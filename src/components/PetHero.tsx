@@ -32,8 +32,8 @@ export function PetHero({ name, picture, ageLabel }: PetHeroProps) {
       </div>
 
       {/* Name pill overlapping the bottom of the image */}
-      <div className="relative -mt-6 flex justify-center">
-        <span className="rounded-full bg-white px-8 py-3 text-lg font-bold text-ink shadow-pill">
+      <div className="relative -mt-16 flex justify-center">
+        <span className="rounded-full bg-white/50 backdrop-blur-md px-8 py-3 text-lg font-bold text-ink shadow-pill">
           {name}
         </span>
       </div>

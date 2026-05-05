@@ -30,7 +30,14 @@ export async function generateMetadata({
   };
 }
 
-export default async function ViewPetPage({ params, searchParams }: PageProps) {
+/**
+ * View a pet's details.
+ *
+ * @param props
+ * @returns
+ */
+export default async function ViewPetPage(props: PageProps) {
+  const { params, searchParams } = props;
   const { id } = await params;
   const { lang } = await searchParams;
 
@@ -50,7 +57,7 @@ export default async function ViewPetPage({ params, searchParams }: PageProps) {
     <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       <PetHero name={pet.name} picture={pet.picture} ageLabel={ageLabel} />
 
-      <div className="px-6 pt-8">
+      <div className="px-4 pt-8">
         <OwnerContact owner={pet.owner} locale={locale} />
       </div>
 
