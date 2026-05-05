@@ -4,9 +4,18 @@
  * lives in `i18n.server.ts`.
  */
 
-export const SUPPORTED_LOCALES = ["pt", "en"] as const;
+export const SUPPORTED_LOCALES = ["pt-BR", "en-US"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
-export const DEFAULT_LOCALE: Locale = "pt";
+export const DEFAULT_LOCALE: Locale = "pt-BR";
+
+/**
+ * Legacy locale codes for backward compatibility.
+ * Maps simplified codes (pt, en) to full locale codes (pt-BR, en-US).
+ */
+const LOCALE_ALIASES: Record<string, Locale> = {
+  pt: "pt-BR",
+  en: "en-US",
+};
 
 type Dictionary = {
   ownerContact: string;
@@ -54,7 +63,7 @@ type Dictionary = {
 };
 
 const dictionaries: Record<Locale, Dictionary> = {
-  pt: {
+  "pt-BR": {
     ownerContact: "Contato do Dono",
     name: "Nome",
     email: "E-mail",
@@ -99,7 +108,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     statusEmpty: "vazio — pronto para cadastro",
     statusFilled: "preenchido",
   },
-  en: {
+  "en-US": {
     ownerContact: "Owner Contact",
     name: "Name",
     email: "Email",
@@ -149,6 +158,27 @@ export function getDictionary(locale: Locale): Dictionary {
   return dictionaries[locale];
 }
 
+/**
+ * Checks if a value is a valid locale code, including legacy aliases.
+ */
 export function isLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
+/**
+ * Normalizes a locale string to a supported Locale.
+ * Handles both full locale codes (pt-BR, en-US) and legacy simplified codes (pt, en).
+ * Returns the normalized locale or undefined if not supported.
+ */
+export function normalizeLocale(value: string): Locale | undefined {
+  // Check if it's already a valid full locale code
+  if (isLocale(value)) return value;
+
+  // Check if it's a legacy alias
+  const normalized = LOCALE_ALIASES[value.toLowerCase()];
+  if (normalized) return normalized;
+
+  // Try extracting the language part from locale codes like "pt-PT" → "pt" → "pt-BR"
+  const langPart = value.toLowerCase().split("-")[0];
+  return LOCALE_ALIASES[langPart];
 }
