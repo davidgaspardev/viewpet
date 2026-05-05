@@ -10,6 +10,9 @@ import { Logo } from "@/components/Logo";
 
 import { PetForm } from "./PetForm";
 
+// Force dynamic rendering since we're using Redis
+export const dynamic = "force-dynamic";
+
 type Params = { id: string };
 type SearchParams = { lang?: string };
 

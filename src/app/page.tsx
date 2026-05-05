@@ -5,6 +5,9 @@ import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
 import { Logo } from "@/components/Logo";
 
+// Force dynamic rendering since we're using Redis
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [entries, locale] = await Promise.all([
     listPetEntries(),

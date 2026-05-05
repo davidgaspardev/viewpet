@@ -6,7 +6,7 @@ MVP de uma página web dinâmica que renderiza as informações de um pet a part
 https://<domain>/view/<hashId>
 ```
 
-O `hashId` é a chave usada para buscar o registro do pet em um KVS (Key-Value Store). Nesta versão inicial, o KVS é simulado por um arquivo JSON em disco, lido e gravado em runtime.
+O `hashId` é a chave usada para buscar o registro do pet em um **KVS (Key-Value Store)**. A aplicação utiliza **Redis** como store de produção.
 
 ## Stack
 
@@ -19,19 +19,45 @@ O `hashId` é a chave usada para buscar o registro do pet em um KVS (Key-Value S
 
 ## Rodando localmente
 
+### 1. Instalar dependências
+
 ```bash
 bun install
+```
+
+### 2. Iniciar Redis
+
+```bash
+# Usando Docker Compose (recomendado)
+docker-compose up -d
+
+# Ou com Docker diretamente
+docker run -d --name viewpet-redis -p 6379:6379 redis:7-alpine
+```
+
+### 3. Popular banco de dados
+
+```bash
+bun run seed
+```
+
+### 4. Rodar aplicação
+
+```bash
 bun dev
 ```
 
 App sobe em <http://localhost:3000>.
 
-Outros comandos:
+> 📖 **Guia completo:** Veja [REDIS_SETUP.md](./REDIS_SETUP.md) para instruções detalhadas, troubleshooting e deployment em produção.
+
+### Outros comandos
 
 ```bash
 bun run build               # build de produção
 bun start                   # inicia servidor de produção
 bun run typecheck           # checagem de tipos
+bun run seed                # popula Redis com dados de pets.json
 bun run reserve             # reserva 1 hashId vazio no KVS
 bun run reserve --count 50  # reserva 50 hashIds (alias: -n 50)
 ```
@@ -146,19 +172,69 @@ src/
     └── pet.ts                # Pet, Owner, PetStore, PetEntry
 ```
 
-## Trocando o mock por um KVS real
+## Redis como KVS
 
-A interface fica isolada em `src/lib/kvs.ts`. Para plugar Redis (ou DynamoDB, Cloudflare KV, etc.), basta reimplementar as funções mantendo as assinaturas:
+A aplicação utiliza **Redis** como Key-Value Store. A interface fica isolada em `src/lib/kvs.ts`:
 
 ```ts
 getPetEntry(hashId: string): Promise<PetEntry>
 setPet(hashId: string, pet: Pet): Promise<void>
-reservePetId(hashId: string): Promise<void>   // grava sentinela null
+reservePetId(hashId: string): Promise<void>   // grava sentinela "null"
 listPetEntries(): Promise<Array<{ id, status, pet? }>>
 ```
 
-Mapeamento natural para Redis:
+### Estrutura de dados no Redis
 
-- `reservePetId(id)` → `SET pet:<id> ""` (ou `SET pet:<id> "__reserved__"`)
-- `setPet(id, pet)` → `SET pet:<id> <JSON>`
-- `getPetEntry(id)` → `GET pet:<id>` e classificar: `nil` → `missing`, valor sentinela → `empty`, JSON → `filled`.
+**Padrão de chaves:** `pet:{hashId}`
+
+**Valores:**
+- `"null"` (string) → Pet reservado mas vazio (mostra formulário)
+- JSON stringificado → Pet com dados completos (mostra perfil)
+- Chave inexistente → 404
+
+**Exemplos:**
+```bash
+# Reservar pet vazio
+SET pet:abc123 "null"
+
+# Salvar pet completo
+SET pet:nuxw4d83wraa '{"name":"Lupe","picture":"...","birthdate":"...","owner":{...}}'
+
+# Listar todos os pets
+KEYS pet:*
+```
+
+### Seed inicial
+
+O comando `bun run seed` lê todos os pets de `src/data/pets.json` e os importa para o Redis:
+
+```bash
+bun run seed
+# 🐾 Seeded: nuxw4d83wraa - Lupe
+# 🐾 Seeded: n7k8w3zwe49w - Mel
+# ...
+# ✅ Seeding complete!
+```
+
+### Configuração
+
+Por padrão, conecta em `redis://localhost:6379`. Para customizar:
+
+```bash
+# .env.local
+REDIS_URL=redis://localhost:6379
+
+# Ou para produção (com senha)
+REDIS_URL=redis://:password@your-host:6379
+
+# Com TLS
+REDIS_URL=rediss://username:password@your-host:6379
+```
+
+**Providers recomendados para produção:**
+- [Upstash](https://upstash.com/) (Serverless Redis)
+- [Redis Cloud](https://redis.com/redis-enterprise-cloud/)
+- [Railway](https://railway.app/)
+- [AWS ElastiCache](https://aws.amazon.com/elasticache/)
+
+> 📖 **Documentação completa:** [REDIS_SETUP.md](./REDIS_SETUP.md)
