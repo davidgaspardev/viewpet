@@ -1,77 +1,97 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
-
-import type { Pet, PetEntry, PetStore } from "@/types/pet";
+import type { Pet, PetEntry } from "@/types/pet";
+import { getRedisClient } from "./redis";
 
 /**
- * Mock KVS access layer.
+ * Redis KVS access layer.
  *
- * For the MVP the "store" is a JSON file on disk read at request time so
- * that writes (e.g. from a form submission) are visible on the next read,
- * mirroring how a real KVS (Redis, DynamoDB, Cloudflare KV) would behave.
+ * Uses Redis as the key-value store with the following pattern:
+ *   - Keys: `pet:{hashId}`
+ *   - Values: JSON-stringified Pet objects or "null" for empty reservations
  *
  * Three states are exposed via `getPetEntry`:
  *   - "missing": key not registered                  (→ 404)
  *   - "empty"  : key registered with a `null` value  (→ render form)
  *   - "filled" : key registered with full Pet data   (→ render profile)
  *
- * Swap the `readStore` / `writeStore` implementations to plug a real KVS
- * later; the public surface stays identical.
+ * The public surface remains identical to the original file-based implementation,
+ * maintaining backward compatibility with existing code.
  */
 
-const STORE_PATH = path.join(process.cwd(), "src/data/pets.json");
-
-async function readStore(): Promise<PetStore> {
-  const raw = await fs.readFile(STORE_PATH, "utf8");
-  return JSON.parse(raw) as PetStore;
-}
-
-async function writeStore(store: PetStore): Promise<void> {
-  const serialized = JSON.stringify(store, null, 2) + "\n";
-  await fs.writeFile(STORE_PATH, serialized, "utf8");
+/** Generate Redis key for a pet hashId */
+function getPetKey(hashId: string): string {
+  return `pet:${hashId}`;
 }
 
 export async function getPetEntry(hashId: string): Promise<PetEntry> {
-  const store = await readStore();
-  if (!Object.prototype.hasOwnProperty.call(store, hashId)) {
+  const redis = await getRedisClient();
+  const key = getPetKey(hashId);
+  const value = await redis.get(key);
+
+  if (value === null) {
     return { status: "missing" };
   }
-  const value = store[hashId];
-  if (value === null || value === undefined) {
+
+  if (value === "null") {
     return { status: "empty" };
   }
-  return { status: "filled", pet: value };
+
+  try {
+    const pet = JSON.parse(value) as Pet;
+    return { status: "filled", pet };
+  } catch (err) {
+    console.error(`Failed to parse pet data for ${hashId}:`, err);
+    throw new Error(`Invalid pet data for ${hashId}`);
+  }
 }
 
 export async function setPet(hashId: string, pet: Pet): Promise<void> {
-  const store = await readStore();
-  store[hashId] = pet;
-  await writeStore(store);
+  const redis = await getRedisClient();
+  const key = getPetKey(hashId);
+  const value = JSON.stringify(pet);
+  await redis.set(key, value);
 }
 
 /** Reserve a hashId without data — useful to demo/test the "empty" state. */
 export async function reservePetId(hashId: string): Promise<void> {
-  const store = await readStore();
-  if (!Object.prototype.hasOwnProperty.call(store, hashId)) {
-    store[hashId] = null;
-    await writeStore(store);
+  const redis = await getRedisClient();
+  const key = getPetKey(hashId);
+  const exists = await redis.exists(key);
+  if (!exists) {
+    await redis.set(key, "null");
   }
 }
 
 export async function listPetIds(): Promise<string[]> {
-  const store = await readStore();
-  return Object.keys(store);
+  const redis = await getRedisClient();
+  const keys = await redis.keys("pet:*");
+  // Extract hashId from "pet:{hashId}" pattern
+  return keys.map((key) => key.slice(4));
 }
 
 /** Lightweight summary for the landing list. */
 export async function listPetEntries(): Promise<
   Array<{ id: string; status: PetEntry["status"]; name?: string }>
 > {
-  const store = await readStore();
-  return Object.entries(store).map(([id, value]) => {
-    if (value === null || value === undefined) {
-      return { id, status: "empty" as const };
-    }
-    return { id, status: "filled" as const, name: value.name };
-  });
+  const redis = await getRedisClient();
+  const keys = await redis.keys("pet:*");
+  const entries = await Promise.all(
+    keys.map(async (key) => {
+      const id = key.slice(4); // Extract hashId from "pet:{hashId}"
+      const value = await redis.get(key);
+
+      if (value === "null") {
+        return { id, status: "empty" as const };
+      }
+
+      try {
+        const pet = JSON.parse(value!) as Pet;
+        return { id, status: "filled" as const, name: pet.name };
+      } catch (err) {
+        console.error(`Failed to parse pet data for ${id}:`, err);
+        return { id, status: "empty" as const };
+      }
+    }),
+  );
+
+  return entries;
 }

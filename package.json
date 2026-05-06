@@ -8,13 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "reserve": "bun run scripts/reserve.ts"
+    "reserve": "bun run scripts/reserve.ts",
+    "seed": "bun run scripts/seed.ts"
   },
   "dependencies": {
     "nanoid": "5.1.9",
     "next": "15.1.12",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "redis": "^5.12.1"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
