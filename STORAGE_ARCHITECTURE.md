@@ -39,15 +39,15 @@ The image storage layer has been refactored using **Dependency Inversion Princip
 │  }                                                   │
 └─────────────────────┬───────────────────────────────┘
                       │ implemented by
-           ┌──────────┴──────────┐
-           ↓                     ↓
-┌──────────────────┐   ┌──────────────────────┐
-│ LocalStorage     │   │ FirebaseStorage      │
-│ Provider         │   │ Provider             │
-│                  │   │                      │
-│ • public/uploads │   │ • Firebase Storage   │
-│ • /uploads URLs  │   │ • CDN URLs           │
-└──────────────────┘   └──────────────────────┘
+           ┌──────────┴──────────┬──────────────┐
+           ↓                     ↓              ↓
+┌──────────────────┐   ┌──────────────────────┐  ┌──────────────────┐
+│ LocalStorage     │   │ FirebaseStorage      │  │ S3Storage        │
+│ Provider         │   │ Provider             │  │ Provider         │
+│                  │   │                      │  │                  │
+│ • public/uploads │   │ • Firebase Storage   │  │ • AWS S3         │
+│ • /uploads URLs  │   │ • CDN URLs           │  │ • CloudFront CDN │
+└──────────────────┘   └──────────────────────┘  └──────────────────┘
 ```
 
 ## File Structure
@@ -59,6 +59,7 @@ src/lib/
     ├── interface.ts            # IStorageProvider + types
     ├── local.ts                # LocalStorageProvider
     ├── firebase.ts             # FirebaseStorageProvider
+    ├── s3.ts                   # S3StorageProvider (AWS S3)
     └── index.ts                # Factory + provider selection
 ```
 
@@ -117,14 +118,39 @@ interface IStorageProvider {
 - Automatic file overwriting (re-uploads)
 - Service account or ADC authentication
 
-### 4. Factory (`index.ts`)
+### 4. S3 Storage Provider (`s3.ts`)
+
+**S3StorageProvider** - Cloud storage via AWS S3
+
+- **Storage location:** S3 bucket (e.g., `viewpet-images-prod`)
+- **URLs returned:** 
+  - Direct S3: `https://bucket.s3.region.amazonaws.com/uploads/abc.jpg`
+  - CloudFront: `https://d123456789.cloudfront.net/uploads/abc.jpg`
+  - Custom domain: `https://cdn.yourdomain.com/uploads/abc.jpg`
+- **Suitable for:**
+  - Production deployments
+  - Multi-server/serverless environments
+  - Cost-effective storage
+  - Global CDN via CloudFront
+  - High-scale applications
+
+**Features:**
+- AWS SDK v3 (modular, tree-shakeable)
+- CloudFront CDN support
+- Custom domain support
+- Cache-Control headers (1 year)
+- Public-read ACL
+- Automatic file overwriting (re-uploads)
+- Proper content-type metadata
+
+### 5. Factory (`index.ts`)
 
 **getStorageProvider()** - Intelligent provider selection
 
 **Selection Logic:**
 1. Check `STORAGE_PROVIDER` env var (explicit)
 2. Auto-detect from `NODE_ENV`:
-   - `production` → Firebase (if configured)
+   - `production` → S3 (if configured) → Firebase (if configured) → Local
    - `development`/`test` → Local
    - Default → Local
 
@@ -134,7 +160,7 @@ interface IStorageProvider {
 - Fallback handling
 - Re-exports for convenience
 
-### 5. Facade (`blobs.ts`)
+### 6. Facade (`blobs.ts`)
 
 **savePetImage()** - Backward-compatible wrapper
 
@@ -161,6 +187,26 @@ export async function savePetImage(
 # No configuration needed
 # Automatically used in development
 ```
+
+#### AWS S3 Storage (Production)
+```bash
+# Required
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=viewpet-images-prod
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+
+# Optional: Force specific provider
+STORAGE_PROVIDER=s3
+
+# Optional: CloudFront CDN
+AWS_CLOUDFRONT_DOMAIN=https://d123456789.cloudfront.net
+
+# Optional: Custom public URL
+AWS_S3_PUBLIC_URL=https://cdn.yourdomain.com
+```
+
+**See [S3_SETUP.md](./S3_SETUP.md) for detailed setup instructions.**
 
 #### Firebase Storage (Production)
 ```bash
@@ -374,32 +420,34 @@ try {
 
 ### Adding New Providers
 
-**Example: AWS S3 Provider**
+**Example: Cloudflare R2 Provider**
 
 ```typescript
-// src/lib/storage/s3.ts
+// src/lib/storage/r2.ts
 import type { IStorageProvider } from "./interface";
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client } from "@aws-sdk/client-s3"; // R2 is S3-compatible!
 
-export class S3StorageProvider implements IStorageProvider {
+export class R2StorageProvider implements IStorageProvider {
   async saveImage(hashId: string, file: File): Promise<string> {
-    // S3 upload logic...
-    return `https://cdn.example.com/${hashId}.jpg`;
+    // R2 upload logic (similar to S3)...
+    return `https://pub-xyz.r2.dev/${hashId}.jpg`;
   }
 }
 
 // src/lib/storage/index.ts - Add to factory
-case "s3":
-  storageProviderInstance = new S3StorageProvider();
+case "r2":
+  storageProviderInstance = new R2StorageProvider();
   break;
 ```
 
 ### Other Possible Providers
+- **AWS S3** - ✅ **Implemented!** (see `s3.ts`)
 - **Cloudflare R2** - S3-compatible, zero egress fees
 - **Cloudinary** - Image optimization + transformations
 - **Vercel Blob** - Optimized for Vercel deployments
 - **DigitalOcean Spaces** - S3-compatible object storage
 - **Azure Blob Storage** - Microsoft cloud storage
+- **Backblaze B2** - Cost-effective S3-compatible storage
 
 ## Benefits
 
@@ -422,6 +470,30 @@ case "s3":
 - ✅ **Resilient** - Graceful fallbacks
 
 ## Troubleshooting
+
+### S3 Errors
+
+**"S3 bucket not configured"**
+```bash
+# Solution: Set bucket name
+export AWS_S3_BUCKET=your-bucket-name
+```
+
+**"Access Denied"**
+- Check IAM policy includes `s3:PutObject` and `s3:PutObjectAcl`
+- Verify AWS credentials are correct
+- Ensure bucket allows public read (bucket policy or ACL)
+
+**"Invalid credentials"**
+- Double-check `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+- Verify IAM user has access keys enabled
+
+**Images upload but return 403**
+- Check bucket policy allows public `s3:GetObject`
+- Verify "Block Public Access" settings
+- If using ACLs, enable Object Ownership
+
+See [S3_SETUP.md](./S3_SETUP.md) for detailed troubleshooting.
 
 ### Firebase Errors
 
