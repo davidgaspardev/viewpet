@@ -59,14 +59,20 @@ export class S3StorageProvider implements IStorageProvider {
       );
     }
 
-    // Initialize S3 client with credentials from environment
+    // Initialize S3 client and only set explicit credentials when both values are provided.
+    // Otherwise, allow the AWS SDK default credential provider chain to resolve credentials.
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
     const clientConfig: any = {
       region: this.region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-      },
     };
+
+    if (accessKeyId && secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId,
+        secretAccessKey,
+      };
+    }
 
     // Support for LocalStack (local AWS emulation)
     if (process.env.AWS_ENDPOINT) {
