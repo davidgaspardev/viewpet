@@ -93,7 +93,7 @@ export class S3StorageProvider implements IStorageProvider {
   async saveImage(hashId: string, file: File): Promise<string> {
     // Validate hashId to prevent path traversal and key manipulation
     if (!isHashId(hashId)) {
-      throw new Error(`Invalid hashId format: ${hashId}`);
+      throw new Error("Invalid hashId format");
     }
 
     // Validate file
