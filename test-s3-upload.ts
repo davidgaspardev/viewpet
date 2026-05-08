@@ -68,7 +68,7 @@ async function testS3Upload() {
         console.log("   - Example: export AWS_S3_BUCKET=your-bucket-name\n");
       } else if (error.message.includes("Access Denied")) {
         console.log("💡 Troubleshooting:");
-        console.log("   - Check IAM permissions (s3:PutObject, s3:PutObjectAcl)");
+        console.log("   - Check IAM permissions (s3:PutObject)");
         console.log("   - Verify AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY");
         console.log("   - See S3_SETUP.md for detailed setup instructions\n");
       } else if (error.message.includes("Invalid credentials")) {
