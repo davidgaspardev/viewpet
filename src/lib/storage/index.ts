@@ -1,6 +1,5 @@
 import type { IStorageProvider } from "./interface";
 import { LocalStorageProvider } from "./local";
-import { FirebaseStorageProvider } from "./firebase";
 import { S3StorageProvider } from "./s3";
 
 /**
@@ -12,7 +11,7 @@ let storageProviderInstance: IStorageProvider | null = null;
 /**
  * Storage provider types supported by the factory.
  */
-export type StorageProviderType = "local" | "firebase" | "s3";
+export type StorageProviderType = "local" | "s3";
 
 /**
  * Factory function to get the appropriate storage provider.
@@ -21,7 +20,6 @@ export type StorageProviderType = "local" | "firebase" | "s3";
  * 1. If STORAGE_PROVIDER env var is set, use that explicitly
  * 2. Otherwise, auto-detect based on NODE_ENV:
  *    - "production" → S3 (if AWS_S3_BUCKET + AWS_ACCESS_KEY_ID configured)
- *                  → Firebase (if FIREBASE_STORAGE_BUCKET configured)
  *                  → Local filesystem (fallback)
  *    - "development" or "test" → Local filesystem
  *    - default → Local filesystem
@@ -30,7 +28,7 @@ export type StorageProviderType = "local" | "firebase" | "s3";
  * same provider instance.
  *
  * @returns The configured storage provider instance
- * @throws {Error} If a cloud provider is selected but not properly configured
+ * @throws {Error} If S3 is selected but not properly configured
  */
 export function getStorageProvider(): IStorageProvider {
   if (storageProviderInstance) {
@@ -40,10 +38,6 @@ export function getStorageProvider(): IStorageProvider {
   const providerType = determineProviderType();
 
   switch (providerType) {
-    case "firebase":
-      storageProviderInstance = new FirebaseStorageProvider();
-      break;
-
     case "s3":
       storageProviderInstance = new S3StorageProvider();
       break;
@@ -68,24 +62,16 @@ export function getStorageProvider(): IStorageProvider {
 function determineProviderType(): StorageProviderType {
   // Explicit provider selection via STORAGE_PROVIDER env var
   const explicitProvider = process.env.STORAGE_PROVIDER?.toLowerCase();
-  if (
-    explicitProvider === "firebase" ||
-    explicitProvider === "local" ||
-    explicitProvider === "s3"
-  ) {
+  if (explicitProvider === "local" || explicitProvider === "s3") {
     return explicitProvider;
   }
 
   // Auto-detect based on NODE_ENV
   const nodeEnv = process.env.NODE_ENV;
   if (nodeEnv === "production") {
-    // In production, check for S3 configuration first (preferred)
+    // In production, check for S3 configuration
     if (process.env.AWS_S3_BUCKET && process.env.AWS_ACCESS_KEY_ID) {
       return "s3";
-    }
-    // Then check if Firebase is configured
-    if (process.env.FIREBASE_STORAGE_BUCKET) {
-      return "firebase";
     }
     // Fall back to local if no cloud storage configured (not recommended for prod)
     console.warn(
