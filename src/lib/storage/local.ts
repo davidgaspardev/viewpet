@@ -6,6 +6,7 @@ import {
   SaveImageException,
   getExtensionFromMime,
 } from "./interface";
+import { isHashId } from "../ids";
 
 /**
  * Local filesystem storage provider.
@@ -44,6 +45,11 @@ export class LocalStorageProvider implements IStorageProvider {
    * @returns Public URL (e.g., "/uploads/abc123.jpg")
    */
   async saveImage(hashId: string, file: File): Promise<string> {
+    // Validate hashId to prevent path traversal attacks
+    if (!isHashId(hashId)) {
+      throw new Error(`Invalid hashId format: ${hashId}`);
+    }
+
     // Validate file
     if (!file || file.size === 0) {
       throw new SaveImageException("empty");

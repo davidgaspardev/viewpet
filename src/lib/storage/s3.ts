@@ -5,6 +5,7 @@ import {
   SaveImageException,
   getExtensionFromMime,
 } from "./interface";
+import { isHashId } from "../ids";
 
 /**
  * AWS S3 storage provider.
@@ -90,6 +91,11 @@ export class S3StorageProvider implements IStorageProvider {
    * @returns Public S3 or CloudFront URL
    */
   async saveImage(hashId: string, file: File): Promise<string> {
+    // Validate hashId to prevent path traversal and key manipulation
+    if (!isHashId(hashId)) {
+      throw new Error(`Invalid hashId format: ${hashId}`);
+    }
+
     // Validate file
     if (!file || file.size === 0) {
       throw new SaveImageException("empty");
