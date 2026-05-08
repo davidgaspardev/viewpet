@@ -25,7 +25,6 @@ import {
  * - Supports direct S3 URLs and CloudFront CDN URLs
  * - Automatic re-upload handling (overwrites existing files)
  * - Proper content-type and cache-control headers
- * - Public-read ACL for easy access
  *
  * Suitable for:
  * - Production deployments
