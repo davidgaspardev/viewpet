@@ -7,7 +7,6 @@ src/lib/
 └── storage/
     ├── interface.ts            # IStorageProvider + types
     ├── local.ts                # LocalStorageProvider
-    ├── firebase.ts             # FirebaseStorageProvider
     ├── s3.ts                   # S3StorageProvider (AWS S3)
     └── index.ts                # Factory + provider selection
 ```
@@ -36,16 +35,6 @@ AWS_CLOUDFRONT_DOMAIN=https://d123456789.cloudfront.net
 NODE_ENV=production
 ```
 
-### Production (Firebase)
-```bash
-# .env.local or environment:
-FIREBASE_STORAGE_BUCKET=your-app.appspot.com
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
-
-# Auto-detects Firebase in production
-NODE_ENV=production
-```
-
 ## 📝 Usage Examples
 
 ### Basic Usage (No Changes Needed)
@@ -57,7 +46,6 @@ try {
   // Local: /uploads/abc123.jpg
   // S3: https://bucket.s3.us-east-1.amazonaws.com/uploads/abc123.jpg
   // CloudFront: https://d123456789.cloudfront.net/uploads/abc123.jpg
-  // Firebase: https://storage.googleapis.com/.../uploads/abc123.jpg
 } catch (err) {
   if (err instanceof SaveImageException) {
     // Handle: empty, invalid_type, too_large
@@ -77,18 +65,13 @@ const url = await provider.saveImage(hashId, file);
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `STORAGE_PROVIDER` | No | Auto-detect | `"local"`, `"firebase"`, or `"s3"` |
+| `STORAGE_PROVIDER` | No | Auto-detect | `"local"` or `"s3"` |
 | `AWS_REGION` | S3 | `us-east-1` | AWS region |
 | `AWS_S3_BUCKET` | S3 | - | S3 bucket name |
 | `AWS_ACCESS_KEY_ID` | S3 | - | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | S3 | - | AWS secret key |
 | `AWS_CLOUDFRONT_DOMAIN` | No | - | CloudFront URL (optional) |
 | `AWS_S3_PUBLIC_URL` | No | - | Custom S3 URL (optional) |
-| `FIREBASE_STORAGE_BUCKET` | Firebase | - | Firebase bucket name |
-| `FIREBASE_SERVICE_ACCOUNT_KEY` | Firebase* | - | Service account JSON |
-
-*Or use Application Default Credentials in GCP
-
 ## 🏗️ Architecture Pattern
 
 ```typescript
@@ -99,7 +82,6 @@ interface IStorageProvider {
 
 // Implementations (concrete)
 class LocalStorageProvider implements IStorageProvider { ... }
-class FirebaseStorageProvider implements IStorageProvider { ... }
 class S3StorageProvider implements IStorageProvider { ... }
 
 // Factory (provider selection)
@@ -128,7 +110,6 @@ export async function savePetImage(...) {
 |----------|---------|------|----------|
 | **Local** | `public/uploads/` | `/uploads/...` | Development, single-server |
 | **S3** | AWS S3 | `https://bucket.s3.region.amazonaws.com/...` | Production, cost-effective, CDN |
-| **Firebase** | Firebase Storage | `https://storage.googleapis.com/...` | Production, multi-server, easy setup |
 
 ## 🚀 Adding New Providers
 
@@ -167,18 +148,6 @@ Error: S3 upload failed: Access Denied
 → See S3_SETUP.md for bucket configuration
 ```
 
-### Firebase Not Configured
-```
-Error: Firebase Storage bucket not configured
-→ Set FIREBASE_STORAGE_BUCKET environment variable
-```
-
-### Invalid Service Account
-```
-Error: Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY
-→ Ensure JSON is valid and properly quoted
-```
-
 ### File Not Appearing
 ```
 Images not showing in browser
@@ -200,7 +169,7 @@ Images not showing in browser
 
 ```
 ❌ Before: actions.ts → filesystem directly
-✅ After:  actions.ts → IStorageProvider ← LocalStorage/Firebase/S3
+✅ After:  actions.ts → IStorageProvider ← LocalStorage/S3
 ```
 
 **Benefits:**
@@ -213,11 +182,10 @@ Images not showing in browser
 
 1. **Local Development:** Just run `bun run dev` - no setup needed
 2. **Production (S3):** Set AWS env vars - auto-switches (see `S3_SETUP.md`)
-3. **Production (Firebase):** Set Firebase env vars - auto-switches
-4. **CloudFront:** Add `AWS_CLOUDFRONT_DOMAIN` for global CDN
-5. **Testing:** Use mock provider implementing `IStorageProvider`
-6. **Extending:** New provider? Implement interface, add to factory
-7. **Override:** Use `STORAGE_PROVIDER` env var to force specific provider
+3. **CloudFront:** Add `AWS_CLOUDFRONT_DOMAIN` for global CDN
+4. **Testing:** Use mock provider implementing `IStorageProvider`
+5. **Extending:** New provider? Implement interface, add to factory
+6. **Override:** Use `STORAGE_PROVIDER` env var to force specific provider
 
 ---
 
@@ -226,12 +194,12 @@ Images not showing in browser
 # Development (local storage)
 bun run dev
 
-# Production build (auto-detects Firebase)
+# Production build (auto-detects S3)
 bun run build
 
 # Type check
 bun run typecheck
 
 # Force specific provider
-STORAGE_PROVIDER=firebase bun run dev
+STORAGE_PROVIDER=s3 bun run dev
 ```

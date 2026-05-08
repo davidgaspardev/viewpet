@@ -6,8 +6,8 @@
  * by the factory in `./storage/index.ts`, which selects between:
  *
  * - LocalStorageProvider: writes to `public/uploads/` (development)
- * - FirebaseStorageProvider: uploads to Firebase Storage (production)
- * - Future providers: S3, Cloudinary, etc.
+ * - S3StorageProvider: uploads to AWS S3 (production)
+ * - Future providers: Cloudinary, R2, etc.
  *
  * High-level code (Server Actions, KVS) depends on this stable interface,
  * not on concrete storage implementations. This enables:

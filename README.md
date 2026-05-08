@@ -249,7 +249,6 @@ A aplicação utiliza uma **camada de abstração** para armazenamento de imagen
 |----------|-----|----------------|
 | **Local** | Desenvolvimento | `/uploads/abc123.jpg` |
 | **S3** | Produção (recomendado) | `https://bucket.s3.region.amazonaws.com/uploads/abc123.jpg` |
-| **Firebase** | Produção (alternativa) | `https://storage.googleapis.com/.../uploads/abc123.jpg` |
 
 ### Configuração
 
@@ -274,24 +273,16 @@ AWS_CLOUDFRONT_DOMAIN=https://d123456789.cloudfront.net
 
 > 📖 **Setup completo do S3:** [S3_SETUP.md](./S3_SETUP.md)
 
-#### Produção (Firebase - alternativa)
-```bash
-# .env.local
-FIREBASE_STORAGE_BUCKET=your-app.appspot.com
-FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
-```
-
 ### Seleção automática
 
 Em produção (`NODE_ENV=production`), o sistema detecta automaticamente qual provedor usar:
 
 1. **S3** (se `AWS_S3_BUCKET` e `AWS_ACCESS_KEY_ID` estiverem configurados)
-2. **Firebase** (se `FIREBASE_STORAGE_BUCKET` estiver configurado)
-3. **Local** (fallback - não recomendado para produção)
+2. **Local** (fallback - não recomendado para produção)
 
 Para forçar um provedor específico:
 ```bash
-STORAGE_PROVIDER=s3  # ou "firebase" ou "local"
+STORAGE_PROVIDER=s3  # ou "local"
 ```
 
 > 📖 **Documentação completa:**
