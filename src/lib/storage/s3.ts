@@ -115,8 +115,7 @@ export class S3StorageProvider implements IStorageProvider {
         ContentType: file.type,
         // Cache for 1 year (immutable content)
         CacheControl: "public, max-age=31536000, immutable",
-        // Make publicly readable (or rely on bucket policy)
-        ACL: "public-read",
+        // Note: Public access is controlled by bucket policy, not ACL
       });
 
       await this.client.send(command);

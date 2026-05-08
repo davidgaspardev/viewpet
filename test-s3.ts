@@ -5,7 +5,11 @@
  * Usage: bun run test-s3.ts
  */
 
-import { S3Client, PutObjectCommand, ListBucketsCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  ListBucketsCommand,
+} from "@aws-sdk/client-s3";
 
 async function testS3() {
   console.log("🧪 Testing S3 Connection...\n");
@@ -17,10 +21,14 @@ async function testS3() {
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
   console.log("📋 Configuration:");
-  console.log(`   Region: ${region || '❌ NOT SET'}`);
-  console.log(`   Bucket: ${bucket || '❌ NOT SET'}`);
-  console.log(`   Access Key ID: ${accessKeyId ? '✅ Set (' + accessKeyId.substring(0, 8) + '...)' : '❌ NOT SET'}`);
-  console.log(`   Secret Access Key: ${secretAccessKey ? '✅ Set (***hidden***)' : '❌ NOT SET'}\n`);
+  console.log(`   Region: ${region || "❌ NOT SET"}`);
+  console.log(`   Bucket: ${bucket || "❌ NOT SET"}`);
+  console.log(
+    `   Access Key ID: ${accessKeyId ? "✅ Set (" + accessKeyId.substring(0, 8) + "...)" : "❌ NOT SET"}`,
+  );
+  console.log(
+    `   Secret Access Key: ${secretAccessKey ? "✅ Set (***hidden***)" : "❌ NOT SET"}\n`,
+  );
 
   if (!region || !bucket || !accessKeyId || !secretAccessKey) {
     console.error("❌ Missing required environment variables!");
@@ -46,13 +54,15 @@ async function testS3() {
     console.log("🔍 Test 1: Verifying AWS credentials...");
     const listCommand = new ListBucketsCommand({});
     const listResult = await client.send(listCommand);
-    console.log(`✅ Credentials valid! Found ${listResult.Buckets?.length || 0} buckets\n`);
+    console.log(
+      `✅ Credentials valid! Found ${listResult.Buckets?.length || 0} buckets\n`,
+    );
 
     // Test 2: Upload a test file
     console.log("📤 Test 2: Uploading test image...");
     const testImageBuffer = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-      "base64"
+      "base64",
     );
 
     const testKey = `uploads/test-${Date.now()}.png`;
@@ -61,7 +71,6 @@ async function testS3() {
       Key: testKey,
       Body: testImageBuffer,
       ContentType: "image/png",
-      ACL: "public-read",
       CacheControl: "public, max-age=31536000, immutable",
     });
 
@@ -72,14 +81,18 @@ async function testS3() {
     console.log("✅ Upload successful!\n");
     console.log("📍 Public URL:");
     console.log(`   ${publicUrl}\n`);
-    console.log("🌐 Open this URL in your browser to verify the image is accessible.\n");
+    console.log(
+      "🌐 Open this URL in your browser to verify the image is accessible.\n",
+    );
 
     // Test 3: Check if bucket policy allows public read
     console.log("🔒 Test 3: Checking public access...");
     try {
       const response = await fetch(publicUrl);
       if (response.ok) {
-        console.log("✅ Public read access working! Image is publicly accessible.\n");
+        console.log(
+          "✅ Public read access working! Image is publicly accessible.\n",
+        );
       } else {
         console.log(`⚠️  Public access returned status: ${response.status}`);
         console.log("   This might indicate bucket policy issues.\n");
@@ -95,7 +108,6 @@ async function testS3() {
     console.log("   1. Start your app: bun run dev");
     console.log("   2. Upload a pet image through the form");
     console.log("   3. Verify it's stored in S3\n");
-
   } catch (error: any) {
     console.error("\n❌ Test failed!");
     console.error("\nError details:");
@@ -119,9 +131,9 @@ async function testS3() {
       console.log("   • IAM user lacks required permissions");
       console.log("   • Add these permissions to your IAM user:");
       console.log("     - s3:PutObject");
-      console.log("     - s3:PutObjectAcl");
       console.log("     - s3:GetObject");
       console.log("     - s3:ListBucket (optional)");
+      console.log("   • Public access is managed by bucket policy, not ACL");
     } else {
       console.log("💡 Troubleshooting:");
       console.log("   • Check error details above");
