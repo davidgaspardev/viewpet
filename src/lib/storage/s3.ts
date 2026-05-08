@@ -60,13 +60,21 @@ export class S3StorageProvider implements IStorageProvider {
     }
 
     // Initialize S3 client with credentials from environment
-    this.client = new S3Client({
+    const clientConfig: any = {
       region: this.region,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
       },
-    });
+    };
+
+    // Support for LocalStack (local AWS emulation)
+    if (process.env.AWS_ENDPOINT) {
+      clientConfig.endpoint = process.env.AWS_ENDPOINT;
+      clientConfig.forcePathStyle = true; // Required for LocalStack
+    }
+
+    this.client = new S3Client(clientConfig);
   }
 
   /**
@@ -118,13 +126,9 @@ export class S3StorageProvider implements IStorageProvider {
     } catch (err) {
       // Wrap AWS errors with more context
       if (err instanceof Error) {
-        throw new Error(
-          `S3 upload failed: ${err.message}`,
-        );
+        throw new Error(`S3 upload failed: ${err.message}`);
       }
-      throw new Error(
-        `S3 upload failed: ${String(err)}`,
-      );
+      throw new Error(`S3 upload failed: ${String(err)}`);
     }
   }
 
