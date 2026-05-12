@@ -9,7 +9,10 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "reserve": "bun run scripts/reserve.ts",
-    "seed": "bun run scripts/seed.ts"
+    "seed": "bun run scripts/seed.ts",
+    "test:s3": "bun run scripts/test-s3.ts",
+    "test:s3-upload": "bun run scripts/test-s3-upload.ts",
+    "setup:localstack": "bun run scripts/setup-localstack.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1044.0",

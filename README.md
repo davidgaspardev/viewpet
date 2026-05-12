@@ -49,18 +49,23 @@ bun dev
 
 App sobe em <http://localhost:3000>.
 
-> 📖 **Guia completo:** Veja [REDIS_SETUP.md](./REDIS_SETUP.md) para instruções detalhadas, troubleshooting e deployment em produção.
+> 📖 **Guia completo:** Veja [src/lib/database/README.md](./src/lib/database/README.md) para instruções detalhadas, troubleshooting e deployment em produção.
 
-### Outros comandos
+### Comandos disponíveis
 
-```bash
-bun run build               # build de produção
-bun start                   # inicia servidor de produção
-bun run typecheck           # checagem de tipos
-bun run seed                # popula Redis com dados de pets.json
-bun run reserve             # reserva 1 hashId vazio no KVS
-bun run reserve --count 50  # reserva 50 hashIds (alias: -n 50)
-```
+| Comando | Descrição |
+|---------|-----------|
+| `bun dev` | Inicia servidor de desenvolvimento |
+| `bun run build` | Build de produção |
+| `bun start` | Inicia servidor de produção |
+| `bun run lint` | Lint do código |
+| `bun run typecheck` | Checagem de tipos TypeScript |
+| `bun run seed` | Popula Redis com dados de `src/data/pets.json` |
+| `bun run reserve` | Reserva 1 hashId vazio no KVS |
+| `bun run reserve --count N` | Reserva N hashIds vazios |
+| `bun run test:s3` | Testa conexão e credenciais S3 |
+| `bun run test:s3-upload` | Testa upload via provider de storage |
+| `bun run setup:localstack` | Configura bucket LocalStack para testes offline |
 
 ## Formato do `hashId`
 
@@ -237,7 +242,7 @@ REDIS_URL=rediss://username:password@your-host:6379
 - [Railway](https://railway.app/)
 - [AWS ElastiCache](https://aws.amazon.com/elasticache/)
 
-> 📖 **Documentação completa:** [REDIS_SETUP.md](./REDIS_SETUP.md)
+> 📖 **Documentação completa:** [src/lib/database/README.md](./src/lib/database/README.md)
 
 ## Armazenamento de Imagens
 
@@ -271,7 +276,7 @@ AWS_SECRET_ACCESS_KEY=...
 AWS_CLOUDFRONT_DOMAIN=https://d123456789.cloudfront.net
 ```
 
-> 📖 **Setup completo do S3:** [S3_SETUP.md](./S3_SETUP.md)
+> 📖 **Setup completo do S3:** [src/lib/storage/README.md](./src/lib/storage/README.md)
 
 ### Seleção automática
 
@@ -285,7 +290,4 @@ Para forçar um provedor específico:
 STORAGE_PROVIDER=s3  # ou "local"
 ```
 
-> 📖 **Documentação completa:**
-> - [S3_SETUP.md](./S3_SETUP.md) - Guia completo de setup AWS S3
-> - [STORAGE_ARCHITECTURE.md](./STORAGE_ARCHITECTURE.md) - Arquitetura e princípios SOLID
-> - [STORAGE_QUICK_REFERENCE.md](./STORAGE_QUICK_REFERENCE.md) - Referência rápida
+> 📖 **Documentação completa:** [src/lib/storage/README.md](./src/lib/storage/README.md)
