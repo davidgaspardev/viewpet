@@ -237,35 +237,154 @@ const entry = await getPetEntry("abc123");  // Works identically
 
 The facade delegates to the appropriate provider automatically.
 
+## Redis Server Setup
+
+### Option A: Docker Compose (recommended)
+
+```bash
+docker-compose up -d        # start in background
+docker-compose ps           # verify running
+docker-compose logs -f redis
+docker-compose down         # stop
+```
+
+### Option B: Docker (standalone)
+
+```bash
+docker run -d --name viewpet-redis -p 6379:6379 redis:7-alpine
+```
+
+### Option C: Homebrew (macOS)
+
+```bash
+brew install redis
+brew services start redis
+redis-cli ping  # → PONG
+```
+
+### Environment
+
+```bash
+# .env.local (default works with any of the above)
+REDIS_URL=redis://localhost:6379
+
+# With authentication
+REDIS_URL=redis://:password@localhost:6379
+
+# Production TLS
+REDIS_URL=rediss://username:password@your-host:6380
+```
+
+## Data Seeding
+
+Import existing pets from `src/data/pets.json` into Redis:
+
+```bash
+bun run seed
+```
+
+Verify:
+
+```bash
+redis-cli KEYS "pet:*"         # list all pet keys
+redis-cli GET "pet:nuxw4d83wraa"  # inspect a specific pet
+redis-cli DBSIZE               # total key count
+```
+
+Re-seed from scratch:
+
+```bash
+redis-cli FLUSHDB && bun run seed
+# or: docker-compose down -v && docker-compose up -d && bun run seed
+```
+
+## Redis Key Schema
+
+```
+Key pattern:  pet:{hashId}
+Value:        JSON string (filled pet) | "null" (reserved) | <missing> (404)
+```
+
+Examples:
+
+```
+pet:nuxw4d83wraa → {"name":"Lupe","picture":"https://...","birthdate":"...","owner":{...}}
+pet:abc123def456 → "null"   (reserved, awaiting form submission)
+```
+
+## Connection Management
+
+The Redis client (`src/lib/redis.ts`) uses a singleton with:
+
+- **Retry strategy**: exponential backoff — 50 ms → 100 ms → 200 ms → max 3 s
+- **Max attempts**: 2 in production (fail fast), 10 in development
+- **Reconnection**: automatic on disconnect
+- **Dynamic rendering**: pages reading Redis use `export const dynamic = "force-dynamic"` to prevent static generation at build time
+
+### Recommended Redis Providers (production)
+
+- **Upstash** — serverless HTTP-based Redis
+- **Redis Cloud** — managed by Redis Labs
+- **AWS ElastiCache** — Redis on AWS
+- **Railway / Render** — simple managed Redis
+
+## Manual Testing Scenarios
+
+```bash
+# Create an empty reservation
+redis-cli SET pet:test-empty "null"
+# → http://localhost:3000/view/test-empty should show the form
+
+# Create a filled pet
+redis-cli SET pet:test-filled '{"name":"Test","picture":"https://example.com/pic.jpg","birthdate":"2020-01-01T00:00:00.000Z","owner":{"name":"Owner","email":"a@b.com","phone":"123"}}'
+# → http://localhost:3000/view/test-filled should show profile
+
+# Test 404
+redis-cli DEL pet:test-missing
+# → http://localhost:3000/view/test-missing should show "not found"
+```
+
 ## Production Checklist
 
-- [ ] Set `KVS_PROVIDER=redis` (or let auto-detection work)
+- [ ] Set `KVS_PROVIDER=redis` (or let auto-detection work via `REDIS_URL`)
 - [ ] Configure `REDIS_URL` with production Redis instance
+- [ ] Run seed if migrating from JSON: `bun run seed`
 - [ ] Verify build: `bun run build`
-- [ ] Test both providers work: `bun test`
+- [ ] Run tests: `bun test`
 - [ ] Monitor provider logs: `[KVS] Using redis provider`
 
 ## Troubleshooting
 
-**Issue:** "Falling back to in-memory storage" warning
+**"Falling back to in-memory storage" warning**
+→ Set `REDIS_URL` or set `KVS_PROVIDER=memory` explicitly if intentional
 
-**Solution:** Set `REDIS_URL` environment variable or explicitly set `KVS_PROVIDER=memory` if intentional
+**Tests failing with Redis connection errors**
+→ Ensure `NODE_ENV=test` — tests should auto-select `MemoryKVSProvider`
 
----
+**Data not persisting between requests**
+→ You are using `memory` provider; set `REDIS_URL` to switch to `redis`
 
-**Issue:** Tests failing with Redis connection errors
+**`ECONNREFUSED` — can't connect to Redis**
+```bash
+redis-cli ping              # should return PONG
+docker-compose restart redis
+docker-compose logs redis
+```
 
-**Solution:** Ensure `NODE_ENV=test` so tests use `MemoryKVSProvider`
+**Build fails with Redis connection error**
+→ Pages reading Redis must have `export const dynamic = "force-dynamic"`
 
----
-
-**Issue:** Data not persisting between requests
-
-**Solution:** Check you're using `redis` provider, not `memory` (memory doesn't persist)
+**Seed script fails**
+```bash
+redis-cli ping              # verify Redis is reachable
+cat src/data/pets.json      # verify data file exists
+REDIS_URL=redis://localhost:6379 bun run seed
+```
 
 ## Related Files
 
-- `src/lib/kvs.ts` - Backward-compatible facade
-- `src/lib/redis.ts` - Redis client singleton
-- `src/lib/storage/` - Storage layer (same pattern)
-- `src/lib/__tests__/database.test.ts` - Test suite
+- `src/lib/kvs.ts` — backward-compatible facade
+- `src/lib/redis.ts` — Redis client singleton
+- `src/lib/storage/` — Storage layer (same pattern)
+- `src/lib/__tests__/database.test.ts` — test suite
+- `scripts/seed.ts` — seed script

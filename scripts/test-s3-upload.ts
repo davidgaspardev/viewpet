@@ -12,7 +12,7 @@
  *   - STORAGE_PROVIDER=s3 (or it will auto-detect in production)
  */
 
-import { getStorageProvider } from "./src/lib/storage";
+import { getStorageProvider } from "../src/lib/storage";
 
 async function testS3Upload() {
   console.log("🧪 Testing S3 upload...\n");
