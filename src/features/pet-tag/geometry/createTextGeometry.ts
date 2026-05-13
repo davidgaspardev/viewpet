@@ -9,6 +9,27 @@ const font = new FontLoader().parse(fontData);
 const TAG_DEPTH = 5;
 const ENGRAVE_DEPTH = 1.5;
 
+export function createTextFillGeometry(text: string): THREE.BufferGeometry {
+  const geometry = new TextGeometry(text, {
+    font,
+    size: 16,
+    depth: ENGRAVE_DEPTH - 0.1,
+    curveSegments: 4,
+    bevelEnabled: false,
+  });
+
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox!;
+
+  geometry.translate(
+    -(min.x + (max.x - min.x) / 2),
+    -(min.y + (max.y - min.y) / 2),
+    TAG_DEPTH - ENGRAVE_DEPTH + 0.05,
+  );
+
+  return geometry;
+}
+
 export function createTextGeometry(text: string): THREE.BufferGeometry {
   const geometry = new TextGeometry(text, {
     font,

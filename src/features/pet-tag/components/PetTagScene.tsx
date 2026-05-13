@@ -13,7 +13,9 @@ export default function PetTagScene() {
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       <Canvas camera={{ position: [0, 0, 300] }}>
-        <Environment preset="studio" environmentIntensity={0.1} />
+        <Environment preset="studio" environmentIntensity={0} />
+        <ambientLight intensity={1} />
+        <directionalLight position={[100, 200, 200]} intensity={2} />
 
         <PetTagMesh text={debouncedText} />
 
