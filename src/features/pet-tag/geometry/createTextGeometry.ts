@@ -9,10 +9,10 @@ const font = new FontLoader().parse(fontData);
 const TAG_DEPTH = 5;
 const ENGRAVE_DEPTH = 1.5;
 
-export function createTextFillGeometry(text: string): THREE.BufferGeometry {
+export function createTextFillGeometry(text: string, size = 16): THREE.BufferGeometry {
   const geometry = new TextGeometry(text, {
     font,
-    size: 16,
+    size,
     depth: ENGRAVE_DEPTH - 0.1,
     curveSegments: 4,
     bevelEnabled: false,
@@ -30,10 +30,10 @@ export function createTextFillGeometry(text: string): THREE.BufferGeometry {
   return geometry;
 }
 
-export function createTextGeometry(text: string): THREE.BufferGeometry {
+export function createTextGeometry(text: string, size = 16): THREE.BufferGeometry {
   const geometry = new TextGeometry(text, {
     font,
-    size: 16,
+    size,
     depth: ENGRAVE_DEPTH + 2,
     curveSegments: 4,
     bevelEnabled: false,
