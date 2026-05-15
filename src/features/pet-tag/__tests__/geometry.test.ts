@@ -44,11 +44,18 @@ describe("createRoundedRectShape", () => {
     expect(Math.abs(first.y - last.y)).toBeLessThan(0.01);
   });
 
-  test("radius=0 produces a plain rectangle shape", () => {
-    const shape = createRoundedRectShape(100, 60, 0);
-    // Without curves, only line segments — curves array may still include 0-control curves
-    const pts = shape.getPoints(16);
-    expect(pts.length).toBeGreaterThan(0);
+  test("radius=0 corners land exactly at rectangle vertices", () => {
+    const w = 100;
+    const h = 60;
+    const shape = createRoundedRectShape(w, h, 0);
+    const pts = shape.getPoints(32);
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    // All sampled points must lie on the rectangle boundary
+    expect(Math.min(...xs)).toBeCloseTo(-w / 2, 1);
+    expect(Math.max(...xs)).toBeCloseTo(w / 2, 1);
+    expect(Math.min(...ys)).toBeCloseTo(-h / 2, 1);
+    expect(Math.max(...ys)).toBeCloseTo(h / 2, 1);
   });
 });
 

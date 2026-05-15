@@ -22,6 +22,7 @@ const CIRCLE_RADIUS = 60;
 
 export default function PetTagMesh({ text, shape = "rectangle" }: PetTagProps) {
   const { viewport, size } = useThree();
+  const textSize = shape === "circle" ? 14 : 16;
 
   const scale = useMemo(() => {
     const isCircle = shape === "circle";
@@ -39,23 +40,21 @@ export default function PetTagMesh({ text, shape = "rectangle" }: PetTagProps) {
 
     if (!text.trim()) return base;
 
-    const textSize = shape === "circle" ? 14 : 16;
     try {
       return engraveText(base, createTextGeometry(text, textSize));
     } catch {
       return base;
     }
-  }, [text, shape]);
+  }, [text, shape, textSize]); // textSize derives from shape; both listed for exhaustive-deps
 
   const fillGeometry = useMemo(() => {
     if (!text.trim()) return null;
-    const textSize = shape === "circle" ? 14 : 16;
     try {
       return createTextFillGeometry(text, textSize);
     } catch {
       return null;
     }
-  }, [text, shape]);
+  }, [text, textSize]);
 
   return (
     <group scale={scale}>

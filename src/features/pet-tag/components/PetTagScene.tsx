@@ -6,6 +6,11 @@ import { Environment } from "@react-three/drei";
 import TagCarousel from "./TagCarousel";
 import { useDebounce } from "../hooks/useDebounce";
 
+// Design tokens — keep in sync with tailwind.config.ts
+const COLOR_INK = "#1F2D3D";
+const COLOR_MUTED = "#6B7A8F";
+const COLOR_SURFACE = "#F3F4F2";
+
 const TAGS = [
   { label: "Retangular", index: 0 },
   { label: "Circular", index: 1 },
@@ -22,11 +27,11 @@ export default function PetTagScene() {
         width: "100%",
         height: "100vh",
         position: "relative",
-        background: "#F3F4F2",
+        background: COLOR_SURFACE,
       }}
     >
       <Canvas camera={{ position: [0, 0, 300] }}>
-        <color attach="background" args={["#F3F4F2"]} />
+        <color attach="background" args={[COLOR_SURFACE]} />
         <Environment preset="studio" environmentIntensity={0} />
         <ambientLight intensity={1} />
         <directionalLight position={[100, 200, 200]} intensity={2} />
@@ -48,6 +53,8 @@ export default function PetTagScene() {
         {TAGS.map(({ label, index }) => (
           <button
             key={label}
+            type="button"
+            aria-pressed={activeTag === index}
             onClick={() => setActiveTag(index)}
             style={{
               padding: "6px 18px",
@@ -59,8 +66,8 @@ export default function PetTagScene() {
               letterSpacing: 1,
               transition: "background 0.2s, color 0.2s",
               background:
-                activeTag === index ? "#1F2D3D" : "rgba(31,45,61,0.08)",
-              color: activeTag === index ? "#ffffff" : "#6B7A8F",
+                activeTag === index ? COLOR_INK : `${COLOR_INK}14`,
+              color: activeTag === index ? "#ffffff" : COLOR_MUTED,
             }}
           >
             {label}
@@ -89,9 +96,9 @@ export default function PetTagScene() {
             fontFamily: "monospace",
             letterSpacing: 4,
             borderRadius: 8,
-            border: "1px solid rgba(31,45,61,0.12)",
+            border: `1px solid ${COLOR_INK}1F`,
             background: "rgba(255,255,255,0.85)",
-            color: "#1F2D3D",
+            color: COLOR_INK,
             outline: "none",
             textAlign: "center",
             width: 280,

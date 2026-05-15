@@ -3,7 +3,7 @@ import PetTagScene from "@/features/pet-tag/components/PetTagScene";
 
 export default function HomePage() {
   return (
-    <main className="bg-[#F3F4F2] text-ink min-h-screen">
+    <main className="bg-surface text-ink min-h-screen">
       <header className="fixed top-0 left-0 right-0 z-20 flex items-center gap-3 px-6 py-4 bg-white/80 backdrop-blur-md border-b border-black/5">
         <Image
           src="/logo.svg"
@@ -17,7 +17,7 @@ export default function HomePage() {
         </span>
       </header>
 
-      <section className="relative h-screen bg-[#F3F4F2]">
+      <section className="relative h-screen bg-surface">
         <div className="absolute top-20 inset-x-0 z-10 text-center px-4 pointer-events-none">
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Pingente personalizado para o seu pet
