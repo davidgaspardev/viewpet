@@ -59,7 +59,12 @@ export default function PetTagMesh({ text, shape = "rectangle" }: PetTagProps) {
   return (
     <group scale={scale}>
       <mesh geometry={geometry}>
-        <meshStandardMaterial color="#AAAAAA" metalness={1} roughness={0.5} />
+        <meshStandardMaterial
+          color="#A1A1A1"
+          metalness={1}
+          roughness={0.45}
+          envMapIntensity={1}
+        />
       </mesh>
       {fillGeometry && (
         <mesh geometry={fillGeometry}>

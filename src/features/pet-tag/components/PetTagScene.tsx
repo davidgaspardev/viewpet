@@ -32,9 +32,12 @@ export default function PetTagScene() {
     >
       <Canvas camera={{ position: [0, 0, 300] }}>
         <color attach="background" args={[COLOR_SURFACE]} />
-        <Environment preset="studio" environmentIntensity={0} />
-        <ambientLight intensity={1} />
-        <directionalLight position={[100, 200, 200]} intensity={2} />
+        <Environment preset="studio" environmentIntensity={2} />
+        {/* Four-point rig — covers full 360° rotation */}
+        <directionalLight position={[0, 150, 300]} intensity={0.35} />
+        <directionalLight position={[0, 150, -300]} intensity={0.25} />
+        <directionalLight position={[-300, 50, 0]} intensity={0.2} />
+        <directionalLight position={[300, 50, 0]} intensity={0.2} />
 
         <TagCarousel text={debouncedText} activeIndex={activeTag} />
       </Canvas>
