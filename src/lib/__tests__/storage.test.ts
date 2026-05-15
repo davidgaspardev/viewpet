@@ -15,7 +15,7 @@ import { LocalStorageProvider } from "../storage/local";
 import { S3StorageProvider } from "../storage/s3";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Test utilities
 const TEST_UPLOADS_DIR = path.join(process.cwd(), "test-uploads");
@@ -57,7 +57,7 @@ function createTestImage(): File {
 async function cleanupTestFiles(): Promise<void> {
   try {
     await fs.rm(TEST_UPLOADS_DIR, { recursive: true, force: true });
-  } catch (err) {
+  } catch {
     // Ignore if directory doesn't exist
   }
 }
@@ -539,10 +539,6 @@ describe("Storage Provider Abstraction", () => {
   describe("Backward Compatibility (blobs.ts facade)", () => {
     test("savePetImage works with factory", async () => {
       const { savePetImage } = await import("../blobs");
-      const provider = new LocalStorageProvider(
-        TEST_UPLOADS_DIR,
-        TEST_PUBLIC_PREFIX,
-      );
 
       // Set up environment to use local provider
       process.env.STORAGE_PROVIDER = "local";

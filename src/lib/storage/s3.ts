@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
 import type { IStorageProvider } from "./interface";
 import {
   MAX_IMAGE_BYTES,
@@ -63,7 +63,7 @@ export class S3StorageProvider implements IStorageProvider {
     // Otherwise, allow the AWS SDK default credential provider chain to resolve credentials.
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
     const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-    const clientConfig: any = {
+    const clientConfig: S3ClientConfig = {
       region: this.region,
     };
 
