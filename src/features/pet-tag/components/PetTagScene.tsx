@@ -34,8 +34,8 @@ export default function PetTagScene() {
         <color attach="background" args={[COLOR_SURFACE]} />
         <Environment preset="studio" environmentIntensity={1} />
         {/* Four-point rig — covers full 360° rotation */}
-        <directionalLight position={[0, 150, 300]} intensity={0.2} />
-        <directionalLight position={[0, 150, -300]} intensity={0.15} />
+        <directionalLight position={[0, 150, 300]} intensity={0.1} />
+        <directionalLight position={[0, 150, -300]} intensity={0.1} />
         <directionalLight position={[-300, 50, 0]} intensity={0.1} />
         <directionalLight position={[300, 50, 0]} intensity={0.1} />
 
@@ -68,8 +68,7 @@ export default function PetTagScene() {
               fontFamily: "monospace",
               letterSpacing: 1,
               transition: "background 0.2s, color 0.2s",
-              background:
-                activeTag === index ? COLOR_INK : `${COLOR_INK}14`,
+              background: activeTag === index ? COLOR_INK : `${COLOR_INK}14`,
               color: activeTag === index ? "#ffffff" : COLOR_MUTED,
             }}
           >
