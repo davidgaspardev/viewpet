@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { useThree, useFrame } from "@react-three/fiber";
+import { useThree, useFrame, ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import PetTagMesh from "./PetTagMesh";
 
@@ -30,14 +30,15 @@ export default function TagCarousel({ text, activeIndex }: TagCarouselProps) {
   const activeIndexRef = useRef(activeIndex);
   activeIndexRef.current = activeIndex;
 
+  // Drag starts only when the pointer hits a tag mesh
+  const onTagPointerDown = (e: ThreeEvent<PointerEvent>) => {
+    isDragging.current = true;
+    lastX.current = e.clientX;
+    gl.domElement.setPointerCapture(e.pointerId);
+  };
+
   useEffect(() => {
     const canvas = gl.domElement;
-
-    const onDown = (e: PointerEvent) => {
-      isDragging.current = true;
-      lastX.current = e.clientX;
-      canvas.setPointerCapture(e.pointerId);
-    };
 
     const onMove = (e: PointerEvent) => {
       if (!isDragging.current) return;
@@ -50,13 +51,11 @@ export default function TagCarousel({ text, activeIndex }: TagCarouselProps) {
       isDragging.current = false;
     };
 
-    canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerup", onUp);
     canvas.addEventListener("pointercancel", onUp);
 
     return () => {
-      canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
@@ -76,11 +75,11 @@ export default function TagCarousel({ text, activeIndex }: TagCarouselProps) {
 
   return (
     <group ref={sliderRef}>
-      <group ref={rectRef}>
+      <group ref={rectRef} onPointerDown={onTagPointerDown}>
         <PetTagMesh text={text} shape="rectangle" />
       </group>
       <group position={[viewport.width, 0, 0]}>
-        <group ref={circleRef}>
+        <group ref={circleRef} onPointerDown={onTagPointerDown}>
           <PetTagMesh text={text} shape="circle" />
         </group>
       </group>

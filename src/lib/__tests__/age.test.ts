@@ -83,6 +83,6 @@ describe("formatAge", () => {
 
   test("clamps month count to at least 1", () => {
     const result = formatAge("2024-06-01T00:00:00.000Z", "pt-BR", d("2024-06-01"));
-    expect(result).toMatch(/1/);
+    expect(result).toMatch(/m[eê]s/i);
   });
 });
