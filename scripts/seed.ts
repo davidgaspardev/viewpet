@@ -1,28 +1,35 @@
 #!/usr/bin/env bun
 /**
- * Seed Redis with pet data from pets.json.
+ * Seed database with pet data from pets.json.
  *
  * Usage:
  *   bun run seed
  *
- * This script:
- * 1. Reads all pets from src/data/pets.json
- * 2. Connects to Redis
- * 3. Saves each pet to Redis with the key pattern `pet:{hashId}`
- * 4. Logs progress for each pet seeded
+ * Respects DATABASE_PROVIDER env var (default: local).
+ * Note: DATABASE_PROVIDER=local uses in-memory storage — data is lost
+ * when the process exits and won't carry over to the running app.
  */
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { getRedisClient, closeRedisClient } from "../src/lib/redis";
+import { getDatabaseProvider } from "../src/lib/database";
 import type { PetStore } from "../src/types/pet";
 
 const PETS_JSON_PATH = path.join(process.cwd(), "src/data/pets.json");
 
-async function main(): Promise<void> {
-  console.log("🌱 Starting Redis seed...\n");
+const providerType = process.env.DATABASE_PROVIDER ?? "local";
 
-  // Read pets.json
+async function main(): Promise<void> {
+  console.log(`🌱 Starting seed (provider: ${providerType})...\n`);
+
+  if (providerType === "local") {
+    console.warn(
+      "⚠️  DATABASE_PROVIDER=local uses in-memory storage.\n" +
+        "   Data seeded here won't persist to the running app.\n" +
+        "   Set DATABASE_PROVIDER=redis to seed a real database.\n",
+    );
+  }
+
   console.log(`📖 Reading pets from ${PETS_JSON_PATH}...`);
   const rawData = await fs.readFile(PETS_JSON_PATH, "utf8");
   const petsData = JSON.parse(rawData) as PetStore;
@@ -30,31 +37,21 @@ async function main(): Promise<void> {
   const petIds = Object.keys(petsData);
   console.log(`✅ Found ${petIds.length} pets to seed\n`);
 
-  // Connect to Redis
-  console.log("🔌 Connecting to Redis...");
-  const redis = await getRedisClient();
-  console.log("✅ Connected to Redis\n");
+  const provider = getDatabaseProvider();
 
-  // Seed each pet
   let seededCount = 0;
   let skippedCount = 0;
 
   for (const [hashId, petData] of Object.entries(petsData)) {
-    const key = `pet:${hashId}`;
-
     try {
       if (petData === null) {
-        // Handle reserved but empty pets
-        await redis.set(key, "null");
+        await provider.reservePetId(hashId);
         console.log(`🔒 Reserved: ${hashId} (empty slot)`);
-        seededCount++;
       } else {
-        // Save pet with full data
-        const value = JSON.stringify(petData);
-        await redis.set(key, value);
+        await provider.setPet(hashId, petData);
         console.log(`🐾 Seeded: ${hashId} - ${petData.name}`);
-        seededCount++;
       }
+      seededCount++;
     } catch (err) {
       console.error(`❌ Failed to seed ${hashId}:`, err);
       skippedCount++;
@@ -70,12 +67,8 @@ async function main(): Promise<void> {
   }
   console.log("=".repeat(50) + "\n");
 
-  // Verify by listing all keys
-  const keys = await redis.keys("pet:*");
-  console.log(`🔍 Verification: Found ${keys.length} pet keys in Redis`);
-
-  // Close connection
-  await closeRedisClient();
+  const ids = await provider.listPetIds();
+  console.log(`🔍 Verification: Found ${ids.length} pet entries`);
 }
 
 main().catch((err) => {
