@@ -43,7 +43,7 @@ export function GuardianContact({ guardian, locale }: GuardianContactProps) {
         </h2>
       </header>
 
-      <dl className="p-4 space-y-5">
+      <dl className="px-4 py-5 space-y-5">
         {/* Name — info only */}
         <div>
           <dt className="text-xs font-medium text-muted">{dict.name}</dt>
