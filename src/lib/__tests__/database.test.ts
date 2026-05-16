@@ -1,42 +1,38 @@
 /**
- * Test file to verify KVS provider abstraction and implementations
+ * Test file to verify Database provider abstraction and implementations
  * Run with: bun test src/lib/__tests__/database.test.ts
  */
 
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
-import { getKVSProvider, resetKVSProvider } from "../database";
+import { getDatabaseProvider, resetDatabaseProvider } from "../database";
 import { MemoryKVSProvider } from "../database/memory";
 import type { Pet } from "@/types/pet";
 
-describe("KVS Provider Abstraction", () => {
+describe("Database Provider Abstraction", () => {
   beforeEach(() => {
-    // Reset singleton before each test
-    resetKVSProvider();
-    // Clear provider overrides to let auto-detection work
-    delete process.env.KVS_PROVIDER;
-    delete process.env.REDIS_URL;
+    resetDatabaseProvider();
+    delete process.env.DATABASE_PROVIDER;
   });
 
   afterEach(() => {
-    resetKVSProvider();
+    resetDatabaseProvider();
   });
 
   describe("Factory", () => {
     test("returns a singleton instance", () => {
-      const provider1 = getKVSProvider();
-      const provider2 = getKVSProvider();
+      const provider1 = getDatabaseProvider();
+      const provider2 = getDatabaseProvider();
       expect(provider1).toBe(provider2);
     });
 
-    test("uses memory provider in test environment", () => {
-      const provider = getKVSProvider();
+    test("defaults to local (in-memory) provider", () => {
+      const provider = getDatabaseProvider();
       expect(provider).toBeInstanceOf(MemoryKVSProvider);
     });
 
-    test("respects KVS_PROVIDER environment variable", () => {
-      resetKVSProvider();
-      process.env.KVS_PROVIDER = "memory";
-      const provider = getKVSProvider();
+    test("uses local provider when DATABASE_PROVIDER=local", () => {
+      process.env.DATABASE_PROVIDER = "local";
+      const provider = getDatabaseProvider();
       expect(provider).toBeInstanceOf(MemoryKVSProvider);
     });
   });

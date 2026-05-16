@@ -14,7 +14,7 @@
  */
 
 import type { Pet, PetEntry } from "@/types/pet";
-import { getKVSProvider } from "./database";
+import { getDatabaseProvider } from "./database";
 
 /**
  * Get pet entry by hash ID.
@@ -23,7 +23,7 @@ import { getKVSProvider } from "./database";
  * @returns Pet entry with status discriminator
  */
 export async function getPetEntry(hashId: string): Promise<PetEntry> {
-  const provider = getKVSProvider();
+  const provider = getDatabaseProvider();
   return provider.getPetEntry(hashId);
 }
 
@@ -34,7 +34,7 @@ export async function getPetEntry(hashId: string): Promise<PetEntry> {
  * @param pet - Complete pet data to persist
  */
 export async function setPet(hashId: string, pet: Pet): Promise<void> {
-  const provider = getKVSProvider();
+  const provider = getDatabaseProvider();
   return provider.setPet(hashId, pet);
 }
 
@@ -44,7 +44,7 @@ export async function setPet(hashId: string, pet: Pet): Promise<void> {
  * @param hashId - Unique identifier to reserve
  */
 export async function reservePetId(hashId: string): Promise<void> {
-  const provider = getKVSProvider();
+  const provider = getDatabaseProvider();
   return provider.reservePetId(hashId);
 }
 
@@ -54,7 +54,7 @@ export async function reservePetId(hashId: string): Promise<void> {
  * @returns Array of hash IDs (both empty and filled)
  */
 export async function listPetIds(): Promise<string[]> {
-  const provider = getKVSProvider();
+  const provider = getDatabaseProvider();
   return provider.listPetIds();
 }
 
@@ -66,6 +66,6 @@ export async function listPetIds(): Promise<string[]> {
 export async function listPetEntries(): Promise<
   Array<{ id: string; status: PetEntry["status"]; name?: string }>
 > {
-  const provider = getKVSProvider();
+  const provider = getDatabaseProvider();
   return provider.listPetEntries();
 }
