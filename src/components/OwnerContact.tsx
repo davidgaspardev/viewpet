@@ -31,16 +31,18 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
   return (
     <section
       aria-labelledby="owner-contact-heading"
-      className="rounded-xl bg-surface px-6 py-6"
+      className="rounded-xl bg-surface"
     >
-      <h2
+      <header
         id="owner-contact-heading"
-        className="border-b border-black/10 pb-3 text-lg font-bold tracking-tight text-ink"
+        className="h-16 py-4 mx-2 border-b border-black/10 pb-3 flex items-center"
       >
-        {dict.ownerContact}
-      </h2>
+        <h2 className="text-lg pl-2 font-bold tracking-tight text-ink">
+          {dict.ownerContact}
+        </h2>
+      </header>
 
-      <dl className="mt-4 space-y-5">
+      <dl className="p-4 space-y-5">
         {/* Name — info only */}
         <div>
           <dt className="text-xs font-medium text-muted">{dict.name}</dt>
@@ -95,7 +97,7 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
       </dl>
 
       {hasSocial && (
-        <div className="mt-5 border-t border-black/10 pt-4">
+        <div className="py-4 px-2 mx-2 border-t border-black/10 pt-4">
           <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
           <SocialLinks social={owner.social} />
         </div>
