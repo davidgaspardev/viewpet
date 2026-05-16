@@ -3,7 +3,7 @@
     "name": "Lupe",
     "picture": "https://bestforpet.com.au/wp-content/uploads/2025/11/Husky.jpg",
     "birthdate": "2018-04-21T18:21:09.372Z",
-    "owner": {
+    "guardian": {
       "name": "David Corrêa Gaspar",
       "email": "davidgaspar.dev@gmail.com",
       "phone": "(48) 984596882",
@@ -19,7 +19,7 @@
     "name": "Mel",
     "picture": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200&q=80",
     "birthdate": "2022-08-10T10:00:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Ana Souza",
       "email": "ana.souza@example.com",
       "phone": "(11) 99887-6655",
@@ -34,7 +34,7 @@
     "name": "Thor",
     "picture": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1200&q=80",
     "birthdate": "2016-01-15T08:30:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Rafael Lima",
       "email": "rafael.lima@example.com",
       "phone": "(21) 98877-2211",
@@ -48,7 +48,7 @@
     "name": "Bob",
     "picture": "https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=1200&q=80",
     "birthdate": "2020-03-02T14:00:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Carla Mendes",
       "email": "carla.mendes@example.com",
       "phone": "(31) 97766-5544",
@@ -61,7 +61,7 @@
     "name": "Luna",
     "picture": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=1200&q=80",
     "birthdate": "2019-11-20T09:15:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Pedro Alves",
       "email": "pedro.alves@example.com",
       "phone": "(41) 99654-3322"
@@ -71,7 +71,7 @@
     "name": "Scooby",
     "picture": "/uploads/vcjv2sx3s5bd.png",
     "birthdate": "2026-03-01T00:00:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Heloisa",
       "email": "helokirchner@gmail.com",
       "phone": "4898455500",
@@ -84,7 +84,7 @@
     "name": "Mel",
     "picture": "/uploads/6pb46abtj58e.jpg",
     "birthdate": "2026-02-01T00:00:00.000Z",
-    "owner": {
+    "guardian": {
       "name": "Heloisa",
       "email": "helokirchner@gmail.com",
       "phone": "48999842525",

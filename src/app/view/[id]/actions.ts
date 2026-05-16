@@ -46,12 +46,12 @@ export async function submitPet(
 ): Promise<SubmitState> {
   const name = readString(form, "name");
   const birthdate = readString(form, "birthdate");
-  const ownerName = readString(form, "ownerName");
-  const ownerEmail = readString(form, "ownerEmail");
-  const ownerPhone = readString(form, "ownerPhone");
+  const guardianName = readString(form, "guardianName");
+  const guardianEmail = readString(form, "guardianEmail");
+  const guardianPhone = readString(form, "guardianPhone");
   const pictureField = form.get("picture");
 
-  if (!name || !birthdate || !ownerName || !ownerEmail || !ownerPhone) {
+  if (!name || !birthdate || !guardianName || !guardianEmail || !guardianPhone) {
     return { status: "error", message: "missing_fields" };
   }
   if (!(pictureField instanceof File) || pictureField.size === 0) {
@@ -82,10 +82,10 @@ export async function submitPet(
     name,
     picture: pictureUrl,
     birthdate: parsed.toISOString(),
-    owner: {
-      name: ownerName,
-      email: ownerEmail,
-      phone: ownerPhone,
+    guardian: {
+      name: guardianName,
+      email: guardianEmail,
+      phone: guardianPhone,
       social: pruneSocial(form),
     },
   };

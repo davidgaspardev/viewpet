@@ -18,7 +18,7 @@ const LOCALE_ALIASES: Record<string, Locale> = {
 };
 
 type Dictionary = {
-  ownerContact: string;
+  guardianContact: string;
   name: string;
   email: string;
   cellphone: string;
@@ -38,7 +38,7 @@ type Dictionary = {
   formTitle: string;
   formIntro: (id: string) => string;
   petSection: string;
-  ownerSection: string;
+  guardianSection: string;
   socialSectionOptional: string;
   petName: string;
   petPicture: string;
@@ -49,8 +49,8 @@ type Dictionary = {
   petPictureRemove: string;
   petPictureHint: string;
   petBirthdate: string;
-  ownerName: string;
-  ownerPhone: string;
+  guardianName: string;
+  guardianPhone: string;
   socialPlaceholder: string;
   optional: string;
   submit: string;
@@ -67,7 +67,7 @@ type Dictionary = {
 
 const dictionaries: Record<Locale, Dictionary> = {
   "pt-BR": {
-    ownerContact: "Contato do Dono",
+    guardianContact: "Meu Tutor",
     name: "Nome",
     email: "E-mail",
     cellphone: "Celular",
@@ -89,7 +89,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formIntro: (id) =>
       `Esta página (${id}) está reservada mas ainda não tem dados. Preencha os campos abaixo para publicar.`,
     petSection: "Sobre o pet",
-    ownerSection: "Contato do dono",
+    guardianSection: "Contato do tutor",
     socialSectionOptional: "Redes sociais (opcional)",
     petName: "Nome do pet",
     petPicture: "Foto do pet",
@@ -100,8 +100,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petPictureRemove: "Remover",
     petPictureHint: "JPG, PNG, WEBP ou GIF — até 5 MB.",
     petBirthdate: "Data de nascimento",
-    ownerName: "Nome do dono",
-    ownerPhone: "Celular",
+    guardianName: "Nome do tutor",
+    guardianPhone: "Celular",
     socialPlaceholder: "@usuario",
     optional: "opcional",
     submit: "Publicar",
@@ -115,7 +115,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     statusFilled: "preenchido",
   },
   "en-US": {
-    ownerContact: "Owner Contact",
+    guardianContact: "Guardian Contact",
     name: "Name",
     email: "Email",
     cellphone: "Cellphone",
@@ -136,7 +136,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formIntro: (id) =>
       `This page (${id}) is reserved but has no data yet. Fill in the fields below to publish.`,
     petSection: "About the pet",
-    ownerSection: "Owner contact",
+    guardianSection: "Guardian contact",
     socialSectionOptional: "Social (optional)",
     petName: "Pet name",
     petPicture: "Pet picture",
@@ -147,8 +147,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petPictureRemove: "Remove",
     petPictureHint: "JPG, PNG, WEBP or GIF — up to 5 MB.",
     petBirthdate: "Birthdate",
-    ownerName: "Owner name",
-    ownerPhone: "Cellphone",
+    guardianName: "Guardian name",
+    guardianPhone: "Cellphone",
     socialPlaceholder: "@username",
     optional: "optional",
     submit: "Publish",
