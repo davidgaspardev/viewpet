@@ -43,3 +43,6 @@ bun.lockb
 # uploaded pet pictures (mock blob storage)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# local filesystem database
+/data/*.db.json

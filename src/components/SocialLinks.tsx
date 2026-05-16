@@ -1,4 +1,5 @@
 import type { SocialHandles, SocialPlatform } from "@/types/pet";
+import { ActionButton } from "./ActionButton";
 
 type PlatformMeta = {
   label: string;
@@ -66,13 +67,11 @@ export function SocialLinks({ social, className }: SocialLinksProps) {
         const meta = PLATFORMS[platform];
         return (
           <li key={platform}>
-            <a
+            <ActionButton
               href={meta.url(handle)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${meta.label}: @${handle}`}
-              title={`@${handle}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink shadow-pill transition hover:text-muted"
+              ariaLabel={`${meta.label}: @${handle}`}
+              variant="outline"
+              external
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +82,7 @@ export function SocialLinks({ social, className }: SocialLinksProps) {
               >
                 {meta.icon}
               </svg>
-            </a>
+            </ActionButton>
           </li>
         );
       })}

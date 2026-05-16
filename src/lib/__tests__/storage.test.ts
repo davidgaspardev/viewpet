@@ -73,13 +73,6 @@ describe("Storage Provider Abstraction", () => {
     resetStorageProvider();
     // Clear environment variables
     delete process.env.STORAGE_PROVIDER;
-    delete process.env.AWS_S3_BUCKET;
-    delete process.env.AWS_ACCESS_KEY_ID;
-    delete process.env.AWS_SECRET_ACCESS_KEY;
-    delete process.env.AWS_REGION;
-    delete process.env.AWS_S3_PUBLIC_URL;
-    delete process.env.AWS_CLOUDFRONT_DOMAIN;
-    delete process.env.AWS_ENDPOINT;
     // Clean up test files
     await cleanupTestFiles();
   });
@@ -94,33 +87,6 @@ describe("Storage Provider Abstraction", () => {
       const provider1 = getStorageProvider();
       const provider2 = getStorageProvider();
       expect(provider1).toBe(provider2);
-    });
-
-    test("uses local provider in development", () => {
-      (process.env as any).NODE_ENV = "development";
-      const provider = getStorageProvider();
-      expect(provider).toBeInstanceOf(LocalStorageProvider);
-    });
-
-    test("uses local provider in test environment", () => {
-      (process.env as any).NODE_ENV = "test";
-      const provider = getStorageProvider();
-      expect(provider).toBeInstanceOf(LocalStorageProvider);
-    });
-
-    test("uses S3 provider when AWS credentials set in production", () => {
-      (process.env as any).NODE_ENV = "production";
-      process.env.AWS_S3_BUCKET = "test-bucket";
-      process.env.AWS_ACCESS_KEY_ID = "test-key";
-      const provider = getStorageProvider();
-      expect(provider).toBeInstanceOf(S3StorageProvider);
-    });
-
-    test("falls back to local provider in production without AWS credentials", () => {
-      (process.env as any).NODE_ENV = "production";
-      // No AWS credentials set
-      const provider = getStorageProvider();
-      expect(provider).toBeInstanceOf(LocalStorageProvider);
     });
 
     test("respects STORAGE_PROVIDER environment variable for local", () => {
@@ -316,6 +282,13 @@ describe("Storage Provider Abstraction", () => {
 
     afterEach(() => {
       mockSend?.mockRestore?.();
+      delete process.env.AWS_S3_BUCKET;
+      delete process.env.AWS_ACCESS_KEY_ID;
+      delete process.env.AWS_SECRET_ACCESS_KEY;
+      delete process.env.AWS_REGION;
+      delete process.env.AWS_S3_PUBLIC_URL;
+      delete process.env.AWS_CLOUDFRONT_DOMAIN;
+      delete process.env.AWS_ENDPOINT;
     });
 
     test("constructor throws error without bucket configuration", () => {

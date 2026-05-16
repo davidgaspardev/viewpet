@@ -1,12 +1,25 @@
 import type { Owner } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
+import { ActionButton } from "./ActionButton";
 import { SocialLinks } from "./SocialLinks";
+import { MailIcon, PhoneIcon, WhatsAppIcon } from "./icons";
 
 type OwnerContactProps = {
   owner: Owner;
   locale: Locale;
 };
+
+/**
+ * Normalize a Brazilian-style phone string to digits-only E.164 (no plus
+ * sign). Accepts inputs like "(48) 98559-6882" or "+55 48 985596882".
+ * Prepends the BR country code (55) when missing.
+ */
+function toE164Brazil(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  return `55${digits}`;
+}
 
 export function OwnerContact({ owner, locale }: OwnerContactProps) {
   const dict = getDictionary(locale);
@@ -14,34 +27,78 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
     !!owner.social &&
     Object.values(owner.social).some((value) => value?.trim());
 
+  const phoneE164 = toE164Brazil(owner.phone);
+
   return (
     <section
       aria-labelledby="owner-contact-heading"
-      className="rounded-xl bg-surface px-6 py-6"
+      className="rounded-xl bg-surface"
     >
-      <h2
+      <header
         id="owner-contact-heading"
-        className="border-b border-black/10 pb-3 text-lg font-bold tracking-tight text-ink"
+        className="h-16 py-4 mx-2 border-b border-black/10 pb-3 flex items-center"
       >
-        {dict.ownerContact}
-      </h2>
+        <h2 className="text-lg pl-2 font-bold tracking-tight text-ink">
+          {dict.ownerContact}
+        </h2>
+      </header>
 
-      <dl className="mt-4 space-y-4">
-        <Field label={dict.name} value={owner.name} />
-        <Field
-          label={dict.email}
-          value={owner.email}
-          href={`mailto:${owner.email}`}
-        />
-        <Field
-          label={dict.cellphone}
-          value={owner.phone}
-          href={`tel:${owner.phone.replace(/\D/g, "")}`}
-        />
+      <dl className="p-4 space-y-5">
+        {/* Name — info only */}
+        <div>
+          <dt className="text-xs font-medium text-muted">{dict.name}</dt>
+          <dd className="mt-0.5 text-base font-semibold text-ink">
+            {owner.name}
+          </dd>
+        </div>
+
+        {/* Email — info + send-email button */}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <dt className="text-xs font-medium text-muted">{dict.email}</dt>
+            <dd className="mt-0.5 truncate text-base font-semibold text-ink">
+              {owner.email}
+            </dd>
+          </div>
+          <ActionButton
+            href={`mailto:${owner.email}`}
+            ariaLabel={dict.actionEmail}
+            variant="outline"
+          >
+            <MailIcon className="h-[18px] w-[18px]" />
+          </ActionButton>
+        </div>
+
+        {/* Phone — info + WhatsApp + Call buttons */}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
+            <dd className="mt-0.5 text-base font-semibold text-ink">
+              {owner.phone}
+            </dd>
+          </div>
+          <div className="flex gap-2">
+            <ActionButton
+              href={`https://wa.me/${phoneE164}`}
+              ariaLabel={dict.actionWhatsApp}
+              variant="outline"
+              external
+            >
+              <WhatsAppIcon className="h-[18px] w-[18px]" />
+            </ActionButton>
+            <ActionButton
+              href={`tel:+${phoneE164}`}
+              ariaLabel={dict.actionCall}
+              variant="filled"
+            >
+              <PhoneIcon className="h-[18px] w-[18px]" />
+            </ActionButton>
+          </div>
+        </div>
       </dl>
 
       {hasSocial && (
-        <div className="mt-5 border-t border-black/10 pt-4">
+        <div className="py-4 px-2 mx-2 border-t border-black/10 pt-4">
           <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
           <SocialLinks social={owner.social} />
         </div>
@@ -50,27 +107,3 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
   );
 }
 
-function Field({
-  label,
-  value,
-  href,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted">{label}</dt>
-      <dd className="mt-0.5 text-base font-semibold text-ink">
-        {href ? (
-          <a href={href} className="hover:underline">
-            {value}
-          </a>
-        ) : (
-          value
-        )}
-      </dd>
-    </div>
-  );
-}
