@@ -58,7 +58,7 @@ export default async function ViewPetPage(props: PageProps) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
-      <PetHero name={pet.name} picture={pet.picture} ageLabel={ageLabel} />
+      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} />
 
       <div className="px-4 pt-8">
         <GuardianContact guardian={pet.guardian} locale={locale} />

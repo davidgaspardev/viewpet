@@ -3,16 +3,16 @@ import { Logo } from "./Logo";
 
 type PetHeroProps = {
   name: string;
-  picture: string;
+  pictureUrl: string;
   ageLabel: string;
 };
 
-export function PetHero({ name, picture, ageLabel }: PetHeroProps) {
+export function PetHero({ name, pictureUrl, ageLabel }: PetHeroProps) {
   return (
     <div className="relative w-full">
       <div className="relative aspect-[3/4] w-full overflow-hidden sm:aspect-[4/3] md:aspect-[16/10]">
         <Image
-          src={picture}
+          src={pictureUrl}
           alt={name}
           fill
           priority

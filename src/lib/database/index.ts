@@ -22,4 +22,4 @@ export function resetDatabaseProvider(): void {
 }
 
 export type { IKVSProvider } from "./interface";
-export type { Pet, PetEntry } from "./interface";
+export type { PetPublicProfile, PetEntry } from "./interface";

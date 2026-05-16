@@ -1,4 +1,4 @@
-import type { Guardian } from "@/types/pet";
+import type { Guardian, Phone } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 import { ActionButton } from "./ActionButton";
@@ -10,24 +10,43 @@ type GuardianContactProps = {
   locale: Locale;
 };
 
-/**
- * Normalize a Brazilian-style phone string to digits-only E.164 (no plus
- * sign). Accepts inputs like "(48) 98559-6882" or "+55 48 985596882".
- * Prepends the BR country code (55) when missing.
- */
-function toE164Brazil(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("55") && digits.length >= 12) return digits;
-  return `55${digits}`;
+function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDictionary> }) {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
+        <dd className="mt-0.5 text-base font-semibold text-ink">
+          {phone.display ?? `+${phone.e164}`}
+        </dd>
+      </div>
+      <div className="flex gap-2">
+        {phone.channels.includes("whatsapp") && (
+          <ActionButton
+            href={`https://wa.me/${phone.e164}`}
+            ariaLabel={dict.actionWhatsApp}
+            variant="outline"
+            external
+          >
+            <WhatsAppIcon className="h-[18px] w-[18px]" />
+          </ActionButton>
+        )}
+        {phone.channels.includes("call") && (
+          <ActionButton
+            href={`tel:+${phone.e164}`}
+            ariaLabel={dict.actionCall}
+            variant="filled"
+          >
+            <PhoneIcon className="h-[18px] w-[18px]" />
+          </ActionButton>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function GuardianContact({ guardian, locale }: GuardianContactProps) {
   const dict = getDictionary(locale);
-  const hasSocial =
-    !!guardian.social &&
-    Object.values(guardian.social).some((value) => value?.trim());
-
-  const phoneE164 = toE164Brazil(guardian.phone);
+  const hasSocial = Object.values(guardian.social).some((v) => v?.trim());
 
   return (
     <section
@@ -52,49 +71,29 @@ export function GuardianContact({ guardian, locale }: GuardianContactProps) {
           </dd>
         </div>
 
-        {/* Email — info + send-email button */}
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <dt className="text-xs font-medium text-muted">{dict.email}</dt>
-            <dd className="mt-0.5 truncate text-base font-semibold text-ink">
-              {guardian.email}
-            </dd>
-          </div>
-          <ActionButton
-            href={`mailto:${guardian.email}`}
-            ariaLabel={dict.actionEmail}
-            variant="outline"
-          >
-            <MailIcon className="h-[18px] w-[18px]" />
-          </ActionButton>
-        </div>
-
-        {/* Phone — info + WhatsApp + Call buttons */}
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
-            <dd className="mt-0.5 text-base font-semibold text-ink">
-              {guardian.phone}
-            </dd>
-          </div>
-          <div className="flex gap-2">
+        {/* Email — optional */}
+        {guardian.email && (
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <dt className="text-xs font-medium text-muted">{dict.email}</dt>
+              <dd className="mt-0.5 truncate text-base font-semibold text-ink">
+                {guardian.email}
+              </dd>
+            </div>
             <ActionButton
-              href={`https://wa.me/${phoneE164}`}
-              ariaLabel={dict.actionWhatsApp}
+              href={`mailto:${guardian.email}`}
+              ariaLabel={dict.actionEmail}
               variant="outline"
-              external
             >
-              <WhatsAppIcon className="h-[18px] w-[18px]" />
-            </ActionButton>
-            <ActionButton
-              href={`tel:+${phoneE164}`}
-              ariaLabel={dict.actionCall}
-              variant="filled"
-            >
-              <PhoneIcon className="h-[18px] w-[18px]" />
+              <MailIcon className="h-[18px] w-[18px]" />
             </ActionButton>
           </div>
-        </div>
+        )}
+
+        {/* Phones */}
+        {guardian.phones.map((phone) => (
+          <PhoneRow key={phone.e164} phone={phone} dict={dict} />
+        ))}
       </dl>
 
       {hasSocial && (

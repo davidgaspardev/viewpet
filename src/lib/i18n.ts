@@ -51,6 +51,7 @@ type Dictionary = {
   petBirthdate: string;
   guardianName: string;
   guardianPhone: string;
+  guardianEmailOptional: string;
   socialPlaceholder: string;
   optional: string;
   submit: string;
@@ -102,6 +103,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     petBirthdate: "Data de nascimento",
     guardianName: "Nome do tutor",
     guardianPhone: "Celular",
+    guardianEmailOptional: "E-mail (opcional)",
     socialPlaceholder: "@usuario",
     optional: "opcional",
     submit: "Publicar",
@@ -148,7 +150,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petPictureHint: "JPG, PNG, WEBP or GIF — up to 5 MB.",
     petBirthdate: "Birthdate",
     guardianName: "Guardian name",
-    guardianPhone: "Cellphone",
+    guardianPhone: "Phone",
+    guardianEmailOptional: "Email (optional)",
     socialPlaceholder: "@username",
     optional: "optional",
     submit: "Publish",

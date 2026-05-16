@@ -1,20 +1,35 @@
-export type SocialPlatform = "instagram" | "x" | "facebook" | "tiktok";
+export type SocialPlatform = "instagram" | "facebook" | "x" | "tiktok";
+export type PhoneChannel = "call" | "whatsapp" | "sms";
+export type PetStatus = "active" | "lost";
 
-/** Handles (nicknames) for each supported social network. Every field is optional. */
-export type SocialHandles = Partial<Record<SocialPlatform, string>>;
+export interface Phone {
+  /** Digits-only E.164 without "+" (e.g. "5548985596882") */
+  e164: string;
+  /** Formatted string as the guardian typed (e.g. "(48) 98559-6882") */
+  display?: string;
+  channels: PhoneChannel[];
+}
 
 export interface Guardian {
   name: string;
-  email: string;
-  phone: string;
-  social?: SocialHandles;
+  email?: string;
+  phones: Phone[];
+  social: Partial<Record<SocialPlatform, string>>;
 }
 
-export interface Pet {
+export interface LostInfo {
+  since: string;             // ISO-8601
+  lastSeenLocation?: string;
+  lastSeenAt?: string;       // ISO-8601
+  alerts?: string[];         // max 3, validated at runtime
+}
+
+export interface PetPublicProfile {
   name: string;
-  picture: string;
-  /** ISO-8601 date string (e.g. "2018-04-21T18:21:09.372Z") */
-  birthdate: string;
+  pictureUrl: string;
+  birthdate: string;         // ISO-8601
+  status: PetStatus;
+  lostInfo?: LostInfo;       // only populated when status === "lost"
   guardian: Guardian;
 }
 
@@ -22,15 +37,12 @@ export interface Pet {
  * Raw KVS shape:
  *  - hashId not present  → key never registered (404)
  *  - hashId present, null → key reserved but no data yet (renders form)
- *  - hashId present, Pet  → fully filled record
- *
- * Mirrors a Redis pattern where the key exists with a sentinel `null`/empty
- * value before the data is filled in.
+ *  - hashId present, PetPublicProfile → fully filled record
  */
-export type PetStore = Record<string, Pet | null>;
+export type PetStore = Record<string, PetPublicProfile | null>;
 
 /** Discriminated union returned by the KVS lookup so callers can branch UX. */
 export type PetEntry =
   | { status: "missing" }
   | { status: "empty" }
-  | { status: "filled"; pet: Pet };
+  | { status: "filled"; pet: PetPublicProfile };

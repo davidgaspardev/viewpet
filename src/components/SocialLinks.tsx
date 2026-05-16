@@ -1,4 +1,4 @@
-import type { SocialHandles, SocialPlatform } from "@/types/pet";
+import type { SocialPlatform } from "@/types/pet";
 import { ActionButton } from "./ActionButton";
 
 type PlatformMeta = {
@@ -44,12 +44,11 @@ const PLATFORMS: Record<SocialPlatform, PlatformMeta> = {
 const PLATFORM_ORDER: SocialPlatform[] = ["instagram", "x", "facebook", "tiktok"];
 
 type SocialLinksProps = {
-  social?: SocialHandles;
+  social: Partial<Record<SocialPlatform, string>>;
   className?: string;
 };
 
 export function SocialLinks({ social, className }: SocialLinksProps) {
-  if (!social) return null;
 
   const entries = PLATFORM_ORDER.flatMap((platform) => {
     const raw = social[platform]?.trim();

@@ -5,7 +5,7 @@
  * rather than concrete implementations (Redis, DynamoDB, SQLite, etc.)
  */
 
-import type { Pet, PetEntry } from "@/types/pet";
+import type { PetPublicProfile, PetEntry } from "@/types/pet";
 
 /**
  * Interface for key-value store providers.
@@ -13,7 +13,7 @@ import type { Pet, PetEntry } from "@/types/pet";
  * All implementations must support:
  * - Three-state system: missing, empty (reserved), filled
  * - Atomic get/set operations
- * - Pet ID reservation without data
+ * - PetPublicProfile ID reservation without data
  * - Listing operations for admin/debugging
  */
 export interface IKVSProvider {
@@ -21,10 +21,10 @@ export interface IKVSProvider {
    * Get pet entry by hash ID.
    *
    * @param hashId - Unique identifier for this pet
-   * @returns Pet entry with status discriminator:
+   * @returns PetPublicProfile entry with status discriminator:
    *   - "missing": key not registered (→ 404)
    *   - "empty": key registered with null value (→ render form)
-   *   - "filled": key registered with full Pet data (→ render profile)
+   *   - "filled": key registered with full PetPublicProfile data (→ render profile)
    */
   getPetEntry(hashId: string): Promise<PetEntry>;
 
@@ -34,7 +34,7 @@ export interface IKVSProvider {
    * @param hashId - Unique identifier for this pet
    * @param pet - Complete pet data to persist
    */
-  setPet(hashId: string, pet: Pet): Promise<void>;
+  setPet(hashId: string, pet: PetPublicProfile): Promise<void>;
 
   /**
    * Reserve a hash ID without data.
@@ -63,4 +63,4 @@ export interface IKVSProvider {
 }
 
 // Re-export types for convenience
-export type { Pet, PetEntry } from "@/types/pet";
+export type { PetPublicProfile, PetEntry } from "@/types/pet";

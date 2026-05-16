@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { setPet } from "@/lib/kvs";
-import type { Pet, SocialHandles, SocialPlatform } from "@/types/pet";
+import type { PetPublicProfile, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "instagram",
@@ -12,6 +12,8 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "facebook",
   "tiktok",
 ];
+
+const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp", "sms"];
 
 export type SubmitState = {
   status: "idle" | "success" | "error";
@@ -23,22 +25,32 @@ function readString(form: FormData, key: string): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-function pruneSocial(form: FormData): SocialHandles | undefined {
-  const social: SocialHandles = {};
+function toE164Brazil(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  return `55${digits}`;
+}
+
+function readPhone(form: FormData): Phone | null {
+  const display = readString(form, "guardianPhone");
+  if (!display) return null;
+  const e164 = toE164Brazil(display);
+  const channels = PHONE_CHANNELS.filter(
+    (ch) => form.get(`guardianPhone_${ch}`) === "on",
+  );
+  return { e164, display, channels };
+}
+
+function readSocial(form: FormData) {
+  const social: Partial<Record<SocialPlatform, string>> = {};
   for (const platform of SOCIAL_PLATFORMS) {
     const raw = readString(form, `social_${platform}`);
     if (!raw) continue;
     social[platform] = raw.replace(/^@+/, "");
   }
-  return Object.keys(social).length ? social : undefined;
+  return social;
 }
 
-/**
- * Server Action invoked by PetForm. Validates the payload, persists the
- * uploaded image to blob storage, writes the pet record to the mock KVS
- * and revalidates the path so the page re-renders into the "filled"
- * state on the very next request.
- */
 export async function submitPet(
   hashId: string,
   _prev: SubmitState,
@@ -48,16 +60,15 @@ export async function submitPet(
   const birthdate = readString(form, "birthdate");
   const guardianName = readString(form, "guardianName");
   const guardianEmail = readString(form, "guardianEmail");
-  const guardianPhone = readString(form, "guardianPhone");
+  const phone = readPhone(form);
   const pictureField = form.get("picture");
 
-  if (!name || !birthdate || !guardianName || !guardianEmail || !guardianPhone) {
+  if (!name || !birthdate || !guardianName || !phone) {
     return { status: "error", message: "missing_fields" };
   }
   if (!(pictureField instanceof File) || pictureField.size === 0) {
     return { status: "error", message: "invalid_picture" };
   }
-  // Accept date inputs (YYYY-MM-DD) and full ISO strings.
   const parsed = new Date(birthdate);
   if (Number.isNaN(parsed.getTime())) {
     return { status: "error", message: "invalid_birthdate" };
@@ -78,15 +89,16 @@ export async function submitPet(
     throw err;
   }
 
-  const pet: Pet = {
+  const pet: PetPublicProfile = {
     name,
-    picture: pictureUrl,
+    pictureUrl,
     birthdate: parsed.toISOString(),
+    status: "active",
     guardian: {
       name: guardianName,
-      email: guardianEmail,
-      phone: guardianPhone,
-      social: pruneSocial(form),
+      ...(guardianEmail ? { email: guardianEmail } : {}),
+      phones: [phone],
+      social: readSocial(form),
     },
   };
 

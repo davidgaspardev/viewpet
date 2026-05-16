@@ -7,20 +7,20 @@
  * Three states are exposed via `getPetEntry`:
  *   - "missing": key not registered                  (→ 404)
  *   - "empty"  : key registered with a `null` value  (→ render form)
- *   - "filled" : key registered with full Pet data   (→ render profile)
+ *   - "filled" : key registered with full PetPublicProfile data   (→ render profile)
  *
  * The public surface remains identical to the original implementation,
  * maintaining backward compatibility with existing code.
  */
 
-import type { Pet, PetEntry } from "@/types/pet";
+import type { PetPublicProfile, PetEntry } from "@/types/pet";
 import { getDatabaseProvider } from "./database";
 
 /**
  * Get pet entry by hash ID.
  *
  * @param hashId - Unique identifier for this pet
- * @returns Pet entry with status discriminator
+ * @returns PetPublicProfile entry with status discriminator
  */
 export async function getPetEntry(hashId: string): Promise<PetEntry> {
   const provider = getDatabaseProvider();
@@ -33,7 +33,7 @@ export async function getPetEntry(hashId: string): Promise<PetEntry> {
  * @param hashId - Unique identifier for this pet
  * @param pet - Complete pet data to persist
  */
-export async function setPet(hashId: string, pet: Pet): Promise<void> {
+export async function setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
   const provider = getDatabaseProvider();
   return provider.setPet(hashId, pet);
 }

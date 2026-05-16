@@ -3,15 +3,15 @@
  *
  * Uses Redis as the key-value store with the following pattern:
  *   - Keys: `pet:{hashId}`
- *   - Values: JSON-stringified Pet objects or "null" for empty reservations
+ *   - Values: JSON-stringified PetPublicProfile objects or "null" for empty reservations
  *
  * Three states:
  *   - "missing": key not registered                  (→ 404)
  *   - "empty"  : key registered with a `null` value  (→ render form)
- *   - "filled" : key registered with full Pet data   (→ render profile)
+ *   - "filled" : key registered with full PetPublicProfile data   (→ render profile)
  */
 
-import type { IKVSProvider, Pet, PetEntry } from "./interface";
+import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
 import { getRedisClient } from "../redis";
 
 export class RedisKVSProvider implements IKVSProvider {
@@ -34,7 +34,7 @@ export class RedisKVSProvider implements IKVSProvider {
     }
 
     try {
-      const pet = JSON.parse(value) as Pet;
+      const pet = JSON.parse(value) as PetPublicProfile;
       return { status: "filled", pet };
     } catch (err) {
       console.error(`Failed to parse pet data for ${hashId}:`, err);
@@ -42,7 +42,7 @@ export class RedisKVSProvider implements IKVSProvider {
     }
   }
 
-  async setPet(hashId: string, pet: Pet): Promise<void> {
+  async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
     const redis = await getRedisClient();
     const key = this.getPetKey(hashId);
     const value = JSON.stringify(pet);
@@ -80,7 +80,7 @@ export class RedisKVSProvider implements IKVSProvider {
         }
 
         try {
-          const pet = JSON.parse(value!) as Pet;
+          const pet = JSON.parse(value!) as PetPublicProfile;
           return { id, status: "filled" as const, name: pet.name };
         } catch (err) {
           console.error(`Failed to parse pet data for ${id}:`, err);

@@ -62,20 +62,12 @@ export function PetForm({ hashId, locale }: PetFormProps) {
         <Section title={dict.guardianSection}>
           <Field label={dict.guardianName} name="guardianName" required />
           <Field
-            label={dict.email}
+            label={dict.guardianEmailOptional}
             name="guardianEmail"
             type="email"
-            required
             autoComplete="email"
           />
-          <Field
-            label={dict.guardianPhone}
-            name="guardianPhone"
-            type="tel"
-            required
-            autoComplete="tel"
-            placeholder="(48) 98123-4567"
-          />
+          <PhoneField label={dict.guardianPhone} />
         </Section>
 
         <Section title={dict.socialSectionOptional}>
@@ -130,6 +122,46 @@ function Section({
       </legend>
       <div className="space-y-4">{children}</div>
     </fieldset>
+  );
+}
+
+function PhoneField({ label }: { label: string }) {
+  return (
+    <div>
+      <label className="block">
+        <span className="text-xs font-medium text-muted">
+          {label}
+          <span className="ml-1 text-red-500">*</span>
+        </span>
+        <input
+          name="guardianPhone"
+          type="tel"
+          required
+          autoComplete="tel"
+          placeholder="(48) 98123-4567"
+          className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-base text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
+        />
+      </label>
+      <div className="mt-2 flex gap-4">
+        {(
+          [
+            { name: "guardianPhone_call", label: "Chamadas" },
+            { name: "guardianPhone_whatsapp", label: "WhatsApp" },
+            { name: "guardianPhone_sms", label: "SMS" },
+          ] as const
+        ).map(({ name, label: chLabel }) => (
+          <label key={name} className="flex items-center gap-1.5 text-xs text-muted">
+            <input
+              type="checkbox"
+              name={name}
+              defaultChecked={name !== "guardianPhone_sms"}
+              className="rounded"
+            />
+            {chLabel}
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
 
