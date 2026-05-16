@@ -2,29 +2,34 @@
  * MongoDB implementation of the KVS provider interface.
  *
  * Collection: `pets`
- * Document shape:
- *   - { _id: hashId, empty: true }               → reserved, no data yet
- *   - { _id: hashId, ...PetPublicProfile fields } → fully filled record
  *
- * Three states:
- *   - "missing": document not found               (→ 404)
- *   - "empty"  : document has `empty: true`       (→ render form)
- *   - "filled" : document has pet data            (→ render profile)
+ * Document schema
+ * ───────────────
+ * Reserved slot (entry exists, no pet data yet):
+ *   { _id: hashId, status: "reserved" }
  *
- * Set MONGODB_URI in the environment to connect.
- * Defaults to mongodb://localhost:27017/viewpet.
+ * Active pet profile:
+ *   { _id: hashId, status: "active", name, pictureUrl, birthdate, guardian, ... }
+ *
+ * Lost pet (future):
+ *   { _id: hashId, status: "lost", ..., lostInfo: { since, ... } }
+ *
+ * The `status` field is the single discriminator. "reserved" maps to the
+ * `empty` KVS state; "active" / "lost" map to `filled`.
+ *
+ * Environment
+ * ───────────
+ * MONGODB_URI — MongoDB connection string (default: mongodb://localhost:27017/viewpet)
  */
 
-import { MongoClient, type Collection, type Db, type WithId } from "mongodb";
+import { MongoClient, type Collection, type Db } from "mongodb";
 import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
 
 const COLLECTION = "pets";
 
-/** Stored shape — _id is the hashId. */
-type PetDocument = { _id: string } & (
-  | { empty: true }
-  | ({ empty?: never } & PetPublicProfile)
-);
+type ReservedDocument = { _id: string; status: "reserved" };
+type FilledDocument = { _id: string } & PetPublicProfile;
+type PetDocument = ReservedDocument | FilledDocument;
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -40,25 +45,30 @@ async function getCollection(): Promise<Collection<PetDocument>> {
   return db!.collection<PetDocument>(COLLECTION);
 }
 
+/** Exposed for testing — resets the singleton so tests can inject a fresh URI. */
+export function resetMongoClient(): void {
+  client = null;
+  db = null;
+}
+
 export class MongoDBKVSProvider implements IKVSProvider {
   async getPetEntry(hashId: string): Promise<PetEntry> {
     const col = await getCollection();
     const doc = await col.findOne({ _id: hashId });
 
     if (!doc) return { status: "missing" };
-    if ("empty" in doc && doc.empty) return { status: "empty" };
+    if (doc.status === "reserved") return { status: "empty" };
 
-    const { _id, empty: _empty, ...pet } = doc as WithId<PetDocument> & Record<string, unknown>;
-    void _id; void _empty;
-    return { status: "filled", pet: pet as PetPublicProfile };
+    const { _id, ...pet } = doc as FilledDocument;
+    void _id;
+    return { status: "filled", pet };
   }
 
   async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
     const col = await getCollection();
-    // replaceOne expects WithoutId<T>; _id comes from the filter on upsert
     await col.replaceOne(
       { _id: hashId },
-      pet as unknown as PetDocument,
+      { _id: hashId, ...pet } as unknown as PetDocument,
       { upsert: true },
     );
   }
@@ -67,7 +77,7 @@ export class MongoDBKVSProvider implements IKVSProvider {
     const col = await getCollection();
     await col.updateOne(
       { _id: hashId },
-      { $setOnInsert: { _id: hashId, empty: true as const } },
+      { $setOnInsert: { _id: hashId, status: "reserved" } as ReservedDocument },
       { upsert: true },
     );
   }
@@ -83,14 +93,12 @@ export class MongoDBKVSProvider implements IKVSProvider {
   > {
     const col = await getCollection();
     const docs = await col
-      .find({}, { projection: { _id: 1, empty: 1, name: 1 } })
+      .find({}, { projection: { _id: 1, status: 1, name: 1 } })
       .toArray();
-    return docs.map((doc) => {
-      if ("empty" in doc && doc.empty) {
-        return { id: doc._id, status: "empty" as const };
-      }
-      const filled = doc as { _id: string; name?: string };
-      return { id: filled._id, status: "filled" as const, name: filled.name };
-    });
+    return docs.map((doc) =>
+      doc.status === "reserved"
+        ? { id: doc._id, status: "empty" as const }
+        : { id: doc._id, status: "filled" as const, name: (doc as FilledDocument).name },
+    );
   }
 }
