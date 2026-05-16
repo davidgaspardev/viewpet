@@ -4,9 +4,17 @@
  */
 
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
+import { rmSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { getDatabaseProvider, resetDatabaseProvider } from "../database";
-import { MemoryKVSProvider } from "../database/memory";
+import { LocalKVSProvider } from "../database/local";
 import type { Pet } from "@/types/pet";
+
+const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
+
+function cleanupTestDb() {
+  if (existsSync(TEST_DB_PATH)) rmSync(TEST_DB_PATH);
+}
 
 describe("Database Provider Abstraction", () => {
   beforeEach(() => {
@@ -25,23 +33,28 @@ describe("Database Provider Abstraction", () => {
       expect(provider1).toBe(provider2);
     });
 
-    test("defaults to local (in-memory) provider", () => {
+    test("defaults to local (filesystem) provider", () => {
       const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(MemoryKVSProvider);
+      expect(provider).toBeInstanceOf(LocalKVSProvider);
     });
 
     test("uses local provider when DATABASE_PROVIDER=local", () => {
       process.env.DATABASE_PROVIDER = "local";
       const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(MemoryKVSProvider);
+      expect(provider).toBeInstanceOf(LocalKVSProvider);
     });
   });
 
-  describe("MemoryKVSProvider", () => {
-    let provider: MemoryKVSProvider;
+  describe("LocalKVSProvider", () => {
+    let provider: LocalKVSProvider;
 
     beforeEach(() => {
-      provider = new MemoryKVSProvider();
+      cleanupTestDb();
+      provider = new LocalKVSProvider(TEST_DB_PATH);
+    });
+
+    afterEach(() => {
+      cleanupTestDb();
     });
 
     describe("getPetEntry", () => {
@@ -101,21 +114,13 @@ describe("Database Provider Abstraction", () => {
           name: "Old Name",
           picture: "https://example.com/old.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: {
-            name: "Owner",
-            email: "owner@example.com",
-            phone: "+1111111111",
-          },
+          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         const pet2: Pet = {
           name: "New Name",
           picture: "https://example.com/new.jpg",
           birthdate: "2021-01-01T00:00:00.000Z",
-          owner: {
-            name: "Owner",
-            email: "owner@example.com",
-            phone: "+1111111111",
-          },
+          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         await provider.setPet("test123", pet1);
         await provider.setPet("test123", pet2);
@@ -138,11 +143,7 @@ describe("Database Provider Abstraction", () => {
           name: "Existing",
           picture: "https://example.com/existing.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: {
-            name: "Owner",
-            email: "owner@example.com",
-            phone: "+1111111111",
-          },
+          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         await provider.setPet("existing123", pet);
         await provider.reservePetId("existing123");
@@ -166,11 +167,7 @@ describe("Database Provider Abstraction", () => {
           name: "Pet2",
           picture: "https://example.com/pet2.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: {
-            name: "Owner",
-            email: "owner@example.com",
-            phone: "+1111111111",
-          },
+          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         });
         const ids = await provider.listPetIds();
         expect(ids).toHaveLength(2);
@@ -191,11 +188,7 @@ describe("Database Provider Abstraction", () => {
           name: "Buddy",
           picture: "https://example.com/buddy.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: {
-            name: "Owner",
-            email: "owner@example.com",
-            phone: "+1111111111",
-          },
+          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         });
 
         const entries = await provider.listPetEntries();
@@ -224,6 +217,18 @@ describe("Database Provider Abstraction", () => {
         await provider.reservePetId("id2");
         expect(provider.size()).toBe(2);
       });
+
+      test("data persists across provider instances", async () => {
+        await provider.setPet("persist1", {
+          name: "Persistent",
+          picture: "https://example.com/p.jpg",
+          birthdate: "2020-01-01T00:00:00.000Z",
+          owner: { name: "Owner", email: "o@example.com", phone: "+1" },
+        });
+        const provider2 = new LocalKVSProvider(TEST_DB_PATH);
+        const entry = await provider2.getPetEntry("persist1");
+        expect(entry.status).toBe("filled");
+      });
     });
   });
 
@@ -232,31 +237,23 @@ describe("Database Provider Abstraction", () => {
       const { getPetEntry, setPet, reservePetId, listPetIds, listPetEntries } =
         await import("../kvs");
 
-      // Test missing status
       const missingEntry = await getPetEntry("nonexistent");
       expect(missingEntry.status).toBe("missing");
 
-      // Test reserve
       await reservePetId("reserved");
       const reservedEntry = await getPetEntry("reserved");
       expect(reservedEntry.status).toBe("empty");
 
-      // Test set and get
       const pet: Pet = {
         name: "Facade Test",
         picture: "https://example.com/facade.jpg",
         birthdate: "2020-01-01T00:00:00.000Z",
-        owner: {
-          name: "Test Owner",
-          email: "test@example.com",
-          phone: "+1234567890",
-        },
+        owner: { name: "Test Owner", email: "test@example.com", phone: "+1234567890" },
       };
       await setPet("facade123", pet);
       const filledEntry = await getPetEntry("facade123");
       expect(filledEntry.status).toBe("filled");
 
-      // Test list functions
       const ids = await listPetIds();
       expect(ids).toContain("reserved");
       expect(ids).toContain("facade123");

@@ -23,11 +23,7 @@ async function main(): Promise<void> {
   console.log(`🌱 Starting seed (provider: ${providerType})...\n`);
 
   if (providerType === "local") {
-    console.warn(
-      "⚠️  DATABASE_PROVIDER=local uses in-memory storage.\n" +
-        "   Data seeded here won't persist to the running app.\n" +
-        "   Set DATABASE_PROVIDER=redis to seed a real database.\n",
-    );
+    console.log("📁 Writing to local filesystem database (data/local.db.json)\n");
   }
 
   console.log(`📖 Reading pets from ${PETS_JSON_PATH}...`);
