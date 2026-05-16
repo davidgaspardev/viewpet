@@ -5,7 +5,7 @@ import { getPetEntry } from "@/lib/kvs";
 import { formatAge } from "@/lib/age";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/components/PetHero";
-import { OwnerContact } from "@/components/OwnerContact";
+import { GuardianContact } from "@/components/GuardianContact";
 import { Logo } from "@/components/Logo";
 
 import { PetForm } from "./PetForm";
@@ -61,7 +61,7 @@ export default async function ViewPetPage(props: PageProps) {
       <PetHero name={pet.name} picture={pet.picture} ageLabel={ageLabel} />
 
       <div className="px-4 pt-8">
-        <OwnerContact owner={pet.owner} locale={locale} />
+        <GuardianContact guardian={pet.guardian} locale={locale} />
       </div>
 
       <div className="mt-auto flex justify-center py-14 text-muted/30">

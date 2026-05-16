@@ -59,18 +59,18 @@ export function PetForm({ hashId, locale }: PetFormProps) {
           />
         </Section>
 
-        <Section title={dict.ownerSection}>
-          <Field label={dict.ownerName} name="ownerName" required />
+        <Section title={dict.guardianSection}>
+          <Field label={dict.guardianName} name="guardianName" required />
           <Field
             label={dict.email}
-            name="ownerEmail"
+            name="guardianEmail"
             type="email"
             required
             autoComplete="email"
           />
           <Field
-            label={dict.ownerPhone}
-            name="ownerPhone"
+            label={dict.guardianPhone}
+            name="guardianPhone"
             type="tel"
             required
             autoComplete="tel"

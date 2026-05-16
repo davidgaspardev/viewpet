@@ -74,7 +74,7 @@ describe("Database Provider Abstraction", () => {
           name: "Max",
           picture: "https://example.com/max.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: {
+          guardian: {
             name: "John Doe",
             email: "john@example.com",
             phone: "+1234567890",
@@ -95,7 +95,7 @@ describe("Database Provider Abstraction", () => {
           name: "Luna",
           picture: "https://example.com/luna.jpg",
           birthdate: "2019-05-15T00:00:00.000Z",
-          owner: {
+          guardian: {
             name: "Jane Smith",
             email: "jane@example.com",
             phone: "+0987654321",
@@ -114,13 +114,13 @@ describe("Database Provider Abstraction", () => {
           name: "Old Name",
           picture: "https://example.com/old.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
+          guardian: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         const pet2: Pet = {
           name: "New Name",
           picture: "https://example.com/new.jpg",
           birthdate: "2021-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
+          guardian: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         await provider.setPet("test123", pet1);
         await provider.setPet("test123", pet2);
@@ -143,7 +143,7 @@ describe("Database Provider Abstraction", () => {
           name: "Existing",
           picture: "https://example.com/existing.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
+          guardian: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         };
         await provider.setPet("existing123", pet);
         await provider.reservePetId("existing123");
@@ -167,7 +167,7 @@ describe("Database Provider Abstraction", () => {
           name: "Pet2",
           picture: "https://example.com/pet2.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
+          guardian: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         });
         const ids = await provider.listPetIds();
         expect(ids).toHaveLength(2);
@@ -188,7 +188,7 @@ describe("Database Provider Abstraction", () => {
           name: "Buddy",
           picture: "https://example.com/buddy.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
+          guardian: { name: "Owner", email: "owner@example.com", phone: "+1111111111" },
         });
 
         const entries = await provider.listPetEntries();
@@ -223,7 +223,7 @@ describe("Database Provider Abstraction", () => {
           name: "Persistent",
           picture: "https://example.com/p.jpg",
           birthdate: "2020-01-01T00:00:00.000Z",
-          owner: { name: "Owner", email: "o@example.com", phone: "+1" },
+          guardian: { name: "Owner", email: "o@example.com", phone: "+1" },
         });
         const provider2 = new LocalKVSProvider(TEST_DB_PATH);
         const entry = await provider2.getPetEntry("persist1");
@@ -248,7 +248,7 @@ describe("Database Provider Abstraction", () => {
         name: "Facade Test",
         picture: "https://example.com/facade.jpg",
         birthdate: "2020-01-01T00:00:00.000Z",
-        owner: { name: "Test Owner", email: "test@example.com", phone: "+1234567890" },
+        guardian: { name: "Test Owner", email: "test@example.com", phone: "+1234567890" },
       };
       await setPet("facade123", pet);
       const filledEntry = await getPetEntry("facade123");

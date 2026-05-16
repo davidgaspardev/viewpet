@@ -3,7 +3,7 @@ export type SocialPlatform = "instagram" | "x" | "facebook" | "tiktok";
 /** Handles (nicknames) for each supported social network. Every field is optional. */
 export type SocialHandles = Partial<Record<SocialPlatform, string>>;
 
-export interface Owner {
+export interface Guardian {
   name: string;
   email: string;
   phone: string;
@@ -15,7 +15,7 @@ export interface Pet {
   picture: string;
   /** ISO-8601 date string (e.g. "2018-04-21T18:21:09.372Z") */
   birthdate: string;
-  owner: Owner;
+  guardian: Guardian;
 }
 
 /**

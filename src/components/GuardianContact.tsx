@@ -1,12 +1,12 @@
-import type { Owner } from "@/types/pet";
+import type { Guardian } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 import { ActionButton } from "./ActionButton";
 import { SocialLinks } from "./SocialLinks";
 import { MailIcon, PhoneIcon, WhatsAppIcon } from "./icons";
 
-type OwnerContactProps = {
-  owner: Owner;
+type GuardianContactProps = {
+  guardian: Guardian;
   locale: Locale;
 };
 
@@ -21,34 +21,34 @@ function toE164Brazil(phone: string): string {
   return `55${digits}`;
 }
 
-export function OwnerContact({ owner, locale }: OwnerContactProps) {
+export function GuardianContact({ guardian, locale }: GuardianContactProps) {
   const dict = getDictionary(locale);
   const hasSocial =
-    !!owner.social &&
-    Object.values(owner.social).some((value) => value?.trim());
+    !!guardian.social &&
+    Object.values(guardian.social).some((value) => value?.trim());
 
-  const phoneE164 = toE164Brazil(owner.phone);
+  const phoneE164 = toE164Brazil(guardian.phone);
 
   return (
     <section
-      aria-labelledby="owner-contact-heading"
+      aria-labelledby="guardian-contact-heading"
       className="rounded-xl bg-surface"
     >
       <header
-        id="owner-contact-heading"
+        id="guardian-contact-heading"
         className="h-16 py-4 mx-2 border-b border-black/10 pb-3 flex items-center"
       >
         <h2 className="text-lg pl-2 font-bold tracking-tight text-ink">
-          {dict.ownerContact}
+          {dict.guardianContact}
         </h2>
       </header>
 
-      <dl className="p-4 space-y-5">
+      <dl className="px-4 py-5 space-y-5">
         {/* Name — info only */}
         <div>
           <dt className="text-xs font-medium text-muted">{dict.name}</dt>
           <dd className="mt-0.5 text-base font-semibold text-ink">
-            {owner.name}
+            {guardian.name}
           </dd>
         </div>
 
@@ -57,11 +57,11 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
           <div className="min-w-0 flex-1">
             <dt className="text-xs font-medium text-muted">{dict.email}</dt>
             <dd className="mt-0.5 truncate text-base font-semibold text-ink">
-              {owner.email}
+              {guardian.email}
             </dd>
           </div>
           <ActionButton
-            href={`mailto:${owner.email}`}
+            href={`mailto:${guardian.email}`}
             ariaLabel={dict.actionEmail}
             variant="outline"
           >
@@ -74,7 +74,7 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
           <div className="min-w-0 flex-1">
             <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
             <dd className="mt-0.5 text-base font-semibold text-ink">
-              {owner.phone}
+              {guardian.phone}
             </dd>
           </div>
           <div className="flex gap-2">
@@ -100,10 +100,9 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
       {hasSocial && (
         <div className="py-4 px-2 mx-2 border-t border-black/10 pt-4">
           <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
-          <SocialLinks social={owner.social} />
+          <SocialLinks social={guardian.social} />
         </div>
       )}
     </section>
   );
 }
-
