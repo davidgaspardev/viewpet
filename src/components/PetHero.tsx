@@ -17,16 +17,16 @@ export function PetHero({ name, pictureUrl, ageLabel }: PetHeroProps) {
           fill
           priority
           sizes="(min-width: 768px) 768px, 100vw"
-          className="object-cover"
+          className="object-cover rounded-b-2xl"
         />
 
         {/* Top-left logo chip */}
-        <div className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-ink shadow-pill">
-          <Logo className="h-7 w-7" />
+        <div className="absolute left-4 top-0 flex h-16 w-14 items-center justify-center rounded-b-2xl bg-white/50 backdrop-blur-md text-ink shadow-pill">
+          <Logo className="h-12 w-12" />
         </div>
 
         {/* Top-right age pill */}
-        <div className="absolute right-4 top-4 rounded-full bg-white/95 px-4 py-2 text-sm font-bold text-ink shadow-pill">
+        <div className="absolute right-4 top-4 rounded-full bg-white/50 backdrop-blur-md px-4 py-2 text-sm font-bold text-ink shadow-pill">
           {ageLabel}
         </div>
       </div>
