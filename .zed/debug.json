@@ -1,0 +1,13 @@
+[
+  {
+    "adapter": "JavaScript",
+    "label": "Next.js with Bun",
+    "type": "node",
+    "request": "launch",
+    "runtimeExecutable": "bun",
+    "runtimeArgs": ["--inspect-wait=9229", "run", "dev"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "port": 9229,
+    "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+  }
+]

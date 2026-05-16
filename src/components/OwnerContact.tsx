@@ -2,17 +2,31 @@ import type { Owner } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 import { SocialLinks } from "./SocialLinks";
+import { MailIcon, PhoneIcon, WhatsAppIcon } from "./icons";
 
 type OwnerContactProps = {
   owner: Owner;
   locale: Locale;
 };
 
+/**
+ * Normalize a Brazilian-style phone string to digits-only E.164 (no plus
+ * sign). Accepts inputs like "(48) 98559-6882" or "+55 48 985596882".
+ * Prepends the BR country code (55) when missing.
+ */
+function toE164Brazil(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  return `55${digits}`;
+}
+
 export function OwnerContact({ owner, locale }: OwnerContactProps) {
   const dict = getDictionary(locale);
   const hasSocial =
     !!owner.social &&
     Object.values(owner.social).some((value) => value?.trim());
+
+  const phoneE164 = toE164Brazil(owner.phone);
 
   return (
     <section
@@ -26,18 +40,58 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
         {dict.ownerContact}
       </h2>
 
-      <dl className="mt-4 space-y-4">
-        <Field label={dict.name} value={owner.name} />
-        <Field
-          label={dict.email}
-          value={owner.email}
-          href={`mailto:${owner.email}`}
-        />
-        <Field
-          label={dict.cellphone}
-          value={owner.phone}
-          href={`tel:${owner.phone.replace(/\D/g, "")}`}
-        />
+      <dl className="mt-4 space-y-5">
+        {/* Name — info only */}
+        <div>
+          <dt className="text-xs font-medium text-muted">{dict.name}</dt>
+          <dd className="mt-0.5 text-base font-semibold text-ink">
+            {owner.name}
+          </dd>
+        </div>
+
+        {/* Email — info + send-email button */}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <dt className="text-xs font-medium text-muted">{dict.email}</dt>
+            <dd className="mt-0.5 truncate text-base font-semibold text-ink">
+              {owner.email}
+            </dd>
+          </div>
+          <ActionButton
+            href={`mailto:${owner.email}`}
+            ariaLabel={dict.actionEmail}
+            variant="outline"
+          >
+            <MailIcon className="h-[18px] w-[18px]" />
+          </ActionButton>
+        </div>
+
+        {/* Phone — info + WhatsApp + Call buttons */}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
+            <dd className="mt-0.5 text-base font-semibold text-ink">
+              {owner.phone}
+            </dd>
+          </div>
+          <div className="flex gap-2">
+            <ActionButton
+              href={`https://wa.me/${phoneE164}`}
+              ariaLabel={dict.actionWhatsApp}
+              variant="outline"
+              external
+            >
+              <WhatsAppIcon className="h-[18px] w-[18px]" />
+            </ActionButton>
+            <ActionButton
+              href={`tel:+${phoneE164}`}
+              ariaLabel={dict.actionCall}
+              variant="filled"
+            >
+              <PhoneIcon className="h-[18px] w-[18px]" />
+            </ActionButton>
+          </div>
+        </div>
       </dl>
 
       {hasSocial && (
@@ -50,27 +104,35 @@ export function OwnerContact({ owner, locale }: OwnerContactProps) {
   );
 }
 
-function Field({
-  label,
-  value,
+type ActionButtonProps = {
+  href: string;
+  ariaLabel: string;
+  variant: "filled" | "outline";
+  external?: boolean;
+  children: React.ReactNode;
+};
+
+function ActionButton({
   href,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-}) {
+  ariaLabel,
+  variant,
+  external = false,
+  children,
+}: ActionButtonProps) {
+  const base =
+    "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition active:scale-95";
+  const variantClasses =
+    variant === "filled"
+      ? "bg-ink text-white hover:bg-ink/90"
+      : "border border-black/10 bg-white text-ink hover:bg-black/[0.02]";
   return (
-    <div>
-      <dt className="text-xs font-medium text-muted">{label}</dt>
-      <dd className="mt-0.5 text-base font-semibold text-ink">
-        {href ? (
-          <a href={href} className="hover:underline">
-            {value}
-          </a>
-        ) : (
-          value
-        )}
-      </dd>
-    </div>
+    <a
+      href={href}
+      aria-label={ariaLabel}
+      className={`${base} ${variantClasses}`}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
+      {children}
+    </a>
   );
 }

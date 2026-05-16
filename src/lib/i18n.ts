@@ -23,6 +23,9 @@ type Dictionary = {
   email: string;
   cellphone: string;
   social: string;
+  actionCall: string;
+  actionEmail: string;
+  actionWhatsApp: string;
   yearsOld: (n: number) => string;
   monthsOld: (n: number) => string;
   notFoundTitle: string;
@@ -69,6 +72,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     email: "E-mail",
     cellphone: "Celular",
     social: "Redes sociais",
+    actionCall: "Ligar",
+    actionEmail: "Enviar e-mail",
+    actionWhatsApp: "Abrir WhatsApp",
     yearsOld: (n) => (n === 1 ? "1 ano" : `${n} anos`),
     monthsOld: (n) => (n === 1 ? "1 mês" : `${n} meses`),
     notFoundTitle: "Pet não encontrado",
@@ -114,6 +120,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     email: "Email",
     cellphone: "Cellphone",
     social: "Social",
+    actionCall: "Call",
+    actionEmail: "Send email",
+    actionWhatsApp: "Open WhatsApp",
     yearsOld: (n) => (n === 1 ? "1 year old" : `${n} years old`),
     monthsOld: (n) => (n === 1 ? "1 month old" : `${n} months old`),
     notFoundTitle: "Pet not found",

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>View Pet — Modo perdido (mockup)</title>
+<style>
+  :root {
+    --ink: #1a2434;
+    --muted: #6b7280;
+    --surface: #f3f1ea;
+    --bg: #ffffff;
+    --danger: #E24B4A;
+    --danger-bg: #FCEBEB;
+    --danger-fg: #791F1F;
+    --danger-fg-strong: #501313;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e9e7df;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    padding: 32px 16px;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .frame {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+  }
+  .hero {
+    position: relative;
+    aspect-ratio: 3/4;
+    background: linear-gradient(135deg, #9ba0a6, #6b7280);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 4px solid var(--danger);
+  }
+  .hero-placeholder {
+    width: 100%;
+    height: 100%;
+    background-image: url('/uploads/abc23456defg.png');
+    background-size: cover;
+    background-position: center;
+    background-color: #B4B2A9;
+  }
+  .hero-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 96px;
+  }
+  .logo-chip {
+    position: absolute;
+    top: 16px; left: 16px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .alert-pill {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--danger);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .name-pill {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding: 10px 32px;
+    border-radius: 999px;
+    font-size: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .body { padding: 36px 20px 20px; display: flex; flex-direction: column; gap: 18px; }
+  .lead { text-align: center; }
+  .lead p { margin: 0; }
+  .lead .title { font-size: 18px; font-weight: 600; }
+  .lead .sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .seen-card {
+    background: var(--danger-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .seen-card .label {
+    font-size: 11px;
+    color: var(--danger-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin: 0;
+  }
+  .seen-card .value {
+    font-size: 14px;
+    color: var(--danger-fg-strong);
+    font-weight: 600;
+    margin: 2px 0 0;
+  }
+  .seen-card .icon { font-size: 22px; color: var(--danger-fg); margin-top: 2px; }
+  .cta-primary {
+    background: var(--danger);
+    color: white;
+    padding: 16px;
+    border-radius: 12px;
+    text-decoration: none;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .cta-secondary {
+    background: white;
+    border: 1px solid rgba(0,0,0,0.15);
+    padding: 14px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .alerts {
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .alerts .heading {
+    font-size: 11px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin: 0;
+  }
+  .alert-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .alert-row .icon { font-size: 18px; }
+  .footer {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0 4px;
+    opacity: 0.2;
+    font-size: 48px;
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="hero">
+    <div class="hero-placeholder"></div>
+    <div class="logo-chip" aria-label="View Pet">🐾</div>
+    <div class="alert-pill">⚠ Perdido</div>
+    <div class="name-pill">Lupe</div>
+  </div>
+
+  <div class="body">
+    <div class="lead">
+      <p class="title">Encontrou a Lupe?</p>
+      <p class="sub">Husky · 8 anos · ajude ela a voltar pra casa</p>
+    </div>
+
+    <div class="seen-card">
+      <span class="icon">📍</span>
+      <div>
+        <p class="label">Visto pela última vez</p>
+        <p class="value">14/05 às 18h · Praia da Joaquina</p>
+      </div>
+    </div>
+
+    <a href="tel:+5548985596882" class="cta-primary">
+      <span style="font-size: 22px;">📞</span>
+      Ligar agora pro tutor
+    </a>
+
+    <button class="cta-secondary" onclick="shareLocation()">
+      <span style="font-size: 20px;">📍</span>
+      Compartilhar minha localização
+    </button>
+
+    <div class="alerts">
+      <p class="heading">Antes de se aproximar</p>
+      <div class="alert-row"><span class="icon">❤️</span><span>Toma remédio pra coração todo dia</span></div>
+      <div class="alert-row"><span class="icon">🔊</span><span>Tem medo de barulho alto</span></div>
+      <div class="alert-row"><span class="icon">😊</span><span>Atende pelo nome, é dócil</span></div>
+    </div>
+
+    <div class="footer">🐶</div>
+  </div>
+</div>
+
+<script>
+function shareLocation() {
+  if (!navigator.geolocation) {
+    alert('Seu navegador não suporta geolocalização.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => alert('Localização compartilhada com o tutor da Lupe ✓\n\nLat: ' + pos.coords.latitude.toFixed(4) + '\nLng: ' + pos.coords.longitude.toFixed(4)),
+    err => alert('Não foi possível pegar sua localização: ' + err.message)
+  );
+}
+</script>
+
+</body>
+</html>
