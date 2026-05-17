@@ -22,7 +22,7 @@
  * MONGODB_URI — MongoDB connection string (default: mongodb://localhost:27017/viewpet)
  */
 
-import { MongoClient, type Collection, type Db } from "mongodb";
+import { MongoClient, type Collection } from "mongodb";
 import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
 
 const COLLECTION = "pets";
@@ -31,24 +31,34 @@ type ReservedDocument = { _id: string; status: "reserved" };
 type FilledDocument = { _id: string } & PetPublicProfile;
 type PetDocument = ReservedDocument | FilledDocument;
 
-let client: MongoClient | null = null;
-let db: Db | null = null;
+/**
+ * Cache a single Promise so concurrent requests share one connection attempt.
+ * Using globalThis survives Next.js hot-module reloads in development.
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+}
+
+function getClientPromise(): Promise<MongoClient> {
+  if (!globalThis._mongoClientPromise) {
+    const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
+    const client = new MongoClient(uri);
+    globalThis._mongoClientPromise = client.connect();
+  }
+  return globalThis._mongoClientPromise;
+}
 
 async function getCollection(): Promise<Collection<PetDocument>> {
-  if (!client) {
-    const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
-    client = new MongoClient(uri);
-    await client.connect();
-    const dbName = new URL(uri).pathname.slice(1) || "viewpet";
-    db = client.db(dbName);
-  }
-  return db!.collection<PetDocument>(COLLECTION);
+  const client = await getClientPromise();
+  const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
+  const dbName = new URL(uri).pathname.slice(1) || "viewpet";
+  return client.db(dbName).collection<PetDocument>(COLLECTION);
 }
 
 /** Exposed for testing — resets the singleton so tests can inject a fresh URI. */
 export function resetMongoClient(): void {
-  client = null;
-  db = null;
+  globalThis._mongoClientPromise = undefined;
 }
 
 export class MongoDBKVSProvider implements IKVSProvider {
