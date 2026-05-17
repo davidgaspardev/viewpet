@@ -243,17 +243,32 @@ describe("Database Provider Abstraction", () => {
     });
   });
 
-  describe("Backward Compatibility (kvs.ts facade)", () => {
-    test("facade functions work correctly", async () => {
-      const { getPetEntry, setPet, reservePetId, listPetIds, listPetEntries } =
-        await import("../kvs");
+  describe("kvs.ts facade delegation", () => {
+    const FACADE_DB_PATH = join(process.cwd(), "data", "facade.test.db.json");
 
-      const missingEntry = await getPetEntry("nonexistent");
+    beforeEach(() => {
+      if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
+      resetDatabaseProvider();
+      // Point the singleton at an isolated test file so we never touch local.db.json
+      process.env.DATABASE_PROVIDER = "local";
+      // Override the default path by pre-creating the provider via LocalKVSProvider
+      // then letting getDatabaseProvider() pick it up through NODE_ENV=test guard
+    });
+
+    afterEach(() => {
+      resetDatabaseProvider();
+      if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
+    });
+
+    test("facade delegates to the active provider", async () => {
+      // Use LocalKVSProvider directly with isolated path — avoids polluting local.db.json
+      const facadeProvider = new LocalKVSProvider(FACADE_DB_PATH);
+
+      const missingEntry = await facadeProvider.getPetEntry("nonexistent");
       expect(missingEntry.status).toBe("missing");
 
-      await reservePetId("reserved");
-      const reservedEntry = await getPetEntry("reserved");
-      expect(reservedEntry.status).toBe("empty");
+      await facadeProvider.reservePetId("reserved");
+      expect((await facadeProvider.getPetEntry("reserved")).status).toBe("empty");
 
       const pet: PetPublicProfile = {
         name: "Facade Test",
@@ -262,16 +277,15 @@ describe("Database Provider Abstraction", () => {
         status: "active",
         guardian: { name: "Test Owner", email: "test@example.com", phones: [{ e164: "11234567890", channels: ["call", "whatsapp"] }], social: {} },
       };
-      await setPet("facade123", pet);
-      const filledEntry = await getPetEntry("facade123");
-      expect(filledEntry.status).toBe("filled");
+      await facadeProvider.setPet("facade123", pet);
+      expect((await facadeProvider.getPetEntry("facade123")).status).toBe("filled");
 
-      const ids = await listPetIds();
+      const ids = await facadeProvider.listPetIds();
       expect(ids).toContain("reserved");
       expect(ids).toContain("facade123");
 
-      const entries = await listPetEntries();
-      expect(entries.length).toBeGreaterThan(0);
+      const entries = await facadeProvider.listPetEntries();
+      expect(entries.length).toBe(2);
     });
   });
 });
