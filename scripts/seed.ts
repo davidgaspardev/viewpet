@@ -3,24 +3,39 @@
  * Seed database with pet data from pets.json.
  *
  * Usage:
- *   bun run seed
+ *   bun run seed           # upsert (preserves existing entries not in pets.json)
+ *   bun run seed --reset   # wipe collection/file first, then insert fresh
  *
  * Respects DATABASE_PROVIDER env var (default: local).
- * Note: DATABASE_PROVIDER=local uses in-memory storage — data is lost
- * when the process exits and won't carry over to the running app.
+ *   local   → writes to data/local.db.json (persists across runs)
+ *   redis   → requires REDIS_URL
+ *   mongodb → requires MONGODB_URI
  */
 
-import { promises as fs } from "node:fs";
+import { promises as fs, existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getDatabaseProvider } from "../src/lib/database";
 import type { PetStore } from "../src/types/pet";
 
 const PETS_JSON_PATH = path.join(process.cwd(), "src/data/pets.json");
+const LOCAL_DB_PATH = path.join(process.cwd(), "data", "local.db.json");
 
 const providerType = process.env.DATABASE_PROVIDER ?? "local";
+const shouldReset = process.argv.includes("--reset");
+
+async function resetProvider(): Promise<void> {
+  if (providerType === "local") {
+    writeFileSync(LOCAL_DB_PATH, "{}", "utf8");
+    console.log("🗑️  Cleared local.db.json\n");
+    return;
+  }
+  console.warn("⚠️  --reset only supported for local provider. Skipping reset.\n");
+}
 
 async function main(): Promise<void> {
   console.log(`🌱 Starting seed (provider: ${providerType})...\n`);
+
+  if (shouldReset) await resetProvider();
 
   if (providerType === "local") {
     console.log("📁 Writing to local filesystem database (data/local.db.json)\n");
