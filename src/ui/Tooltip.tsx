@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Orientation = "top" | "bottom" | "left" | "right";
 
@@ -12,22 +12,26 @@ type TooltipProps = {
   closable?: boolean;
 };
 
-const POSITIONS: Record<Orientation, { tooltip: string; arrow: string }> = {
+const POSITIONS: Record<Orientation, { tooltip: string; arrow: string; enterFrom: string }> = {
   top: {
     tooltip: "bottom-full left-1/2 -translate-x-1/2 mb-2",
     arrow: "left-1/2 top-full -translate-x-1/2 border-t-ink",
+    enterFrom: "translate-y-1",
   },
   bottom: {
     tooltip: "top-full left-1/2 -translate-x-1/2 mt-2",
     arrow: "left-1/2 bottom-full -translate-x-1/2 border-b-ink",
+    enterFrom: "-translate-y-1",
   },
   left: {
     tooltip: "right-full top-1/2 -translate-y-1/2 mr-2",
     arrow: "left-full top-1/2 -translate-y-1/2 border-l-ink",
+    enterFrom: "translate-x-1",
   },
   right: {
     tooltip: "left-full top-1/2 -translate-y-1/2 ml-2",
     arrow: "right-full top-1/2 -translate-y-1/2 border-r-ink",
+    enterFrom: "-translate-x-1",
   },
 };
 
@@ -38,12 +42,16 @@ export function Tooltip({
   orientation = "top",
   closable = false,
 }: TooltipProps) {
+  // mounted triggers the entrance animation on the first render
+  const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // forceVisible keeps the tooltip open on load until the user dismisses it
-  const forceVisible = defaultOpen && !dismissed;
+  useEffect(() => {
+    if (defaultOpen) setMounted(true);
+  }, [defaultOpen]);
 
-  const { tooltip, arrow } = POSITIONS[orientation];
+  const forceVisible = defaultOpen && mounted && !dismissed;
+  const { tooltip, arrow, enterFrom } = POSITIONS[orientation];
 
   return (
     <div className="group relative inline-flex">
@@ -52,10 +60,11 @@ export function Tooltip({
         role="tooltip"
         className={[
           "absolute flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-3 py-1.5",
-          "text-xs font-medium text-white shadow-pill transition-opacity duration-150",
-          "group-hover:opacity-100",
+          "text-xs font-medium text-white shadow-pill",
+          "transition-all duration-200 ease-out",
+          "group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0",
           tooltip,
-          forceVisible ? "opacity-100" : "opacity-0",
+          forceVisible ? "opacity-100 translate-x-0 translate-y-0" : `opacity-0 ${enterFrom}`,
           closable ? "pointer-events-auto" : "pointer-events-none",
         ].join(" ")}
       >
