@@ -4,6 +4,7 @@ import { getDictionary } from "@/lib/i18n";
 import { ActionButton } from "./ActionButton";
 import { SocialLinks } from "./SocialLinks";
 import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/ui/icons";
+import { Tooltip } from "@/ui/Tooltip";
 
 type GuardianContactProps = {
   guardian: Guardian;
@@ -31,13 +32,15 @@ function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDi
           </ActionButton>
         )}
         {phone.channels.includes("call") && (
-          <ActionButton
-            href={`tel:+${phone.e164}`}
-            ariaLabel={dict.actionCall}
-            variant="filled"
-          >
-            <PhoneIcon className="h-[18px] w-[18px]" />
-          </ActionButton>
+          <Tooltip label={dict.actionCall}>
+            <ActionButton
+              href={`tel:+${phone.e164}`}
+              ariaLabel={dict.actionCall}
+              variant="filled"
+            >
+              <PhoneIcon className="h-[18px] w-[18px]" />
+            </ActionButton>
+          </Tooltip>
         )}
       </div>
     </div>
