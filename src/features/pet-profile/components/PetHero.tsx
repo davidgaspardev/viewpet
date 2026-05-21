@@ -21,19 +21,19 @@ export function PetHero({ name, pictureUrl, ageLabel }: PetHeroProps) {
         />
 
         {/* Top-left logo chip */}
-        <div className="absolute left-4 top-0 flex h-16 w-14 items-center justify-center rounded-b-2xl bg-white/50 backdrop-blur-md text-ink shadow-pill">
+        <div className="absolute left-4 top-0 flex h-16 w-14 items-center justify-center rounded-b-2xl bg-white/65 backdrop-blur-md text-ink">
           <Logo className="h-12 w-12" />
         </div>
 
         {/* Top-right age pill */}
-        <div className="absolute right-4 top-4 rounded-full bg-white/50 backdrop-blur-md px-4 py-2 text-sm font-bold text-ink shadow-pill">
+        <div className="absolute right-0 top-4 rounded-l-full bg-white/65 backdrop-blur-md px-4 py-2 text-sm font-bold text-ink">
           {ageLabel}
         </div>
       </div>
 
       {/* Name pill overlapping the bottom of the image */}
       <div className="relative -mt-16 flex justify-center">
-        <span className="rounded-full bg-white/50 backdrop-blur-md px-8 py-3 text-lg font-bold text-ink shadow-pill">
+        <span className="rounded-full bg-white/65 backdrop-blur-md px-8 py-3 text-lg font-bold text-ink">
           {name}
         </span>
       </div>
