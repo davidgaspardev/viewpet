@@ -23,6 +23,7 @@ type Dictionary = {
   email: string;
   cellphone: string;
   social: string;
+  close: string;
   actionCall: string;
   actionCallTooltip: string;
   actionEmail: string;
@@ -74,6 +75,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     email: "E-mail",
     cellphone: "Celular",
     social: "Redes sociais",
+    close: "Fechar",
     actionCall: "Ligar",
     actionCallTooltip: "Clique neste botão para ligar para o tutor",
     actionEmail: "Enviar e-mail",
@@ -124,6 +126,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     email: "Email",
     cellphone: "Cellphone",
     social: "Social",
+    close: "Close",
     actionCall: "Call",
     actionCallTooltip: "Click this button to call the guardian",
     actionEmail: "Send email",

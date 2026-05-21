@@ -32,7 +32,7 @@ function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDi
           </ActionButton>
         )}
         {phone.channels.includes("call") && (
-          <Tooltip label={dict.actionCallTooltip} defaultOpen orientation="bottom-left" closable>
+          <Tooltip label={dict.actionCallTooltip} defaultOpen orientation="bottom-left" closable closeLabel={dict.close}>
             <ActionButton
               href={`tel:+${phone.e164}`}
               ariaLabel={dict.actionCall}
