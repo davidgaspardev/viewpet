@@ -24,6 +24,7 @@ type Dictionary = {
   cellphone: string;
   social: string;
   actionCall: string;
+  actionCallTooltip: string;
   actionEmail: string;
   actionWhatsApp: string;
   yearsOld: (n: number) => string;
@@ -74,6 +75,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     cellphone: "Celular",
     social: "Redes sociais",
     actionCall: "Ligar",
+    actionCallTooltip: "Clique neste botão para ligar para o tutor",
     actionEmail: "Enviar e-mail",
     actionWhatsApp: "Abrir WhatsApp",
     yearsOld: (n) => (n === 1 ? "1 ano" : `${n} anos`),
@@ -123,6 +125,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     cellphone: "Cellphone",
     social: "Social",
     actionCall: "Call",
+    actionCallTooltip: "Click this button to call the guardian",
     actionEmail: "Send email",
     actionWhatsApp: "Open WhatsApp",
     yearsOld: (n) => (n === 1 ? "1 year old" : `${n} years old`),
