@@ -1,4 +1,4 @@
-import { getDictionary, type Locale } from "./i18n";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
 /**
  * Compute the age in whole years between birthdate and reference date.

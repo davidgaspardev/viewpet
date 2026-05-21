@@ -5,7 +5,7 @@ import {
   SaveImageException,
   getExtensionFromMime,
 } from "./interface";
-import { isHashId } from "../ids";
+import { isHashId } from "../utils/ids";
 
 /**
  * AWS S3 storage provider.

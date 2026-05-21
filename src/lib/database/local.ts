@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
 
@@ -9,8 +9,6 @@ export class LocalKVSProvider implements IKVSProvider {
 
   constructor(dbPath = DEFAULT_PATH) {
     this.dbPath = dbPath;
-    mkdirSync(dirname(dbPath), { recursive: true });
-    if (!existsSync(dbPath)) writeFileSync(dbPath, "{}", "utf8");
   }
 
   private read(): Record<string, PetPublicProfile | null> {
@@ -22,6 +20,7 @@ export class LocalKVSProvider implements IKVSProvider {
   }
 
   private write(data: Record<string, PetPublicProfile | null>): void {
+    mkdirSync(dirname(this.dbPath), { recursive: true });
     writeFileSync(this.dbPath, JSON.stringify(data, null, 2), "utf8");
   }
 

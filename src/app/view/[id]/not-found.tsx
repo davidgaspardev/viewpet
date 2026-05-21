@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/ui/Logo";
 
 export default async function NotFound() {
   const locale = await resolveLocale();

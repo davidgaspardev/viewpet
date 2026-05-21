@@ -6,7 +6,7 @@ import {
   SaveImageException,
   getExtensionFromMime,
 } from "./interface";
-import { isHashId } from "../ids";
+import { isHashId } from "../utils/ids";
 
 /**
  * Local filesystem storage provider.

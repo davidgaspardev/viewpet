@@ -3,11 +3,11 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/ui/Logo";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
-import { submitPet, type SubmitState } from "./actions";
+import { submitPet, type SubmitState } from "@/app/view/[id]/actions";
 import { ImageUpload } from "./ImageUpload";
 
 const initialState: SubmitState = { status: "idle" };

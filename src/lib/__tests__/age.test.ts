@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ageInYears, ageInMonths, formatAge } from "../age";
+import { ageInYears, ageInMonths, formatAge } from "../utils/age";
 
 const d = (s: string) => new Date(s);
 

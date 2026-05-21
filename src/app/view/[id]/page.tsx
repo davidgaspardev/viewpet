@@ -2,13 +2,13 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getPetEntry } from "@/lib/kvs";
-import { formatAge } from "@/lib/age";
+import { formatAge } from "@/lib/utils/age";
 import { resolveLocale } from "@/lib/i18n.server";
-import { PetHero } from "@/components/PetHero";
-import { GuardianContact } from "@/components/GuardianContact";
-import { Logo } from "@/components/Logo";
+import { PetHero } from "@/features/pet-profile/components/PetHero";
+import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
+import { Logo } from "@/ui/Logo";
 
-import { PetForm } from "./PetForm";
+import { PetForm } from "@/features/pet-profile/components/PetForm";
 
 // Force dynamic rendering since we're using Redis
 export const dynamic = "force-dynamic";

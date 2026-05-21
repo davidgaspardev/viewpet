@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateHashId, isHashId, HASH_ID_LENGTH } from "../ids";
+import { generateHashId, isHashId, HASH_ID_LENGTH } from "../utils/ids";
 
 const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 
