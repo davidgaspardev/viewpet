@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 
-type Orientation = "top" | "bottom" | "left" | "right";
+type Orientation =
+  | "top" | "bottom" | "left" | "right"
+  | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 type TooltipProps = {
   label: string;
@@ -45,6 +47,35 @@ const POSITIONS: Record<
     hidden: "-translate-x-3",
     visible: "translate-x-0",
     hoverVisible: "group-hover:opacity-100 group-hover:translate-x-0",
+  },
+  // Diagonal — anchored to an edge so the tooltip expands away from the screen boundary
+  "top-left": {
+    tooltip: "bottom-full right-0 mb-2",
+    arrow: "right-3 top-full border-t-ink",
+    hidden: "translate-y-3",
+    visible: "translate-y-0",
+    hoverVisible: "group-hover:opacity-100 group-hover:translate-y-0",
+  },
+  "top-right": {
+    tooltip: "bottom-full left-0 mb-2",
+    arrow: "left-3 top-full border-t-ink",
+    hidden: "translate-y-3",
+    visible: "translate-y-0",
+    hoverVisible: "group-hover:opacity-100 group-hover:translate-y-0",
+  },
+  "bottom-left": {
+    tooltip: "top-full right-0 mt-2",
+    arrow: "right-3 bottom-full border-b-ink",
+    hidden: "-translate-y-3",
+    visible: "translate-y-0",
+    hoverVisible: "group-hover:opacity-100 group-hover:translate-y-0",
+  },
+  "bottom-right": {
+    tooltip: "top-full left-0 mt-2",
+    arrow: "left-3 bottom-full border-b-ink",
+    hidden: "-translate-y-3",
+    visible: "translate-y-0",
+    hoverVisible: "group-hover:opacity-100 group-hover:translate-y-0",
   },
 };
 
