@@ -1,14 +1,17 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 
 import { listPetEntries } from "@/lib/kvs";
 import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
-import { Logo } from "@/components/Logo";
+import { Logo } from "@/ui/Logo";
 
 // Force dynamic rendering since we're using Redis
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  if (process.env.NODE_ENV === "production") notFound();
+
   const [entries, locale] = await Promise.all([
     listPetEntries(),
     resolveLocale(),

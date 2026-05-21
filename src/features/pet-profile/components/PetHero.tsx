@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Logo } from "./Logo";
+import { Logo } from "@/ui/Logo";
 
 type PetHeroProps = {
   name: string;

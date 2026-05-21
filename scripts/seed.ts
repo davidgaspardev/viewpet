@@ -12,7 +12,7 @@
  *   mongodb → requires MONGODB_URI
  */
 
-import { promises as fs, existsSync, writeFileSync } from "node:fs";
+import { promises as fs, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getDatabaseProvider } from "../src/lib/database";
 import type { PetStore } from "../src/types/pet";
@@ -29,7 +29,9 @@ async function resetProvider(): Promise<void> {
     console.log("🗑️  Cleared local.db.json\n");
     return;
   }
-  console.warn("⚠️  --reset only supported for local provider. Skipping reset.\n");
+  console.warn(
+    "⚠️  --reset only supported for local provider. Skipping reset.\n",
+  );
 }
 
 async function main(): Promise<void> {
@@ -38,7 +40,9 @@ async function main(): Promise<void> {
   if (shouldReset) await resetProvider();
 
   if (providerType === "local") {
-    console.log("📁 Writing to local filesystem database (data/local.db.json)\n");
+    console.log(
+      "📁 Writing to local filesystem database (data/local.db.json)\n",
+    );
   }
 
   console.log(`📖 Reading pets from ${PETS_JSON_PATH}...`);

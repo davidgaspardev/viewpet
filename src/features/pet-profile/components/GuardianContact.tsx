@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 import { ActionButton } from "./ActionButton";
 import { SocialLinks } from "./SocialLinks";
-import { MailIcon, PhoneIcon, WhatsAppIcon } from "./icons";
+import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/ui/icons";
 
 type GuardianContactProps = {
   guardian: Guardian;
