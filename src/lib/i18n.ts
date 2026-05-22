@@ -45,8 +45,8 @@ type Dictionary = {
   petName: string;
   petPicture: string;
   petPictureDropzone: string;
-  petPictureBrowse: string;
   petPictureCamera: string;
+  petPictureBrowseBtn: string;
   petPictureReplace: string;
   petPictureRemove: string;
   petPictureHint: string;
@@ -99,8 +99,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petName: "Nome do pet",
     petPicture: "Foto do pet",
     petPictureDropzone: "Arraste uma foto aqui",
-    petPictureBrowse: "ou clique para escolher do dispositivo",
     petPictureCamera: "Tirar foto agora",
+    petPictureBrowseBtn: "Escolher do dispositivo",
     petPictureReplace: "Trocar foto",
     petPictureRemove: "Remover",
     petPictureHint: "JPG, PNG, WEBP ou GIF — até 5 MB.",
@@ -149,8 +149,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petName: "Pet name",
     petPicture: "Pet picture",
     petPictureDropzone: "Drag a photo here",
-    petPictureBrowse: "or click to choose from your device",
     petPictureCamera: "Take a photo now",
+    petPictureBrowseBtn: "Choose from device",
     petPictureReplace: "Replace photo",
     petPictureRemove: "Remove",
     petPictureHint: "JPG, PNG, WEBP or GIF — up to 5 MB.",

@@ -119,7 +119,7 @@ export function ImageUpload({
         : null;
 
   return (
-    <div className="block">
+    <div className="w-full min-w-0">
       <span className="text-xs font-medium text-muted">
         {dict.petPicture}
         {required && <span className="ml-1 text-red-500">*</span>}
@@ -156,47 +156,41 @@ export function ImageUpload({
 
       {!previewUrl ? (
         <div
-          role="button"
-          tabIndex={0}
-          aria-label={dict.petPictureDropzone}
-          onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              fileInputRef.current?.click();
-            }
-          }}
           onDrop={onDrop}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
-          className={`mt-1 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition cursor-pointer ${
+          className={`mt-1 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
             isDragging
               ? "border-ink bg-ink/5"
-              : "border-black/15 bg-white hover:border-ink/50"
+              : "border-black/15 bg-white"
           }`}
         >
           <UploadIcon />
-          <div>
-            <p className="text-sm font-medium text-ink">
-              {dict.petPictureDropzone}
-            </p>
-            <p className="text-xs text-muted">{dict.petPictureBrowse}</p>
+          <p className="text-sm font-medium text-ink">
+            {dict.petPictureDropzone}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
+            >
+              <GalleryIcon />
+              {dict.petPictureBrowseBtn}
+            </button>
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
+            >
+              <CameraIcon />
+              {dict.petPictureCamera}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              cameraInputRef.current?.click();
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
-          >
-            <CameraIcon />
-            {dict.petPictureCamera}
-          </button>
           <p className="text-[11px] text-muted">{dict.petPictureHint}</p>
         </div>
       ) : (
-        <div className="mt-1 overflow-hidden rounded-xl border border-black/10 bg-white">
+        <div className="mt-1 w-full overflow-hidden rounded-xl border border-black/10 bg-white">
           {/* Local preview only — file isn't uploaded until the form submits. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -255,6 +249,26 @@ function UploadIcon() {
       <path d="M12 16V4" />
       <path d="m6 10 6-6 6 6" />
       <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
+function GalleryIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
     </svg>
   );
 }
