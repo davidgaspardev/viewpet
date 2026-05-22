@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { Logo } from "@/ui/Logo";
 import { Card } from "@/ui/Card";
+import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
@@ -39,7 +40,9 @@ export function PetForm({ hashId, locale }: PetFormProps) {
       : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-6 pb-16 pt-12">
+    <>
+      <StickyHeader />
+      <main className="mx-auto flex min-h-screen max-w-md flex-col px-6 pb-16 pt-[6.5rem]">
       <header className="mb-8 flex items-center gap-3">
         <Logo className="h-10 w-10 text-ink" />
         <div>
@@ -106,6 +109,7 @@ export function PetForm({ hashId, locale }: PetFormProps) {
         <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
       </form>
     </main>
+    </>
   );
 }
 
