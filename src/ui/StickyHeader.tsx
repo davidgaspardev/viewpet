@@ -32,10 +32,12 @@ export function StickyHeader() {
         visible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <div className="border-b border-black/5 bg-white/80 backdrop-blur-md">
+      <div className="border-b border-black/5 bg-white/50 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-center gap-2.5 px-6">
           <Logo className="h-7 w-7 text-ink" />
-          <span className="text-base font-bold tracking-tight text-ink">View Pet</span>
+          <span className="text-base font-bold tracking-tight text-ink">
+            View Pet
+          </span>
         </div>
       </div>
     </header>
