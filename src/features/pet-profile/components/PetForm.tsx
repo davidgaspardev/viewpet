@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Logo } from "@/ui/Logo";
+import { Card } from "@/ui/Card";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
@@ -48,7 +49,7 @@ export function PetForm({ hashId, locale }: PetFormProps) {
       </header>
 
       <form action={formAction} className="space-y-8">
-        <Section title={dict.petSection}>
+        <Card title={dict.petSection}>
           <Field label={dict.petName} name="name" required autoComplete="off" />
           <ImageUpload name="picture" required locale={locale} />
           <Field
@@ -57,9 +58,9 @@ export function PetForm({ hashId, locale }: PetFormProps) {
             type="date"
             required
           />
-        </Section>
+        </Card>
 
-        <Section title={dict.guardianSection}>
+        <Card title={dict.guardianSection}>
           <Field label={dict.guardianName} name="guardianName" required />
           <Field
             label={dict.guardianEmailOptional}
@@ -68,9 +69,9 @@ export function PetForm({ hashId, locale }: PetFormProps) {
             autoComplete="email"
           />
           <PhoneField label={dict.guardianPhone} />
-        </Section>
+        </Card>
 
-        <Section title={dict.socialSectionOptional}>
+        <Card title={dict.socialSectionOptional}>
           <Field
             label="Instagram"
             name="social_instagram"
@@ -91,7 +92,7 @@ export function PetForm({ hashId, locale }: PetFormProps) {
             name="social_tiktok"
             placeholder={dict.socialPlaceholder}
           />
-        </Section>
+        </Card>
 
         {errorMessage && (
           <p
@@ -105,23 +106,6 @@ export function PetForm({ hashId, locale }: PetFormProps) {
         <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
       </form>
     </main>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className="rounded-xl bg-surface px-6 py-5">
-      <legend className="px-2 text-xs font-semibold uppercase tracking-wider text-muted">
-        {title}
-      </legend>
-      <div className="space-y-4">{children}</div>
-    </fieldset>
   );
 }
 
