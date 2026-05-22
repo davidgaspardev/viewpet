@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Logo } from "@/ui/Logo";
+import { Card } from "@/ui/Card";
+import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
@@ -38,90 +39,80 @@ export function PetForm({ hashId, locale }: PetFormProps) {
       : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col px-6 pb-16 pt-12">
-      <header className="mb-8 flex items-center gap-3">
-        <Logo className="h-10 w-10 text-ink" />
-        <div>
-          <h1 className="text-xl font-bold text-ink">{dict.formTitle}</h1>
-          <p className="mt-1 text-xs text-muted">{dict.formIntro(hashId)}</p>
-        </div>
-      </header>
+    <>
+      <StickyHeader />
+      <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-14">
+        <header className="mt-8 flex items-center">
+          <div>
+            <h1 className="text-xl font-bold text-ink">{dict.formTitle}</h1>
+            <p className="mt-1 text-xs text-muted">{dict.formIntro(hashId)}</p>
+          </div>
+        </header>
 
-      <form action={formAction} className="space-y-8">
-        <Section title={dict.petSection}>
-          <Field label={dict.petName} name="name" required autoComplete="off" />
-          <ImageUpload name="picture" required locale={locale} />
-          <Field
-            label={dict.petBirthdate}
-            name="birthdate"
-            type="date"
-            required
-          />
-        </Section>
+        <form action={formAction} className="space-y-8">
+          <Card title={dict.petSection}>
+            <Field
+              label={dict.petName}
+              name="name"
+              required
+              autoComplete="off"
+            />
+            <ImageUpload name="picture" required locale={locale} />
+            <Field
+              label={dict.petBirthdate}
+              name="birthdate"
+              type="date"
+              required
+            />
+          </Card>
 
-        <Section title={dict.guardianSection}>
-          <Field label={dict.guardianName} name="guardianName" required />
-          <Field
-            label={dict.guardianEmailOptional}
-            name="guardianEmail"
-            type="email"
-            autoComplete="email"
-          />
-          <PhoneField label={dict.guardianPhone} />
-        </Section>
+          <Card title={dict.guardianSection}>
+            <Field label={dict.guardianName} name="guardianName" required />
+            <Field
+              label={dict.guardianEmailOptional}
+              name="guardianEmail"
+              type="email"
+              autoComplete="email"
+            />
+            <PhoneField label={dict.guardianPhone} />
+          </Card>
 
-        <Section title={dict.socialSectionOptional}>
-          <Field
-            label="Instagram"
-            name="social_instagram"
-            placeholder={dict.socialPlaceholder}
-          />
-          <Field
-            label="X"
-            name="social_x"
-            placeholder={dict.socialPlaceholder}
-          />
-          <Field
-            label="Facebook"
-            name="social_facebook"
-            placeholder={dict.socialPlaceholder}
-          />
-          <Field
-            label="TikTok"
-            name="social_tiktok"
-            placeholder={dict.socialPlaceholder}
-          />
-        </Section>
+          <Card title={dict.socialSectionOptional}>
+            <Field
+              label="Instagram"
+              name="social_instagram"
+              placeholder={dict.socialPlaceholder}
+            />
+            <Field
+              label="X"
+              name="social_x"
+              placeholder={dict.socialPlaceholder}
+            />
+            <Field
+              label="Facebook"
+              name="social_facebook"
+              placeholder={dict.socialPlaceholder}
+            />
+            <Field
+              label="TikTok"
+              name="social_tiktok"
+              placeholder={dict.socialPlaceholder}
+            />
+          </Card>
 
-        {errorMessage && (
-          <p
-            role="alert"
-            className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            {errorMessage}
-          </p>
-        )}
+          {errorMessage && (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {errorMessage}
+            </p>
+          )}
 
-        <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
-      </form>
-    </main>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset className="rounded-xl bg-surface px-6 py-5">
-      <legend className="px-2 text-xs font-semibold uppercase tracking-wider text-muted">
-        {title}
-      </legend>
-      <div className="space-y-4">{children}</div>
-    </fieldset>
+          <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
+        </form>
+      </main>
+    </>
   );
 }
 
@@ -150,7 +141,10 @@ function PhoneField({ label }: { label: string }) {
             { name: "guardianPhone_sms", label: "SMS" },
           ] as const
         ).map(({ name, label: chLabel }) => (
-          <label key={name} className="flex items-center gap-1.5 text-xs text-muted">
+          <label
+            key={name}
+            className="flex items-center gap-1.5 text-xs text-muted"
+          >
             <input
               type="checkbox"
               name={name}
