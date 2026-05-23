@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { listPetEntries } from "@/lib/kvs";
+import { listPetEntries } from "@/lib/database";
 import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
 import { Logo } from "@/ui/Logo";

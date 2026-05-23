@@ -1,5 +1,5 @@
 /**
- * Test file to verify Database provider abstraction and implementations
+ * Tests for the database provider abstraction and LocalRepository.
  * Run with: bun test src/lib/__tests__/database.test.ts
  */
 
@@ -7,7 +7,7 @@ import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { getDatabaseProvider, resetDatabaseProvider } from "../database";
-import { LocalKVSProvider } from "../database/local";
+import { LocalRepository } from "../database/local";
 import type { PetPublicProfile, Guardian } from "@/types/pet";
 
 const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
@@ -56,22 +56,22 @@ describe("Database Provider Abstraction", () => {
 
     test("defaults to local (filesystem) provider", () => {
       const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(LocalKVSProvider);
+      expect(provider).toBeInstanceOf(LocalRepository);
     });
 
     test("uses local provider when DATABASE_PROVIDER=local", () => {
       process.env.DATABASE_PROVIDER = "local";
       const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(LocalKVSProvider);
+      expect(provider).toBeInstanceOf(LocalRepository);
     });
   });
 
-  describe("LocalKVSProvider", () => {
-    let provider: LocalKVSProvider;
+  describe("LocalRepository", () => {
+    let provider: LocalRepository;
 
     beforeEach(() => {
       cleanupTestDb();
-      provider = new LocalKVSProvider(TEST_DB_PATH);
+      provider = new LocalRepository(TEST_DB_PATH);
     });
 
     afterEach(() => {
@@ -218,14 +218,14 @@ describe("Database Provider Abstraction", () => {
 
       test("data persists across provider instances", async () => {
         await provider.setPet("persist1", makePet({ name: "Persistent" }));
-        const provider2 = new LocalKVSProvider(TEST_DB_PATH);
+        const provider2 = new LocalRepository(TEST_DB_PATH);
         const entry = await provider2.getPetEntry("persist1");
         expect(entry.status).toBe("filled");
       });
     });
   });
 
-  describe("kvs.ts facade delegation", () => {
+  describe("LocalRepository — full workflow", () => {
     const FACADE_DB_PATH = join(process.cwd(), "data", "facade.test.db.json");
 
     beforeEach(() => {
@@ -240,7 +240,7 @@ describe("Database Provider Abstraction", () => {
     });
 
     test("facade delegates to the active provider", async () => {
-      const facadeProvider = new LocalKVSProvider(FACADE_DB_PATH);
+      const facadeProvider = new LocalRepository(FACADE_DB_PATH);
 
       const missingEntry = await facadeProvider.getPetEntry("nonexistent");
       expect(missingEntry.status).toBe("missing");

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { getPetEntry } from "@/lib/kvs";
+import { getPetEntry } from "@/lib/database";
 import { formatAge } from "@/lib/utils/age";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/features/pet-profile/components/PetHero";

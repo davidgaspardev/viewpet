@@ -13,7 +13,7 @@
  *   bun run reserve -n 100 > qr-batch.txt
  */
 import { generateHashId } from "../src/lib/utils/ids";
-import { reservePetId } from "../src/lib/kvs";
+import { reservePetId } from "../src/lib/database";
 
 function parseArgs(argv: string[]): { count: number } {
   const args = argv.slice(2);

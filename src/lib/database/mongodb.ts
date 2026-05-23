@@ -32,7 +32,7 @@
  */
 
 import { MongoClient, ObjectId, type Collection } from "mongodb";
-import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
+import type { ISeedable, PetPublicProfile, PetEntry } from "./interface";
 import type { Guardian } from "@/types/pet";
 
 const PETS_COLLECTION = "pets";
@@ -66,22 +66,28 @@ declare global {
   // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
   // eslint-disable-next-line no-var
+  var _mongoDbName: string | undefined;
+  // eslint-disable-next-line no-var
   var _mongoIndexesEnsured: boolean | undefined;
 }
 
-function getClientPromise(): Promise<MongoClient> {
+function getClientAndDb(): { promise: Promise<MongoClient>; dbName: string } {
   if (!globalThis._mongoClientPromise) {
     const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
+    const dbName = new URL(uri).pathname.slice(1) || "viewpet";
     const client = new MongoClient(uri);
     globalThis._mongoClientPromise = client.connect();
+    globalThis._mongoDbName = dbName;
   }
-  return globalThis._mongoClientPromise;
+  return {
+    promise: globalThis._mongoClientPromise,
+    dbName: globalThis._mongoDbName ?? "viewpet",
+  };
 }
 
 async function db() {
-  const client = await getClientPromise();
-  const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
-  const dbName = new URL(uri).pathname.slice(1) || "viewpet";
+  const { promise, dbName } = getClientAndDb();
+  const client = await promise;
   const database = client.db(dbName);
 
   if (!globalThis._mongoIndexesEnsured) {
@@ -111,6 +117,7 @@ async function ensureIndexes(database: import("mongodb").Db): Promise<void> {
 /** Exposed for testing — resets the singleton so tests can inject a fresh URI. */
 export function resetMongoClient(): void {
   globalThis._mongoClientPromise = undefined;
+  globalThis._mongoDbName = undefined;
   globalThis._mongoIndexesEnsured = undefined;
 }
 
@@ -154,7 +161,7 @@ async function upsertGuardian(
   return insert.insertedId;
 }
 
-export class MongoDBKVSProvider implements IKVSProvider {
+export class MongoDBRepository implements ISeedable {
   async getPetEntry(hashId: string): Promise<PetEntry> {
     const { pets } = await db();
 
