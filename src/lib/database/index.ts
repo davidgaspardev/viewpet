@@ -15,7 +15,9 @@ export function getDatabaseProvider(): IKVSProvider {
     } else {
       instance = new LocalKVSProvider();
     }
-    console.log(`[Database] Using ${type} provider`);
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[Database] Using ${type} provider`);
+    }
   }
   return instance;
 }
