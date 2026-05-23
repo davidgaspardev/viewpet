@@ -2,7 +2,7 @@
  * KVS provider interface for pet data persistence.
  *
  * Enables dependency inversion: high-level code depends on this interface
- * rather than concrete implementations (Redis, DynamoDB, SQLite, etc.)
+ * rather than concrete implementations (MongoDB, local JSON, etc.)
  */
 
 import type { PetPublicProfile, PetEntry } from "@/types/pet";

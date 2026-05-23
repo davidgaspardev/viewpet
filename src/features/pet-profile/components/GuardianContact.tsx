@@ -7,11 +7,18 @@ import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/ui/icons";
 import { Tooltip } from "@/ui/Tooltip";
 
 type GuardianContactProps = {
-  guardian: Guardian;
+  /** Ordered list — index 0 is the primary guardian, rendered prominently. */
+  guardians: Guardian[];
   locale: Locale;
 };
 
-function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDictionary> }) {
+function PhoneRow({
+  phone,
+  dict,
+}: {
+  phone: Phone;
+  dict: ReturnType<typeof getDictionary>;
+}) {
   return (
     <div className="flex items-end justify-between gap-3">
       <div className="min-w-0 flex-1">
@@ -32,7 +39,13 @@ function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDi
           </ActionButton>
         )}
         {phone.channels.includes("call") && (
-          <Tooltip label={dict.actionCallTooltip} defaultOpen orientation="bottom-left" closable closeLabel={dict.close}>
+          <Tooltip
+            label={dict.actionCallTooltip}
+            defaultOpen
+            orientation="bottom-left"
+            closable
+            closeLabel={dict.close}
+          >
             <ActionButton
               href={`tel:+${phone.e164}`}
               ariaLabel={dict.actionCall}
@@ -47,9 +60,67 @@ function PhoneRow({ phone, dict }: { phone: Phone; dict: ReturnType<typeof getDi
   );
 }
 
-export function GuardianContact({ guardian, locale }: GuardianContactProps) {
-  const dict = getDictionary(locale);
+function GuardianBlock({
+  guardian,
+  dict,
+  isPrimary,
+}: {
+  guardian: Guardian;
+  dict: ReturnType<typeof getDictionary>;
+  isPrimary: boolean;
+}) {
   const hasSocial = Object.values(guardian.social).some((v) => v?.trim());
+
+  return (
+    <div className="space-y-5">
+      {/* Name — info only */}
+      <div>
+        <dt className="text-xs font-medium text-muted">{dict.name}</dt>
+        <dd className="mt-0.5 text-base font-semibold text-ink">
+          {guardian.name}
+        </dd>
+      </div>
+
+      {/* Email — optional */}
+      {guardian.email && (
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <dt className="text-xs font-medium text-muted">{dict.email}</dt>
+            <dd className="mt-0.5 truncate text-base font-semibold text-ink">
+              {guardian.email}
+            </dd>
+          </div>
+          <ActionButton
+            href={`mailto:${guardian.email}`}
+            ariaLabel={dict.actionEmail}
+            variant="outline"
+          >
+            <MailIcon className="h-[18px] w-[18px]" />
+          </ActionButton>
+        </div>
+      )}
+
+      {/* Phones */}
+      {guardian.phones.map((phone) => (
+        <PhoneRow key={phone.e164} phone={phone} dict={dict} />
+      ))}
+
+      {/* Social — only show for primary to avoid clutter */}
+      {isPrimary && hasSocial && (
+        <div className="border-t border-black/10 pt-4">
+          <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
+          <SocialLinks social={guardian.social} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function GuardianContact({ guardians, locale }: GuardianContactProps) {
+  const dict = getDictionary(locale);
+  if (guardians.length === 0) return null;
+
+  const [primary, ...others] = guardians;
 
   return (
     <section
@@ -58,53 +129,28 @@ export function GuardianContact({ guardian, locale }: GuardianContactProps) {
     >
       <header
         id="guardian-contact-heading"
-        className="h-16 py-4 mx-2 border-b border-black/10 pb-3 flex items-center"
+        className="mx-2 flex h-16 items-center border-b border-black/10 py-4 pb-3"
       >
-        <h2 className="text-lg pl-2 font-bold tracking-tight text-ink">
+        <h2 className="pl-2 text-lg font-bold tracking-tight text-ink">
           {dict.guardianContact}
         </h2>
       </header>
 
-      <dl className="px-4 py-5 space-y-5">
-        {/* Name — info only */}
-        <div>
-          <dt className="text-xs font-medium text-muted">{dict.name}</dt>
-          <dd className="mt-0.5 text-base font-semibold text-ink">
-            {guardian.name}
-          </dd>
-        </div>
+      <dl className="space-y-6 px-4 py-5">
+        <GuardianBlock guardian={primary} dict={dict} isPrimary />
 
-        {/* Email — optional */}
-        {guardian.email && (
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <dt className="text-xs font-medium text-muted">{dict.email}</dt>
-              <dd className="mt-0.5 truncate text-base font-semibold text-ink">
-                {guardian.email}
-              </dd>
-            </div>
-            <ActionButton
-              href={`mailto:${guardian.email}`}
-              ariaLabel={dict.actionEmail}
-              variant="outline"
-            >
-              <MailIcon className="h-[18px] w-[18px]" />
-            </ActionButton>
+        {others.map((g, i) => (
+          <div
+            key={`${g.email ?? g.name}-${i}`}
+            className="border-t border-black/10 pt-5"
+          >
+            <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">
+              {dict.guardianOther}
+            </p>
+            <GuardianBlock guardian={g} dict={dict} isPrimary={false} />
           </div>
-        )}
-
-        {/* Phones */}
-        {guardian.phones.map((phone) => (
-          <PhoneRow key={phone.e164} phone={phone} dict={dict} />
         ))}
       </dl>
-
-      {hasSocial && (
-        <div className="py-4 px-2 mx-2 border-t border-black/10 pt-4">
-          <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
-          <SocialLinks social={guardian.social} />
-        </div>
-      )}
     </section>
   );
 }

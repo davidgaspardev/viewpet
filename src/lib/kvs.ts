@@ -2,15 +2,12 @@
  * Backward-compatible facade for KVS operations.
  *
  * This file maintains the original public API while delegating to the
- * appropriate KVS provider (Redis, Memory, etc.) via the factory pattern.
+ * configured database provider (MongoDB in production, Local JSON in dev/test).
  *
  * Three states are exposed via `getPetEntry`:
  *   - "missing": key not registered                  (→ 404)
- *   - "empty"  : key registered with a `null` value  (→ render form)
- *   - "filled" : key registered with full PetPublicProfile data   (→ render profile)
- *
- * The public surface remains identical to the original implementation,
- * maintaining backward compatibility with existing code.
+ *   - "empty"  : key registered with no data yet     (→ render form)
+ *   - "filled" : key registered with full data       (→ render profile)
  */
 
 import type { PetPublicProfile, PetEntry } from "@/types/pet";

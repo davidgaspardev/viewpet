@@ -8,7 +8,6 @@
  *
  * Respects DATABASE_PROVIDER env var (default: local).
  *   local   → writes to data/local.db.json (persists across runs)
- *   redis   → requires REDIS_URL
  *   mongodb → requires MONGODB_URI
  */
 

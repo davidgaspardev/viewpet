@@ -10,7 +10,7 @@ import { Logo } from "@/ui/Logo";
 
 import { PetForm } from "@/features/pet-profile/components/PetForm";
 
-// Force dynamic rendering since we're using Redis
+// Force dynamic rendering — every page render hits the database
 export const dynamic = "force-dynamic";
 
 type Params = { id: string };
@@ -61,7 +61,7 @@ export default async function ViewPetPage(props: PageProps) {
       <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} />
 
       <div className="px-4 pt-8">
-        <GuardianContact guardian={pet.guardian} locale={locale} />
+        <GuardianContact guardians={pet.guardians} locale={locale} />
       </div>
 
       <div className="mt-auto flex justify-center py-14 text-muted/30">

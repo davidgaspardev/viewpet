@@ -94,12 +94,14 @@ export async function submitPet(
     pictureUrl,
     birthdate: parsed.toISOString(),
     status: "active",
-    guardian: {
-      name: guardianName,
-      ...(guardianEmail ? { email: guardianEmail } : {}),
-      phones: [phone],
-      social: readSocial(form),
-    },
+    guardians: [
+      {
+        name: guardianName,
+        ...(guardianEmail ? { email: guardianEmail } : {}),
+        phones: [phone],
+        social: readSocial(form),
+      },
+    ],
   };
 
   await setPet(hashId, pet);

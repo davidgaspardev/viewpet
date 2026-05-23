@@ -1,110 +1,97 @@
 # View Pet
 
-MVP de uma página web dinâmica que renderiza as informações de um pet a partir de um `hashId` na URL:
+MVP de uma página web pública que renderiza as informações de um pet a partir de um `hashId` na URL:
 
 ```
 https://<domain>/view/<hashId>
 ```
 
-O `hashId` é a chave usada para buscar o registro do pet no **banco de dados**. A aplicação suporta múltiplos provedores via variável de ambiente `DATABASE_PROVIDER`.
+O `hashId` é a chave usada pra buscar o registro do pet no banco de dados. A página é o destino do QR Code impresso na plaquinha do pet — sem login, leitura pública, otimizada pra ser aberta por um estranho que encontrou o animal.
 
 ## Stack
 
 - [Next.js 15](https://nextjs.org/) (App Router, React 19)
 - [Bun.js](https://bun.sh/) (runtime + package manager + script runner)
-- TypeScript
-- Tailwind CSS
-- i18n próprio (PT-BR e EN)
-- [nanoid](https://github.com/ai/nanoid) para geração de hashIds opacos
+- TypeScript + Tailwind CSS
+- MongoDB (produção), filesystem JSON (dev/test)
+- S3 (produção) ou filesystem (dev) pra armazenamento de imagens
+- i18n próprio (PT-BR e EN-US)
+- [nanoid](https://github.com/ai/nanoid) pra geração de hashIds opacos
 
 ## Rodando localmente
 
-### 1. Instalar dependências
-
 ```bash
+# 1. Dependências
 bun install
-```
 
-### 2. Iniciar banco de dados
+# 2. (Opcional) Sobe MongoDB local — só precisa se for usar provider mongodb
+docker-compose up -d mongodb
 
-```bash
-# MongoDB (recomendado para dev local)
-docker run -d --name viewpet-mongo -p 27017:27017 mongo:7
-
-# Redis
-docker run -d --name viewpet-redis -p 6379:6379 redis:7-alpine
-
-# Ou sem banco — provider local grava em data/local.db.json
-DATABASE_PROVIDER=local bun dev
-```
-
-### 3. Popular banco de dados
-
-```bash
+# 3. Popula dados de exemplo
 bun run seed
-```
 
-### 4. Rodar aplicação
-
-```bash
+# 4. Dev server
 bun dev
 ```
 
 App sobe em <http://localhost:3000>.
 
+Por padrão o provider é `local` (arquivo `data/local.db.json`), então o passo 2 é opcional pra desenvolvimento. Pra usar MongoDB:
+
+```bash
+DATABASE_PROVIDER=mongodb bun dev
+```
+
 ### Comandos disponíveis
 
 | Comando | Descrição |
 |---------|-----------|
-| `bun dev` | Inicia servidor de desenvolvimento |
+| `bun dev` | Servidor de desenvolvimento |
 | `bun run build` | Build de produção |
-| `bun start` | Inicia servidor de produção |
-| `bun run lint` | Lint do código |
-| `bun run typecheck` | Checagem de tipos TypeScript |
-| `bun test` | Roda todos os testes |
-| `bun run seed` | Popula o banco com dados de `src/data/pets.json` |
+| `bun start` | Servidor de produção |
+| `bun run lint` | Lint |
+| `bun run typecheck` | `tsc --noEmit` |
+| `bun test` | Roda os testes |
+| `bun run seed` | Popula o banco com `src/data/pets.json` |
+| `bun run seed --reset` | Limpa e re-popula (apenas provider `local`) |
 | `bun run reserve` | Reserva 1 hashId vazio |
 | `bun run reserve --count N` | Reserva N hashIds vazios |
 
 ## Formato do `hashId`
 
-O `hashId` é **opaco**: não carrega nome, slug ou qualquer informação derivada do pet. Isso é proposital — o QR Code é impresso uma única vez e fica colado na coleira/plaquinha do pet por anos. Qualquer mudança de nome ou de tutor não pode invalidar a URL.
-
-Especificação:
+Opaco: não carrega nome, slug ou qualquer informação derivada do pet. Isso é proposital — o QR Code é impresso uma única vez e fica colado na plaquinha por anos. Trocar o nome do pet, o tutor, qualquer coisa, não pode invalidar a URL.
 
 - **Comprimento:** 12 caracteres
-- **Alfabeto (32 chars, URL-safe e sem ambiguidade visual):** `23456789abcdefghjkmnpqrstuvwxyz`
-  - Sem `0/O`, `1/l/I`, e sem vogais (evita formar palavras indesejadas).
-- **Entropia:** 12 × 5 bits = **60 bits** (~10¹⁸ IDs possíveis).
+- **Alfabeto (32 chars, URL-safe e sem ambiguidade visual):** `23456789abcdefghjkmnpqrstuvwxyz` (sem `0/O`, `1/l/I`, sem vogais pra evitar palavras)
+- **Entropia:** 12 × 5 bits = **60 bits** (~10¹⁸ IDs possíveis)
 
-A geração e validação ficam em `src/lib/ids.ts` (`generateHashId()`, `isHashId()`).
+Implementação em `src/lib/utils/ids.ts` (`generateHashId()`, `isHashId()`).
 
 ## Fluxo de reserva (QR Code estático)
 
-O QR Code é impresso **antes** do cliente preencher os dados do pet. O fluxo é:
+O QR Code é impresso **antes** do tutor cadastrar o pet.
 
-1. **Reservar** um lote de hashIds com `bun run reserve --count N`. Cada ID é inserido com estado `empty` (sentinela: "chave existe, dados ainda não").
-2. **Imprimir** o QR Code apontando para `https://<domain>/view/<hashId>` (um `hashId` por plaquinha).
-3. **Cliente acessa a URL** e a página detecta o estado `empty` → renderiza o formulário (`PetForm`) para o cliente preencher pet + tutor + redes sociais.
-4. **Submit** dispara um Server Action (`actions.ts`) que grava no banco via `setPet` e chama `revalidatePath`. A página recarrega já com o perfil completo.
+1. **Reserva** um lote: `bun run reserve --count N`. Cada ID entra no banco com status `reserved`.
+2. **Imprime** o QR apontando pra `https://<domain>/view/<hashId>`, um ID por plaquinha.
+3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
+4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
 
-Pipeline típico para gerar QR Codes a partir do reserve:
+Pipeline típico:
 
 ```bash
 bun run reserve --count 100 > qr-batch.txt
-# qr-batch.txt agora tem 100 hashIds, um por linha,
-# prontos para virar URLs e serem renderizados em QR Codes.
+# qr-batch.txt → 100 hashIds, um por linha, prontos pra virar QR Codes
 ```
 
-## Estados do KVS
+## Estados do banco
 
-`src/lib/kvs.ts` expõe `getPetEntry(hashId)` que retorna uma **discriminated union** com três estados:
+`src/lib/kvs.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
 
-| Estado    | Quando                                     | Comportamento da página             |
-| --------- | ------------------------------------------ | ----------------------------------- |
-| `missing` | Nenhum registro encontrado para o hashId   | `notFound()` → `not-found.tsx`      |
-| `empty`   | Registro reservado, sem dados de pet       | Renderiza `PetForm`                 |
-| `filled`  | Registro com `PetPublicProfile` completo   | Renderiza o perfil público do pet   |
+| Estado    | Quando                                            | Comportamento da página         |
+| --------- | ------------------------------------------------- | ------------------------------- |
+| `missing` | Nenhum registro para o hashId                     | `notFound()` → `not-found.tsx`  |
+| `empty`   | Registro reservado, sem dados                     | Renderiza `PetForm`             |
+| `filled`  | Registro com `PetPublicProfile` completo          | Renderiza o perfil público      |
 
 ## Schema de dados
 
@@ -115,9 +102,9 @@ type PhoneChannel = "call" | "whatsapp" | "sms";
 type PetStatus    = "active" | "lost";
 
 interface Phone {
-  e164:      string;           // digits-only E.164, sem "+" (ex.: "5548985596882")
-  display?:  string;           // como o tutor digitou (ex.: "(48) 98559-6882")
-  channels:  PhoneChannel[];   // canais disponíveis neste número
+  e164:     string;         // digits-only E.164, sem "+" (ex.: "5548985596882")
+  display?: string;         // como o tutor digitou (ex.: "(48) 98559-6882")
+  channels: PhoneChannel[];
 }
 
 interface Guardian {
@@ -127,131 +114,138 @@ interface Guardian {
   social: Partial<Record<"instagram" | "facebook" | "x" | "tiktok", string>>;
 }
 
+interface LostInfo {
+  since:             string;    // ISO-8601
+  lastSeenLocation?: string;
+  lastSeenAt?:       string;    // ISO-8601
+  alerts?:           string[];  // máx. 3
+}
+
 interface PetPublicProfile {
   name:       string;
   pictureUrl: string;
-  birthdate:  string;     // ISO-8601
+  birthdate:  string;        // ISO-8601
   status:     PetStatus;
-  lostInfo?:  LostInfo;  // só presente quando status === "lost"
-  guardian:   Guardian;
+  lostInfo?:  LostInfo;      // só presente quando status === "lost"
+  guardians:  Guardian[];    // ordem importa — [0] é o tutor principal
 }
 ```
 
-### Provedores de banco de dados
+`guardians` é um array porque pet costuma ser de uma família. O índice `0` é o tutor principal (convenção — não tem flag); a página pública dá destaque pra ele e lista os demais como contatos secundários.
 
-Selecione o provedor via `DATABASE_PROVIDER`:
+### Provedores
+
+Selecione via `DATABASE_PROVIDER`:
 
 ```bash
-DATABASE_PROVIDER=local    # padrão — grava em data/local.db.json
-DATABASE_PROVIDER=redis    # Redis (produção)
-DATABASE_PROVIDER=mongodb  # MongoDB (produção)
+DATABASE_PROVIDER=local    # padrão — arquivo data/local.db.json
+DATABASE_PROVIDER=mongodb  # produção
 ```
 
 ---
 
-### Local (filesystem)
+#### Local (filesystem)
 
-Arquivo: `data/local.db.json`
+Arquivo: `data/local.db.json`. Formato flat — mesma estrutura do mock `src/data/pets.json`:
 
 ```json
 {
-  "abc123":      null,
-  "nuxw4d83wraa": { "name": "Lupe", "pictureUrl": "...", "status": "active", "guardian": { ... } }
-}
-```
-
-- `null` → slot reservado (`empty`)
-- Objeto → perfil completo (`filled`)
-
----
-
-### Redis
-
-**Padrão de chaves:** `pet:{hashId}`
-
-| Valor da chave         | Estado   |
-|------------------------|----------|
-| Chave inexistente      | `missing`|
-| `"null"` (string)      | `empty`  |
-| JSON do `PetPublicProfile` | `filled` |
-
-```bash
-# Reservar slot
-SET pet:abc123 "null"
-
-# Salvar perfil completo
-SET pet:nuxw4d83wraa '{"name":"Lupe","pictureUrl":"...","status":"active","guardian":{...}}'
-```
-
-**Configuração:**
-```bash
-REDIS_URL=redis://localhost:6379
-```
-
-**Providers recomendados:** [Upstash](https://upstash.com/), [Redis Cloud](https://redis.com/), [Railway](https://railway.app/)
-
----
-
-### MongoDB
-
-**Collection:** `pets`  
-**Campo discriminador:** `status`
-
-| Documento                                      | Estado   |
-|------------------------------------------------|----------|
-| Nenhum documento com `_id = hashId`            | `missing`|
-| `{ _id: hashId, status: "reserved" }`          | `empty`  |
-| `{ _id: hashId, status: "active", name, ... }` | `filled` |
-| `{ _id: hashId, status: "lost", name, ... }`   | `filled` |
-
-```js
-// Slot reservado
-{ _id: "abc123", status: "reserved" }
-
-// Perfil ativo
-{
-  _id:        "nuxw4d83wraa",
-  status:     "active",
-  name:       "Lupe",
-  pictureUrl: "https://...",
-  birthdate:  "2018-04-21T18:21:09.372Z",
-  guardian: {
-    name:   "David Corrêa Gaspar",
-    email:  "david@example.com",
-    phones: [{ e164: "5548984596882", display: "(48) 984596882", channels: ["call", "whatsapp"] }],
-    social: { instagram: "davidgaspar.dev" }
+  "abc123": null,
+  "nuxw4d83wraa": {
+    "name": "Lupe",
+    "pictureUrl": "...",
+    "birthdate": "2018-04-21T18:21:09.372Z",
+    "status": "active",
+    "guardians": [
+      {
+        "name": "David Corrêa Gaspar",
+        "email": "david@example.com",
+        "phones": [{ "e164": "5548984596882", "channels": ["call", "whatsapp"] }],
+        "social": { "instagram": "davidgaspar.dev" }
+      }
+    ]
   }
 }
+```
 
-// Perfil perdido (futuro)
-{
-  _id:      "nuxw4d83wraa",
-  status:   "lost",
-  ...
-  lostInfo: { since: "2025-05-16T10:00:00.000Z", lastSeenLocation: "Praia da Joaquina" }
-}
+- `null` → slot reservado (estado `empty`)
+- Objeto → `PetPublicProfile` completo (estado `filled`)
+
+Sem separação por collection — o local é só pra dev e teste, então deixa o JSON legível e o seed simétrico ao banco. A separação tutor/pet é problema do Mongo (ver abaixo).
+
+---
+
+#### MongoDB
+
+Duas collections, referência por `ObjectId`. O Pet aponta pros guardiões via `guardianIds: ObjectId[]` (ordenado: índice 0 = principal). Tutores são deduplicados por email, então um casal com dois pets compartilha um único documento em `guardians` — atualizar telefone é um só write.
+
+**`pets`**
+
+| Campo         | Tipo                              | Notas                                                            |
+| ------------- | --------------------------------- | ---------------------------------------------------------------- |
+| `_id`         | `string`                          | O próprio `hashId` (12 chars). Chave primária natural.           |
+| `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. `reserved` mapeia pra estado `empty` no facade.   |
+| `name`        | `string`                          | Ausente quando `status === "reserved"`.                          |
+| `pictureUrl`  | `string`                          | Ausente quando `status === "reserved"`.                          |
+| `birthdate`   | `string` (ISO-8601)               | Ausente quando `status === "reserved"`.                          |
+| `guardianIds` | `ObjectId[]`                      | Ordem encoda prioridade — `[0]` é o principal.                   |
+| `lostInfo`    | `LostInfo` (opcional)             | Só presente quando `status === "lost"`.                          |
+| `createdAt`   | `Date`                            | Auto-gerenciado pelo provider.                                   |
+| `updatedAt`   | `Date`                            | Auto-gerenciado pelo provider.                                   |
+
+**`guardians`**
+
+| Campo       | Tipo                              | Notas                                                              |
+| ----------- | --------------------------------- | ------------------------------------------------------------------ |
+| `_id`       | `ObjectId`                        |                                                                    |
+| `name`      | `string`                          |                                                                    |
+| `email`     | `string` (opcional)               | Unique index (`partialFilterExpression` p/ ignorar nulos).         |
+| `phones`    | `Phone[]`                         |                                                                    |
+| `social`    | `Partial<Record<SocialPlatform, string>>` |                                                            |
+| `createdAt` | `Date`                            |                                                                    |
+| `updatedAt` | `Date`                            |                                                                    |
+
+**Índices** (criados automaticamente na primeira conexão):
+
+```js
+db.guardians.createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
+db.pets.createIndex({ guardianIds: 1 });   // "meus pets" no app nativo
+db.pets.createIndex({ status: 1 });        // futuras queries de perdidos
+```
+
+**Leitura da página pública** — um `$lookup` por hashId, com a ordem dos guardiões preservada via `guardianIds`:
+
+```js
+db.pets.aggregate([
+  { $match: { _id: hashId } },
+  { $lookup: {
+      from: "guardians",
+      localField: "guardianIds",
+      foreignField: "_id",
+      as: "guardians",
+  }},
+]);
 ```
 
 **Configuração:**
+
 ```bash
 MONGODB_URI=mongodb://localhost:27017/viewpet
 ```
 
-**Providers recomendados:** [MongoDB Atlas](https://www.mongodb.com/atlas), [Railway](https://railway.app/)
-
----
+**Providers recomendados:** [MongoDB Atlas](https://www.mongodb.com/atlas), [Railway](https://railway.app/).
 
 ## URLs de exemplo
 
-O seed (`src/data/pets.json`) inclui:
+O seed (`src/data/pets.json`) inclui pets ativos e slots vazios:
 
 | HashId         | Estado   | Pet   |
 | -------------- | -------- | ----- |
 | `nuxw4d83wraa` | `filled` | Lupe  |
 | `n7k8w3zwe49w` | `filled` | Mel   |
 | `egqr8k6at59j` | `filled` | Thor  |
-| `ujvb9gd7afsx` | `filled` | Bob   |
-| `8p6qt38gj7be` | `filled` | Luna  |
+| `vcjv2sx3s5bd` | `filled` | Scooby |
+| `6pb46abtj58e` | `filled` | Mel   |
 
 Exemplos:
 
@@ -260,77 +254,73 @@ Exemplos:
 
 ## Idioma
 
-O idioma é resolvido na seguinte ordem:
+Resolução em três níveis:
 
-1. Parâmetro de query `?lang=pt` ou `?lang=en`
+1. `?lang=pt` ou `?lang=en` na query
 2. Header `Accept-Language` do navegador
-3. Fallback para `pt-BR`
+3. Fallback pra `pt-BR`
 
 Exemplo: <http://localhost:3000/view/nuxw4d83wraa?lang=en>
 
-> O módulo de i18n é dividido em dois: `src/lib/i18n.ts` (dicionário puro, seguro em Client Components) e `src/lib/i18n.server.ts` (resolução de locale via `next/headers`, server-only).
+`src/lib/i18n.ts` carrega o dicionário (seguro em Client Components); `src/lib/i18n.server.ts` resolve o locale via `next/headers` (server-only).
 
 ## Estrutura de pastas
 
 ```
 scripts/
-├── reserve.ts            # CLI: bun run reserve [--count N]
-└── seed.ts               # CLI: bun run seed
+├── reserve.ts                # CLI: bun run reserve [--count N]
+└── seed.ts                   # CLI: bun run seed [--reset]
 
 src/
 ├── app/
-│   ├── layout.tsx            # layout raiz + fontes + globals
-│   ├── page.tsx              # landing: carousel 3D + marketing
-│   ├── globals.css           # tailwind base/components/utilities
-│   └── view/
-│       └── [id]/
-│           ├── page.tsx          # branch missing/empty/filled
-│           ├── PetForm.tsx       # formulário (Client) para estado empty
-│           ├── actions.ts        # Server Action de submit
-│           └── not-found.tsx     # fallback de hashId inexistente
-├── components/
-│   ├── ActionButton.tsx      # botão de ação circular (tel/email/whatsapp/social)
-│   ├── GuardianContact.tsx   # card de contato do tutor
-│   ├── Logo.tsx              # SVG inline (dog + cat)
-│   ├── PetHero.tsx           # foto, logo, badge de idade e pílula do nome
-│   ├── SocialLinks.tsx       # ícones das redes sociais
-│   └── icons.tsx             # PhoneIcon, MailIcon, WhatsAppIcon
-├── data/
-│   └── pets.json             # dados de seed
+│   ├── layout.tsx                # layout raiz + fontes + globals
+│   ├── page.tsx                  # landing
+│   ├── globals.css               # tailwind base/components/utilities
+│   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
+│   └── view/[id]/
+│       ├── page.tsx              # branch missing/empty/filled
+│       ├── actions.ts            # Server Action do submit
+│       ├── ImageUpload.tsx       # input de foto (com câmera)
+│       ├── PetForm.tsx           # formulário pra estado empty
+│       └── not-found.tsx         # fallback 404
 ├── features/
-│   └── pet-tag/              # carousel 3D da plaquinha (Three.js / R3F)
+│   ├── pet-profile/components/   # PetHero, GuardianContact, SocialLinks, ActionButton, ImageUpload, PetForm
+│   └── pet-tag/                  # carousel 3D da plaquinha (Three.js / R3F)
+├── ui/                           # primitives compartilhadas: Logo, Card, Tooltip, StickyHeader, icons
 ├── lib/
-│   ├── age.ts                # cálculo dinâmico de idade
-│   ├── blobs.ts              # camada de abstração de storage de imagens
 │   ├── database/
-│   │   ├── index.ts          # factory getDatabaseProvider()
-│   │   ├── interface.ts      # IKVSProvider
-│   │   ├── local.ts          # LocalKVSProvider (filesystem JSON)
-│   │   ├── mongodb.ts        # MongoDBKVSProvider
-│   │   └── redis.ts          # RedisKVSProvider
-│   ├── i18n.ts               # dicionário PT-BR / EN-US (client-safe)
-│   ├── i18n.server.ts        # resolveLocale (server-only)
-│   ├── ids.ts                # generateHashId, isHashId
-│   ├── kvs.ts                # facade sobre getDatabaseProvider()
-│   └── storage/              # LocalStorageProvider / S3StorageProvider
+│   │   ├── index.ts              # factory getDatabaseProvider()
+│   │   ├── interface.ts          # IKVSProvider
+│   │   ├── local.ts              # LocalKVSProvider (filesystem JSON)
+│   │   └── mongodb.ts            # MongoDBKVSProvider (duas collections)
+│   ├── storage/                  # LocalStorageProvider / S3StorageProvider
+│   ├── utils/
+│   │   ├── age.ts                # cálculo dinâmico de idade
+│   │   └── ids.ts                # generateHashId, isHashId
+│   ├── blobs.ts                  # facade do storage (S3 ou local)
+│   ├── i18n.ts                   # dicionário PT-BR / EN-US (client-safe)
+│   ├── i18n.server.ts            # resolveLocale (server-only)
+│   └── kvs.ts                    # facade sobre getDatabaseProvider()
+├── data/
+│   └── pets.json                 # dados de seed
 └── types/
-    └── pet.ts                # PetPublicProfile, Guardian, Phone, LostInfo, …
+    └── pet.ts                    # PetPublicProfile, Guardian, Phone, LostInfo, ...
 ```
 
-## Armazenamento de Imagens
+## Armazenamento de imagens
 
-A aplicação usa uma **camada de abstração** para armazenamento de imagens:
+Camada de abstração em `src/lib/storage/`:
 
-| Provedor | Uso | URL das imagens |
-|----------|-----|----------------|
-| **Local** | Desenvolvimento | `/uploads/abc123.jpg` |
-| **S3** | Produção | `https://bucket.s3.region.amazonaws.com/uploads/abc123.jpg` |
+| Provedor | Uso             | URL das imagens                                              |
+| -------- | --------------- | ------------------------------------------------------------ |
+| `local`  | Desenvolvimento | `/uploads/abc123.jpg` (gravado em `public/uploads/`)         |
+| `s3`     | Produção        | `https://bucket.s3.region.amazonaws.com/uploads/abc123.jpg` |
 
 ```bash
-STORAGE_PROVIDER=local  # padrão — salva em public/uploads/
-STORAGE_PROVIDER=s3     # Amazon S3
+STORAGE_PROVIDER=local   # padrão
+STORAGE_PROVIDER=s3      # produção
 
-# S3
+# Quando STORAGE_PROVIDER=s3
 AWS_REGION=us-east-1
 AWS_S3_BUCKET=viewpet-images-prod
 AWS_ACCESS_KEY_ID=AKIA...

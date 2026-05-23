@@ -20,12 +20,20 @@ function makePet(overrides: Partial<PetPublicProfile> = {}): PetPublicProfile {
     pictureUrl: "https://example.com/pet.jpg",
     birthdate: "2020-01-01T00:00:00.000Z",
     status: "active",
-    guardian: {
-      name: "Test Guardian",
-      email: "guardian@example.com",
-      phones: [{ e164: "5511999999999", display: "(11) 99999-9999", channels: ["call", "whatsapp"] }],
-      social: {},
-    },
+    guardians: [
+      {
+        name: "Test Guardian",
+        email: "guardian@example.com",
+        phones: [
+          {
+            e164: "5511999999999",
+            display: "(11) 99999-9999",
+            channels: ["call", "whatsapp"],
+          },
+        ],
+        social: {},
+      },
+    ],
     ...overrides,
   };
 }
@@ -73,7 +81,7 @@ describe("MongoDBKVSProvider", () => {
       if (entry.status === "filled") {
         expect(entry.pet.name).toBe("Lupe");
         expect(entry.pet.status).toBe("active");
-        expect(entry.pet.guardian.name).toBe("Test Guardian");
+        expect(entry.pet.guardians[0]?.name).toBe("Test Guardian");
       }
     });
   });
