@@ -7,14 +7,14 @@ import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:tes
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { MongoClient } from "mongodb";
 import { MongoPetRepository, resetMongoClient } from "../repository/mongodb";
-import type { PetPublicProfile } from "@/types/pet";
+import type { Pet } from "@/types/pet";
 
 let mongod: MongoMemoryServer;
 let cleanupClient: MongoClient;
 
-const COLLECTION = "pets";
+const COLLECTIONS = ["pets", "guardians", "lostEvents"] as const;
 
-function makePet(overrides: Partial<PetPublicProfile> = {}): PetPublicProfile {
+function makePet(overrides: Partial<Pet> = {}): Pet {
   return {
     name: "Test Pet",
     pictureUrl: "https://example.com/pet.jpg",
@@ -52,8 +52,11 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  // Drop collection and reset singleton so each test starts fresh
-  await cleanupClient.db("viewpet").collection(COLLECTION).drop().catch(() => {});
+  // Drop collections and reset singleton so each test starts fresh
+  const db = cleanupClient.db("viewpet");
+  for (const name of COLLECTIONS) {
+    await db.collection(name).drop().catch(() => {});
+  }
   resetMongoClient();
 });
 
@@ -117,7 +120,7 @@ describe("MongoPetRepository", () => {
       await provider.reservePetId("check1");
       const raw = await cleanupClient
         .db("viewpet")
-        .collection<{ _id: string; status: string }>(COLLECTION)
+        .collection<{ _id: string; status: string }>("pets")
         .findOne({ _id: "check1" } as never);
       expect(raw?.status).toBe("reserved");
     });
@@ -127,7 +130,7 @@ describe("MongoPetRepository", () => {
       await provider.setPet("filled1", makePet({ status: "active" }));
       const raw = await cleanupClient
         .db("viewpet")
-        .collection<{ _id: string; status: string }>(COLLECTION)
+        .collection<{ _id: string; status: string }>("pets")
         .findOne({ _id: "filled1" } as never);
       expect(raw?.status).toBe("active");
     });
@@ -246,21 +249,128 @@ describe("MongoPetRepository", () => {
       expect(orphanCount).toBe(0);
     });
 
-    test("lostInfo is unset when pet is updated without it", async () => {
-      const provider = new MongoPetRepository();
-      const withLost = makePet({
-        status: "lost",
-        lostInfo: { since: "2026-01-01T00:00:00.000Z", lastSeenLocation: "Parque" },
-      });
-      await provider.setPet("lost1", withLost);
+  });
 
-      await provider.setPet("lost1", makePet({ status: "active" }));
+  describe("lost event lifecycle", () => {
+    test("opens an event when a pet transitions to lost and exposes it via pet.lostEvent", async () => {
+      const provider = new MongoPetRepository();
+      const startedAt = "2026-01-01T00:00:00.000Z";
+      await provider.setPet(
+        "lost1",
+        makePet({
+          status: "lost",
+          lostEvent: { startedAt, endedAt: null, lastSeenLocation: "Parque" },
+        }),
+      );
+
       const entry = await provider.getPetEntry("lost1");
       expect(entry.status).toBe("filled");
       if (entry.status === "filled") {
-        expect(entry.pet.lostInfo).toBeUndefined();
-        expect(entry.pet.status).toBe("active");
+        expect(entry.pet.status).toBe("lost");
+        expect(entry.pet.lostEvent?.startedAt).toBe(startedAt);
+        expect(entry.pet.lostEvent?.endedAt).toBeNull();
+        expect(entry.pet.lostEvent?.lastSeenLocation).toBe("Parque");
       }
+    });
+
+    test("closes the open event when the pet returns to active, preserving the doc as history", async () => {
+      const provider = new MongoPetRepository();
+      const startedAt = "2026-01-01T00:00:00.000Z";
+      await provider.setPet(
+        "lost2",
+        makePet({
+          status: "lost",
+          lostEvent: { startedAt, endedAt: null, lastSeenLocation: "Parque" },
+        }),
+      );
+
+      await provider.setPet("lost2", makePet({ status: "active" }));
+
+      // pet.lostEvent is gone because there's no longer an OPEN event...
+      const entry = await provider.getPetEntry("lost2");
+      expect(entry.status).toBe("filled");
+      if (entry.status === "filled") {
+        expect(entry.pet.status).toBe("active");
+        expect(entry.pet.lostEvent).toBeUndefined();
+      }
+
+      // ...but the doc survives in lostEvents with endedAt stamped.
+      const events = await cleanupClient
+        .db("viewpet")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .find({ petId: "lost2" })
+        .toArray();
+      expect(events).toHaveLength(1);
+      expect(events[0]?.startedAt).toBe(startedAt);
+      expect(events[0]?.endedAt).not.toBeNull();
+    });
+
+    test("updating an open event preserves startedAt and updates mutable fields", async () => {
+      const provider = new MongoPetRepository();
+      const originalStart = "2026-01-01T00:00:00.000Z";
+      await provider.setPet(
+        "lost3",
+        makePet({
+          status: "lost",
+          lostEvent: { startedAt: originalStart, endedAt: null, lastSeenLocation: "A" },
+        }),
+      );
+
+      // Re-set with a different startedAt and a new location.
+      await provider.setPet(
+        "lost3",
+        makePet({
+          status: "lost",
+          lostEvent: {
+            startedAt: "2099-12-31T00:00:00.000Z",
+            endedAt: null,
+            lastSeenLocation: "B",
+          },
+        }),
+      );
+
+      const entry = await provider.getPetEntry("lost3");
+      if (entry.status === "filled") {
+        // startedAt of an open event is never overwritten
+        expect(entry.pet.lostEvent?.startedAt).toBe(originalStart);
+        expect(entry.pet.lostEvent?.lastSeenLocation).toBe("B");
+      }
+
+      // Still exactly one event for this pet — no duplicate insert
+      const count = await cleanupClient
+        .db("viewpet")
+        .collection("lostEvents")
+        .countDocuments({ petId: "lost3" });
+      expect(count).toBe(1);
+    });
+
+    test("a pet that goes missing twice has two events, the older one resolved", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet(
+        "lost4",
+        makePet({
+          status: "lost",
+          lostEvent: { startedAt: "2025-01-01T00:00:00.000Z", endedAt: null },
+        }),
+      );
+      await provider.setPet("lost4", makePet({ status: "active" }));
+      await provider.setPet(
+        "lost4",
+        makePet({
+          status: "lost",
+          lostEvent: { startedAt: "2026-06-01T00:00:00.000Z", endedAt: null },
+        }),
+      );
+
+      const events = await cleanupClient
+        .db("viewpet")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .find({ petId: "lost4" })
+        .sort({ startedAt: 1 })
+        .toArray();
+      expect(events).toHaveLength(2);
+      expect(events[0]?.endedAt).not.toBeNull(); // first one resolved
+      expect(events[1]?.endedAt).toBeNull(); // current one still open
     });
   });
 });

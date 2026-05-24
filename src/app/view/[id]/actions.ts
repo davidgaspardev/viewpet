@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { setPet } from "@/lib/repository";
-import type { PetPublicProfile, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
+import type { Pet, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "instagram",
@@ -89,7 +89,7 @@ export async function submitPet(
     throw err;
   }
 
-  const pet: PetPublicProfile = {
+  const pet: Pet = {
     name,
     pictureUrl,
     birthdate: parsed.toISOString(),

@@ -1,4 +1,4 @@
-import type { PetRepository, Seedable, PetPublicProfile, PetEntry, PetEntrySummary } from "./interface";
+import type { PetRepository, Seedable, Pet, PetEntry, PetEntrySummary } from "./interface";
 import { LocalPetRepository } from "./local";
 import { MongoPetRepository } from "./mongodb";
 
@@ -46,7 +46,7 @@ export async function getPetEntry(hashId: string): Promise<PetEntry> {
   return getRepositoryProvider().getPetEntry(hashId);
 }
 
-export async function setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
+export async function setPet(hashId: string, pet: Pet): Promise<void> {
   return getRepositoryProvider().setPet(hashId, pet);
 }
 
@@ -65,4 +65,4 @@ export async function listPetIds(): Promise<string[]> {
 }
 
 export type { PetRepository, Seedable } from "./interface";
-export type { PetPublicProfile, PetEntry } from "./interface";
+export type { Pet, PetEntry } from "./interface";

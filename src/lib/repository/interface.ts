@@ -1,4 +1,4 @@
-import type { PetPublicProfile, PetEntry } from "@/types/pet";
+import type { Pet, PetEntry } from "@/types/pet";
 
 type PetEntrySummary = Array<{
   id: string;
@@ -9,7 +9,7 @@ type PetEntrySummary = Array<{
 /** Production interface — the three operations the request path actually needs. */
 export interface PetRepository {
   getPetEntry(hashId: string): Promise<PetEntry>;
-  setPet(hashId: string, pet: PetPublicProfile): Promise<void>;
+  setPet(hashId: string, pet: Pet): Promise<void>;
   listPetEntries(): Promise<PetEntrySummary>;
 }
 
@@ -19,4 +19,4 @@ export interface Seedable extends PetRepository {
   listPetIds(): Promise<string[]>;
 }
 
-export type { PetPublicProfile, PetEntry, PetEntrySummary };
+export type { Pet, PetEntry, PetEntrySummary };

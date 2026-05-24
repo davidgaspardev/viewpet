@@ -1,9 +1,4 @@
-import type {
-  Guardian,
-  PetPublicProfile,
-  Phone,
-  PhoneChannel,
-} from "@/types/pet";
+import type { Guardian, Pet, Phone, PhoneChannel } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 import {
@@ -15,7 +10,7 @@ import {
 
 type LostBannerProps = {
   /** Must already have status === "lost"; the parent decides when to render. */
-  pet: PetPublicProfile;
+  pet: Pet;
   locale: Locale;
 };
 

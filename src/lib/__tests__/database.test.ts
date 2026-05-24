@@ -8,7 +8,7 @@ import { rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { getRepositoryProvider, resetRepositoryProvider } from "../repository";
 import { LocalPetRepository } from "../repository/local";
-import type { PetPublicProfile, Guardian } from "@/types/pet";
+import type { Pet, Guardian } from "@/types/pet";
 
 const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
 
@@ -26,7 +26,7 @@ function makeGuardian(overrides: Partial<Guardian> = {}): Guardian {
   };
 }
 
-function makePet(overrides: Partial<PetPublicProfile> = {}): PetPublicProfile {
+function makePet(overrides: Partial<Pet> = {}): Pet {
   return {
     name: "Max",
     pictureUrl: "https://example.com/max.jpg",

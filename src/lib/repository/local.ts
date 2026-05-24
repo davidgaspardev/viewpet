@@ -4,19 +4,20 @@
  * File layout (`data/local.db.json`):
  *
  *   {
- *     "<hashId>": null,                    // reserved slot
- *     "<hashId>": { ...PetPublicProfile }, // filled
+ *     "<hashId>": null,           // reserved slot
+ *     "<hashId>": { ...Pet },     // filled (lostEvent embedded directly)
  *   }
  *
  * This matches the seed file `src/data/pets.json` 1:1 so the seed script just
- * writes pet records through verbatim. There is no two-collection split here —
- * that complexity only pays off with a real database (see mongodb.ts), and
- * adding it locally only makes the test fixtures harder to read.
+ * writes pet records through verbatim. There is no separate collection for
+ * guardians or lost events here — that complexity only pays off with a real
+ * database (see mongodb.ts), and adding it locally only makes the test
+ * fixtures harder to read.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Seedable, PetPublicProfile, PetEntry } from "./interface";
+import type { Seedable, Pet, PetEntry } from "./interface";
 import type { PetStore } from "@/types/pet";
 
 const DEFAULT_PATH = join(process.cwd(), "data", "local.db.json");
@@ -49,7 +50,7 @@ export class LocalPetRepository implements Seedable {
     return { status: "filled", pet: value };
   }
 
-  async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
+  async setPet(hashId: string, pet: Pet): Promise<void> {
     const data = this.read();
     data[hashId] = pet;
     this.write(data);
