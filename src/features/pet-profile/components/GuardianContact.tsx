@@ -126,8 +126,9 @@ export function GuardianContact({ guardians, locale }: GuardianContactProps) {
 
   return (
     <section
+      id="guardians"
       aria-labelledby="guardian-contact-heading"
-      className="rounded-xl bg-surface"
+      className="scroll-mt-4 rounded-xl bg-surface"
     >
       <header
         id="guardian-contact-heading"
