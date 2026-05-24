@@ -6,6 +6,7 @@ import { formatAge } from "@/lib/utils/age";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
+import { LostBanner } from "@/features/pet-profile/components/LostBanner";
 import { Logo } from "@/ui/Logo";
 
 import { PetForm } from "@/features/pet-profile/components/PetForm";
@@ -58,6 +59,8 @@ export default async function ViewPetPage(props: PageProps) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
+      {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
+
       <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} />
 
       <div className="px-4 pt-8">

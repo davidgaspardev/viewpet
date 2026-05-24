@@ -9,7 +9,7 @@ src/lib/
 └── repository/
     ├── interface.ts       # PetRepository + Seedable — contratos de domínio
     ├── local.ts           # LocalPetRepository (filesystem JSON)
-    ├── mongodb.ts         # MongoPetRepository (duas collections)
+    ├── mongodb.ts         # MongoPetRepository (três collections)
     └── index.ts           # factory + singleton + exports diretos
 ```
 
@@ -40,7 +40,7 @@ Os três estados:
 | --------- | ------------------------------------------------- |
 | `missing` | Nenhum registro pro hashId                        |
 | `empty`   | Registro reservado sem dados de pet               |
-| `filled`  | Registro com `PetPublicProfile` completo          |
+| `filled`  | Registro com `Pet` completo          |
 
 ## Modelo de dados
 
@@ -52,35 +52,44 @@ Flat. Um único JSON em `data/local.db.json`, mesma estrutura do mock `src/data/
 
 ```json
 {
-  "<hashId>": null,                    // slot reservado
-  "<hashId>": <PetPublicProfile>       // perfil completo (guardians embedados)
+  "<hashId>": null,             // slot reservado
+  "<hashId>": <Pet>             // perfil completo (guardians e lostEvent embedados)
 }
 ```
 
-Sem split de collection, sem dedup de tutores. É só dev/teste — manter o arquivo legível e fácil de editar à mão é mais importante que reproduzir a normalização do banco real.
+Sem split de collection, sem dedup de tutores, sem histórico de lost events. É só dev/teste — manter o arquivo legível e fácil de editar à mão é mais importante que reproduzir a normalização do banco real.
 
 ### MongoPetRepository
 
-Duas collections. Pets referenciam tutores via `guardianIds: ObjectId[]` (ordem importa — índice 0 é o principal). Tutores com email são deduplicados, então um casal com dois pets compartilha um único documento — atualizar o telefone é um único write que reflete em todos os pets.
+Três collections. Pets referenciam tutores via `guardianIds: ObjectId[]` (ordem importa — índice 0 é o principal). Tutores com email são deduplicados, então um casal com dois pets compartilha um único documento — atualizar o telefone é um único write que reflete em todos os pets. Lost events vivem em coleção própria com `petId` apontando pro pet, e o evento "aberto" (se houver) é descoberto pelo filtro `{ petId, endedAt: null }` — eventos resolvidos ficam como histórico.
 
-Duas collections (`pets` e `guardians`) com índices criados sob demanda na primeira conexão:
+Três collections (`pets`, `guardians` e `lostEvents`) com índices criados sob demanda na primeira conexão:
 
 ```js
 db.guardians.createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
 db.pets.createIndex({ guardianIds: 1 });
 db.pets.createIndex({ status: 1 });
+db.lostEvents.createIndex({ petId: 1, endedAt: 1 });
 ```
 
-Leitura de `/view/<hashId>` é uma agregação com `$lookup` — uma round-trip pro banco:
+Leitura de `/view/<hashId>` é uma agregação com dois `$lookup` — uma round-trip pro banco:
 
 ```js
 db.pets.aggregate([
   { $match: { _id: hashId } },
   { $lookup: { from: "guardians", localField: "guardianIds", foreignField: "_id", as: "guardians" } },
+  {
+    $lookup: {
+      from: "lostEvents",
+      let: { pid: "$_id" },
+      pipeline: [{ $match: { $expr: { $and: [{ $eq: ["$petId", "$$pid"] }, { $eq: ["$endedAt", null] }] } } }],
+      as: "openLostEvents",
+    },
+  },
 ]);
 ```
 
-A ordem de `guardianIds` é preservada após o lookup (o provider reordena com base no array original).
+A ordem de `guardianIds` é preservada após o lookup (o provider reordena com base no array original). O lookup do lost event traz no máximo um documento (o aberto), exposto como `pet.lostEvent`.
 
 #### Write de pet (`setPet`)
 
@@ -90,6 +99,9 @@ A ordem de `guardianIds` é preservada após o lookup (o provider reordena com b
    - Sem email? `insertOne` — sempre cria um novo.
 3. Deleta guardian docs sem email que não estão mais referenciados pelo pet.
 4. `updateOne({ _id: hashId }, { $set: { ..., guardianIds }, $setOnInsert: { createdAt } }, { upsert: true })`.
+5. Reconcilia o lost event:
+   - `status === "lost"`: garante exatamente um evento aberto. Se já existir um (`{ petId, endedAt: null }`), atualiza só os campos mutáveis (`lastSeenLocation`, `lastSeenAt`, `alerts`) — `startedAt` nunca é sobrescrito. Senão, insere um novo.
+   - `status === "active"`: fecha qualquer evento aberto pra esse pet com `endedAt = now`. O documento fica na coleção como histórico.
 
 Sem transação: se o write do pet falhar depois dos guardiões serem upsertados, guardiões com email são idempotentes na próxima tentativa. Guardiões sem email serão limpos na próxima chamada bem-sucedida de `setPet`. Envolva em sessão/transaction se um replica set estiver disponível.
 

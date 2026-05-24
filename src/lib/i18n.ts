@@ -67,6 +67,13 @@ type Dictionary = {
   // Landing status
   statusEmpty: string;
   statusFilled: string;
+  // Lost-pet banner
+  lostBadge: string;
+  lostHeadline: (petName: string) => string;
+  lostBody: string;
+  lostCallPrimary: (guardianFirstName: string) => string;
+  lostWhatsApp: string;
+  lostOtherGuardian: string;
 };
 
 const dictionaries: Record<Locale, Dictionary> = {
@@ -121,6 +128,13 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdate: "Data de nascimento inválida.",
     statusEmpty: "vazio — pronto para cadastro",
     statusFilled: "preenchido",
+    lostBadge: "PERDIDO",
+    lostHeadline: (petName) => `${petName} está perdido`,
+    lostBody:
+      "Você o encontrou? Ligue para o tutor agora — qualquer informação ajuda.",
+    lostCallPrimary: (firstName) => `Ligar para ${firstName}`,
+    lostWhatsApp: "WhatsApp",
+    lostOtherGuardian: "Outro tutor",
   },
   "en-US": {
     guardianContact: "Guardian Contact",
@@ -172,6 +186,13 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdate: "Invalid birthdate.",
     statusEmpty: "empty — ready for setup",
     statusFilled: "filled",
+    lostBadge: "LOST",
+    lostHeadline: (petName) => `${petName} is missing`,
+    lostBody:
+      "Did you find them? Call the guardian now — any information helps.",
+    lostCallPrimary: (firstName) => `Call ${firstName}`,
+    lostWhatsApp: "WhatsApp",
+    lostOtherGuardian: "Other guardian",
   },
 };
 

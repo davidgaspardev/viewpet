@@ -1,8 +1,8 @@
 /**
  * MongoDB implementation of the repository interface.
  *
- * Two collections
- * ───────────────
+ * Three collections
+ * ─────────────────
  *   pets:
  *     {
  *       _id: hashId,                 // the opaque QR id, used as primary key
@@ -10,7 +10,6 @@
  *       // when status !== "reserved":
  *       name, pictureUrl, birthdate,
  *       guardianIds: ObjectId[],     // ordered; [0] = primary
- *       lostInfo?: { since, ... },
  *       createdAt, updatedAt,
  *     }
  *
@@ -21,10 +20,22 @@
  *       createdAt, updatedAt,
  *     }
  *
- * Reads of `/view/<hashId>` use $lookup to assemble the full PetPublicProfile
- * in a single round-trip. Guardians are dedup'd by email on write so a couple
- * with two pets shares one Guardian document — phone-number updates propagate
- * across all their pets without fan-out writes.
+ *   lostEvents:
+ *     {
+ *       _id: ObjectId,
+ *       petId: hashId,               // FK to pets._id
+ *       startedAt: ISO-8601,         // when the pet went missing
+ *       endedAt: ISO-8601 | null,    // when found; null while still open
+ *       lastSeenLocation?, lastSeenAt?, alerts?,
+ *       createdAt, updatedAt,
+ *     }
+ *
+ * Reads of `/view/<hashId>` use $lookup to assemble the full Pet in a single
+ * round-trip. Guardians are dedup'd by email on write so a couple with two pets
+ * shares one Guardian document — phone-number updates propagate across all
+ * their pets without fan-out writes. The current open lost event (if any) is
+ * looked up by `(petId, endedAt: null)` and exposed as `pet.lostEvent`. Past
+ * resolved events stay in the collection as history.
  *
  * Environment
  * ───────────
@@ -32,8 +43,8 @@
  */
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
-import type { Seedable, PetPublicProfile, PetEntry } from "./interface";
-import type { Guardian } from "@/types/pet";
+import type { Seedable, Pet, PetEntry } from "./interface";
+import type { Guardian, LostEvent } from "@/types/pet";
 
 type PetStatus = "reserved" | "active" | "lost";
 
@@ -44,7 +55,6 @@ type PetDoc = {
   pictureUrl?: string;
   birthdate?: string;
   guardianIds?: ObjectId[];
-  lostInfo?: PetPublicProfile["lostInfo"];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -57,6 +67,24 @@ type GuardianDoc = {
   social: Guardian["social"];
   createdAt: Date;
   updatedAt: Date;
+};
+
+type LostEventDoc = {
+  _id: ObjectId;
+  petId: string;
+  startedAt: string;
+  endedAt: string | null;
+  lastSeenLocation?: string;
+  lastSeenAt?: string;
+  alerts?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Collections = {
+  pets: Collection<PetDoc>;
+  guardians: Collection<GuardianDoc>;
+  lostEvents: Collection<LostEventDoc>;
 };
 
 declare global {
@@ -78,10 +106,11 @@ export function resetMongoClient(): void {
 export class MongoPetRepository implements Seedable {
   private static readonly PETS = "pets";
   private static readonly GUARDIANS = "guardians";
+  private static readonly LOST_EVENTS = "lostEvents";
 
   // ── Private infrastructure ────────────────────────────────────────────────
 
-  private async db(): Promise<{ pets: Collection<PetDoc>; guardians: Collection<GuardianDoc> }> {
+  private async db(): Promise<Collections> {
     if (!globalThis._mongoClientPromise) {
       const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
       globalThis._mongoDbName = new URL(uri).pathname.slice(1) || "viewpet";
@@ -105,6 +134,7 @@ export class MongoPetRepository implements Seedable {
     return {
       pets: database.collection<PetDoc>(MongoPetRepository.PETS),
       guardians: database.collection<GuardianDoc>(MongoPetRepository.GUARDIANS),
+      lostEvents: database.collection<LostEventDoc>(MongoPetRepository.LOST_EVENTS),
     };
   }
 
@@ -121,6 +151,22 @@ export class MongoPetRepository implements Seedable {
     await database
       .collection<PetDoc>(MongoPetRepository.PETS)
       .createIndex({ status: 1 });
+    // Compound index for the "open event for this pet" lookup. The query
+    // shape is `{ petId, endedAt: null }`, so petId leads and endedAt
+    // follows — that order makes the index usable both for the open-event
+    // probe and for "all events for this pet" history queries.
+    await database
+      .collection<LostEventDoc>(MongoPetRepository.LOST_EVENTS)
+      .createIndex({ petId: 1, endedAt: 1 });
+    // Enforce at most one open event per pet at the DB level. The partial
+    // filter restricts uniqueness to documents where endedAt is null (open),
+    // so closed events (endedAt: string) are not subject to the constraint.
+    await database
+      .collection<LostEventDoc>(MongoPetRepository.LOST_EVENTS)
+      .createIndex(
+        { petId: 1 },
+        { unique: true, partialFilterExpression: { endedAt: null } },
+      );
   }
 
   /**
@@ -163,13 +209,76 @@ export class MongoPetRepository implements Seedable {
     return insert.insertedId;
   }
 
+  /**
+   * Reconcile the lost-event lifecycle for a pet against the new desired state.
+   *
+   * - status === "lost": ensure there's exactly one open event for this pet.
+   *   Updates the existing open event's mutable fields if one is already there;
+   *   otherwise inserts a new one. `startedAt` of an open event is never
+   *   overwritten — it preserves the original moment the pet went missing.
+   * - status === "active": close any open events for this pet by stamping
+   *   `endedAt = now`. The documents stay in the collection as history.
+   */
+  private static async reconcileLostEvent(
+    lostEvents: Collection<LostEventDoc>,
+    hashId: string,
+    pet: Pet,
+    now: Date,
+  ): Promise<void> {
+    if (pet.status === "lost") {
+      const input: LostEvent = pet.lostEvent ?? {
+        startedAt: now.toISOString(),
+        endedAt: null,
+      };
+
+      const mutableFields = {
+        ...(input.lastSeenLocation !== undefined
+          ? { lastSeenLocation: input.lastSeenLocation }
+          : {}),
+        ...(input.lastSeenAt !== undefined ? { lastSeenAt: input.lastSeenAt } : {}),
+        ...(input.alerts !== undefined ? { alerts: input.alerts } : {}),
+      };
+
+      // Atomic upsert: if an open event already exists update its mutable
+      // fields; otherwise create a new one. Combined with the partial unique
+      // index on { petId } where endedAt: null this guarantees at most one
+      // open event per pet even under concurrent writes.
+      await lostEvents.updateOne(
+        { petId: hashId, endedAt: null },
+        {
+          $set: { ...mutableFields, updatedAt: now },
+          $setOnInsert: {
+            _id: new ObjectId(),
+            petId: hashId,
+            startedAt: input.startedAt,
+            endedAt: null,
+            createdAt: now,
+          },
+        },
+        { upsert: true },
+      );
+      return;
+    }
+
+    // status === "active" → close any open event (preserve history).
+    await lostEvents.updateMany(
+      { petId: hashId, endedAt: null },
+      { $set: { endedAt: now.toISOString(), updatedAt: now } },
+    );
+  }
+
   // ── IPetRepository ────────────────────────────────────────────────────────
 
   async getPetEntry(hashId: string): Promise<PetEntry> {
     const { pets } = await this.db();
 
     const docs = await pets
-      .aggregate<PetDoc & { guardians?: GuardianDoc[] }>([
+      .aggregate<
+        PetDoc & {
+          guardians?: GuardianDoc[];
+          openLostEvents?: LostEventDoc[];
+        }
+      >([
         { $match: { _id: hashId } },
         {
           $lookup: {
@@ -177,6 +286,27 @@ export class MongoPetRepository implements Seedable {
             localField: "guardianIds",
             foreignField: "_id",
             as: "guardians",
+          },
+        },
+        {
+          $lookup: {
+            from: MongoPetRepository.LOST_EVENTS,
+            let: { pid: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$petId", "$$pid"] },
+                      { $eq: ["$endedAt", null] },
+                    ],
+                  },
+                },
+              },
+              { $sort: { startedAt: -1 } },
+              { $limit: 1 },
+            ],
+            as: "openLostEvents",
           },
         },
       ])
@@ -201,19 +331,21 @@ export class MongoPetRepository implements Seedable {
       );
     }
 
-    const pet: PetPublicProfile = {
+    const openEvent = doc.openLostEvents?.[0];
+
+    const pet: Pet = {
       name: doc.name,
       pictureUrl: doc.pictureUrl,
       birthdate: doc.birthdate,
       status: doc.status,
-      ...(doc.lostInfo ? { lostInfo: doc.lostInfo } : {}),
+      ...(openEvent ? { lostEvent: lostEventDocToEntity(openEvent) } : {}),
       guardians,
     };
     return { status: "filled", pet };
   }
 
-  async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
-    const { pets, guardians } = await this.db();
+  async setPet(hashId: string, pet: Pet): Promise<void> {
+    const { pets, guardians, lostEvents } = await this.db();
     const now = new Date();
 
     // Read old guardianIds before writing so we can clean up replaced no-email
@@ -258,16 +390,18 @@ export class MongoPetRepository implements Seedable {
           pictureUrl: pet.pictureUrl,
           birthdate: pet.birthdate,
           guardianIds,
-          ...(pet.lostInfo ? { lostInfo: pet.lostInfo } : {}),
           updatedAt: now,
         },
         $setOnInsert: { createdAt: now },
-        ...(pet.lostInfo
-          ? {}
-          : ({ $unset: { lostInfo: "" } } as Record<string, unknown>)),
+        // Legacy: clear any embedded `lostInfo` field from the pre-collection
+        // schema. Safe to run unconditionally — it's a no-op when the field
+        // isn't there. Can be removed once all production docs are migrated.
+        $unset: { lostInfo: "" } as Record<string, "">,
       },
       { upsert: true },
     );
+
+    await MongoPetRepository.reconcileLostEvent(lostEvents, hashId, pet, now);
   }
 
   // ── ISeedable ─────────────────────────────────────────────────────────────
@@ -316,5 +450,15 @@ function guardianDocToProfile(doc: GuardianDoc): Guardian {
     ...(doc.email ? { email: doc.email } : {}),
     phones: doc.phones,
     social: doc.social,
+  };
+}
+
+function lostEventDocToEntity(doc: LostEventDoc): LostEvent {
+  return {
+    startedAt: doc.startedAt,
+    endedAt: doc.endedAt,
+    ...(doc.lastSeenLocation !== undefined ? { lastSeenLocation: doc.lastSeenLocation } : {}),
+    ...(doc.lastSeenAt !== undefined ? { lastSeenAt: doc.lastSeenAt } : {}),
+    ...(doc.alerts !== undefined ? { alerts: doc.alerts } : {}),
   };
 }
