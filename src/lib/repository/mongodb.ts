@@ -185,6 +185,7 @@ export class MongoPetRepository implements Seedable {
     const doc = docs[0];
     if (!doc) return { status: "missing" };
     if (doc.status === "reserved") return { status: "empty" };
+    if (doc.status !== "active" && doc.status !== "lost") return { status: "missing" };
 
     // Preserve the original order encoded in guardianIds (lookup result is unordered)
     const byId = new Map(
