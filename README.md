@@ -85,7 +85,7 @@ bun run reserve --count 100 > qr-batch.txt
 
 ## Estados do banco
 
-`src/lib/kvs.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
+`src/lib/database/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
 
 | Estado    | Quando                                            | Comportamento da página         |
 | --------- | ------------------------------------------------- | ------------------------------- |
@@ -289,18 +289,17 @@ src/
 ├── ui/                           # primitives compartilhadas: Logo, Card, Tooltip, StickyHeader, icons
 ├── lib/
 │   ├── database/
-│   │   ├── index.ts              # factory getDatabaseProvider()
-│   │   ├── interface.ts          # IKVSProvider
-│   │   ├── local.ts              # LocalKVSProvider (filesystem JSON)
-│   │   └── mongodb.ts            # MongoDBKVSProvider (duas collections)
+│   │   ├── index.ts              # factory + singleton + exports diretos
+│   │   ├── interface.ts          # IPetRepository / ISeedable
+│   │   ├── local.ts              # LocalRepository (filesystem JSON)
+│   │   └── mongodb.ts            # MongoDBRepository (duas collections)
 │   ├── storage/                  # LocalStorageProvider / S3StorageProvider
 │   ├── utils/
 │   │   ├── age.ts                # cálculo dinâmico de idade
 │   │   └── ids.ts                # generateHashId, isHashId
 │   ├── blobs.ts                  # facade do storage (S3 ou local)
 │   ├── i18n.ts                   # dicionário PT-BR / EN-US (client-safe)
-│   ├── i18n.server.ts            # resolveLocale (server-only)
-│   └── kvs.ts                    # facade sobre getDatabaseProvider()
+│   └── i18n.server.ts            # resolveLocale (server-only)
 ├── data/
 │   └── pets.json                 # dados de seed
 └── types/

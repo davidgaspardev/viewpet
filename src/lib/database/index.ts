@@ -14,7 +14,9 @@ function getRepository(): IPetRepository {
     const type = (process.env.DATABASE_PROVIDER ?? "local") as DatabaseProviderType;
     globalThis._petRepository =
       type === "mongodb" ? new MongoDBRepository() : new LocalRepository();
-    console.log(`[Database] Using ${type} provider`);
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[Database] Using ${type} provider`);
+    }
   }
   return globalThis._petRepository;
 }

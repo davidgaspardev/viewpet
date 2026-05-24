@@ -199,4 +199,68 @@ describe("MongoDBRepository", () => {
       expect(filled?.name).toBe("Buddy");
     });
   });
+
+  describe("multi-guardian behavior", () => {
+    test("preserves guardian order on round-trip", async () => {
+      const provider = new MongoDBRepository();
+      const pet = makePet({
+        guardians: [
+          { name: "Primary", email: "primary@example.com", phones: [], social: {} },
+          { name: "Secondary", email: "secondary@example.com", phones: [], social: {} },
+        ],
+      });
+      await provider.setPet("ordered1", pet);
+      const entry = await provider.getPetEntry("ordered1");
+      expect(entry.status).toBe("filled");
+      if (entry.status === "filled") {
+        expect(entry.pet.guardians[0]?.name).toBe("Primary");
+        expect(entry.pet.guardians[1]?.name).toBe("Secondary");
+      }
+    });
+
+    test("dedup by email: two pets sharing a guardian share one guardian doc", async () => {
+      const provider = new MongoDBRepository();
+      const sharedGuardian = { name: "Shared", email: "shared@example.com", phones: [], social: {} };
+      await provider.setPet("pet1", makePet({ name: "Pet One", guardians: [sharedGuardian] }));
+      await provider.setPet("pet2", makePet({ name: "Pet Two", guardians: [sharedGuardian] }));
+
+      const guardianCount = await cleanupClient
+        .db("viewpet")
+        .collection("guardians")
+        .countDocuments({ email: "shared@example.com" });
+      expect(guardianCount).toBe(1);
+    });
+
+    test("no-email guardian is cleaned up when pet is updated", async () => {
+      const provider = new MongoDBRepository();
+      const noEmail = { name: "No Email", phones: [], social: {} };
+      await provider.setPet("pet-update", makePet({ guardians: [noEmail] }));
+
+      const newGuardian = { name: "Replacement", email: "replacement@example.com", phones: [], social: {} };
+      await provider.setPet("pet-update", makePet({ guardians: [newGuardian] }));
+
+      const orphanCount = await cleanupClient
+        .db("viewpet")
+        .collection("guardians")
+        .countDocuments({ email: { $exists: false } });
+      expect(orphanCount).toBe(0);
+    });
+
+    test("lostInfo is unset when pet is updated without it", async () => {
+      const provider = new MongoDBRepository();
+      const withLost = makePet({
+        status: "lost",
+        lostInfo: { since: "2026-01-01T00:00:00.000Z", lastSeenLocation: "Parque" },
+      });
+      await provider.setPet("lost1", withLost);
+
+      await provider.setPet("lost1", makePet({ status: "active" }));
+      const entry = await provider.getPetEntry("lost1");
+      expect(entry.status).toBe("filled");
+      if (entry.status === "filled") {
+        expect(entry.pet.lostInfo).toBeUndefined();
+        expect(entry.pet.status).toBe("active");
+      }
+    });
+  });
 });

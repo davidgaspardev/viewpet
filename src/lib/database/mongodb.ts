@@ -68,7 +68,7 @@ declare global {
   // eslint-disable-next-line no-var
   var _mongoDbName: string | undefined;
   // eslint-disable-next-line no-var
-  var _mongoIndexesEnsured: boolean | undefined;
+  var _mongoIndexesPromise: Promise<void> | undefined;
 }
 
 function getClientAndDb(): { promise: Promise<MongoClient>; dbName: string } {
@@ -90,10 +90,11 @@ async function db() {
   const client = await promise;
   const database = client.db(dbName);
 
-  if (!globalThis._mongoIndexesEnsured) {
-    await ensureIndexes(database);
-    globalThis._mongoIndexesEnsured = true;
+  // Cache the promise itself so concurrent first-calls share one ensureIndexes run.
+  if (!globalThis._mongoIndexesPromise) {
+    globalThis._mongoIndexesPromise = ensureIndexes(database);
   }
+  await globalThis._mongoIndexesPromise;
 
   return {
     pets: database.collection<PetDoc>(PETS_COLLECTION),
@@ -118,7 +119,7 @@ async function ensureIndexes(database: import("mongodb").Db): Promise<void> {
 export function resetMongoClient(): void {
   globalThis._mongoClientPromise = undefined;
   globalThis._mongoDbName = undefined;
-  globalThis._mongoIndexesEnsured = undefined;
+  globalThis._mongoIndexesPromise = undefined;
 }
 
 /**
@@ -194,10 +195,16 @@ export class MongoDBRepository implements ISeedable {
       .map((id) => byId.get(id.toString()))
       .filter((g): g is Guardian => Boolean(g));
 
+    if (!doc.name || !doc.pictureUrl || !doc.birthdate) {
+      throw new Error(
+        `Pet "${hashId}" has status "${doc.status}" but is missing required fields (name/pictureUrl/birthdate).`,
+      );
+    }
+
     const pet: PetPublicProfile = {
-      name: doc.name ?? "",
-      pictureUrl: doc.pictureUrl ?? "",
-      birthdate: doc.birthdate ?? "",
+      name: doc.name,
+      pictureUrl: doc.pictureUrl,
+      birthdate: doc.birthdate,
       status: doc.status,
       ...(doc.lostInfo ? { lostInfo: doc.lostInfo } : {}),
       guardians,
@@ -209,10 +216,26 @@ export class MongoDBRepository implements ISeedable {
     const { pets, guardians } = await db();
     const now = new Date();
 
+    // Read old guardianIds before writing so we can clean up replaced no-email
+    // guardians. Email-keyed guardians are shared across pets — never delete them.
+    // NOTE: guardian upserts and the pet write are not wrapped in a transaction.
+    // If the process dies between steps, email-keyed guardians are idempotent on
+    // retry; no-email ones may accumulate until the next successful setPet cleans
+    // them up. Wrap in a session/transaction when a replica set is available.
+    const oldPetDoc = await pets.findOne({ _id: hashId }, { projection: { guardianIds: 1 } });
+    const oldGuardianIds: ObjectId[] = oldPetDoc?.guardianIds ?? [];
+
     const guardianIds: ObjectId[] = [];
     for (const guardian of pet.guardians) {
       const id = await upsertGuardian(guardians, guardian, now);
       guardianIds.push(id);
+    }
+
+    // Delete no-email guardian docs that are no longer referenced by this pet.
+    const newIdSet = new Set(guardianIds.map((id) => id.toString()));
+    const orphanIds = oldGuardianIds.filter((id) => !newIdSet.has(id.toString()));
+    if (orphanIds.length > 0) {
+      await guardians.deleteMany({ _id: { $in: orphanIds }, email: { $exists: false } });
     }
 
     await pets.updateOne(
@@ -269,7 +292,7 @@ export class MongoDBRepository implements ISeedable {
     return docs.map((doc) =>
       doc.status === "reserved"
         ? { id: doc._id, status: "empty" as const }
-        : { id: doc._id, status: "filled" as const, name: doc.name ?? "" },
+        : { id: doc._id, status: "filled" as const, ...(doc.name ? { name: doc.name } : {}) },
     );
   }
 }
