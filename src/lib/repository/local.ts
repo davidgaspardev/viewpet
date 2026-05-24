@@ -1,25 +1,42 @@
+/**
+ * Local filesystem provider — flat JSON store used in development and tests.
+ *
+ * File layout (`data/local.db.json`):
+ *
+ *   {
+ *     "<hashId>": null,                    // reserved slot
+ *     "<hashId>": { ...PetPublicProfile }, // filled
+ *   }
+ *
+ * This matches the seed file `src/data/pets.json` 1:1 so the seed script just
+ * writes pet records through verbatim. There is no two-collection split here —
+ * that complexity only pays off with a real database (see mongodb.ts), and
+ * adding it locally only makes the test fixtures harder to read.
+ */
+
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { IKVSProvider, PetPublicProfile, PetEntry } from "./interface";
+import type { Seedable, PetPublicProfile, PetEntry } from "./interface";
+import type { PetStore } from "@/types/pet";
 
 const DEFAULT_PATH = join(process.cwd(), "data", "local.db.json");
 
-export class LocalKVSProvider implements IKVSProvider {
+export class LocalPetRepository implements Seedable {
   private readonly dbPath: string;
 
   constructor(dbPath = DEFAULT_PATH) {
     this.dbPath = dbPath;
   }
 
-  private read(): Record<string, PetPublicProfile | null> {
+  private read(): PetStore {
     try {
-      return JSON.parse(readFileSync(this.dbPath, "utf8"));
+      return JSON.parse(readFileSync(this.dbPath, "utf8")) as PetStore;
     } catch {
       return {};
     }
   }
 
-  private write(data: Record<string, PetPublicProfile | null>): void {
+  private write(data: PetStore): void {
     mkdirSync(dirname(this.dbPath), { recursive: true });
     writeFileSync(this.dbPath, JSON.stringify(data, null, 2), "utf8");
   }
@@ -27,8 +44,9 @@ export class LocalKVSProvider implements IKVSProvider {
   async getPetEntry(hashId: string): Promise<PetEntry> {
     const data = this.read();
     if (!(hashId in data)) return { status: "missing" };
-    if (data[hashId] === null) return { status: "empty" };
-    return { status: "filled", pet: data[hashId] as PetPublicProfile };
+    const value = data[hashId];
+    if (value === null) return { status: "empty" };
+    return { status: "filled", pet: value };
   }
 
   async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {

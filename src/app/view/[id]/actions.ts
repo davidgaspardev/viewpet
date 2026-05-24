@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
-import { setPet } from "@/lib/kvs";
+import { setPet } from "@/lib/repository";
 import type { PetPublicProfile, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
@@ -94,12 +94,14 @@ export async function submitPet(
     pictureUrl,
     birthdate: parsed.toISOString(),
     status: "active",
-    guardian: {
-      name: guardianName,
-      ...(guardianEmail ? { email: guardianEmail } : {}),
-      phones: [phone],
-      social: readSocial(form),
-    },
+    guardians: [
+      {
+        name: guardianName,
+        ...(guardianEmail ? { email: guardianEmail } : {}),
+        phones: [phone],
+        social: readSocial(form),
+      },
+    ],
   };
 
   await setPet(hashId, pet);

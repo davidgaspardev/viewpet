@@ -18,25 +18,40 @@ export interface Guardian {
 }
 
 export interface LostInfo {
-  since: string;             // ISO-8601
+  /** ISO-8601 */
+  since: string;
   lastSeenLocation?: string;
-  lastSeenAt?: string;       // ISO-8601
-  alerts?: string[];         // max 3, validated at runtime
-}
-
-export interface PetPublicProfile {
-  name: string;
-  pictureUrl: string;
-  birthdate: string;         // ISO-8601
-  status: PetStatus;
-  lostInfo?: LostInfo;       // only populated when status === "lost"
-  guardian: Guardian;
+  /** ISO-8601 */
+  lastSeenAt?: string;
+  /** max 3, validated at runtime */
+  alerts?: string[];
 }
 
 /**
- * Raw KVS shape:
- *  - hashId not present  → key never registered (404)
- *  - hashId present, null → key reserved but no data yet (renders form)
+ * Public view of a pet, assembled by the database layer.
+ *
+ * `guardians` is an ordered array — index 0 is the primary contact. Multiple
+ * guardians model the real-world case of pets shared by couples / families.
+ * Persistence-wise, guardians live in a separate collection and are joined
+ * in by the provider on read.
+ */
+export interface PetPublicProfile {
+  name: string;
+  pictureUrl: string;
+  /** ISO-8601 */
+  birthdate: string;
+  status: PetStatus;
+  /** only populated when status === "lost" */
+  lostInfo?: LostInfo;
+  /** ordered: [0] is the primary guardian */
+  guardians: Guardian[];
+}
+
+/**
+ * Shape of the JSON seed file (`src/data/pets.json`).
+ *
+ *  - hashId not present   → key never registered (→ 404)
+ *  - hashId present, null → key reserved but no data yet (→ render form)
  *  - hashId present, PetPublicProfile → fully filled record
  */
 export type PetStore = Record<string, PetPublicProfile | null>;

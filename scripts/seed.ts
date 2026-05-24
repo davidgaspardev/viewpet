@@ -8,13 +8,12 @@
  *
  * Respects DATABASE_PROVIDER env var (default: local).
  *   local   → writes to data/local.db.json (persists across runs)
- *   redis   → requires REDIS_URL
  *   mongodb → requires MONGODB_URI
  */
 
 import { promises as fs, writeFileSync } from "node:fs";
 import path from "node:path";
-import { getDatabaseProvider } from "../src/lib/database";
+import { setPet, reservePetId, listPetIds } from "../src/lib/repository";
 import type { PetStore } from "../src/types/pet";
 
 const PETS_JSON_PATH = path.join(process.cwd(), "src/data/pets.json");
@@ -52,18 +51,16 @@ async function main(): Promise<void> {
   const petIds = Object.keys(petsData);
   console.log(`✅ Found ${petIds.length} pets to seed\n`);
 
-  const provider = getDatabaseProvider();
-
   let seededCount = 0;
   let skippedCount = 0;
 
   for (const [hashId, petData] of Object.entries(petsData)) {
     try {
       if (petData === null) {
-        await provider.reservePetId(hashId);
+        await reservePetId(hashId);
         console.log(`🔒 Reserved: ${hashId} (empty slot)`);
       } else {
-        await provider.setPet(hashId, petData);
+        await setPet(hashId, petData);
         console.log(`🐾 Seeded: ${hashId} - ${petData.name}`);
       }
       seededCount++;
@@ -82,7 +79,7 @@ async function main(): Promise<void> {
   }
   console.log("=".repeat(50) + "\n");
 
-  const ids = await provider.listPetIds();
+  const ids = await listPetIds();
   console.log(`🔍 Verification: Found ${ids.length} pet entries`);
 }
 

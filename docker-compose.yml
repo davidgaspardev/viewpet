@@ -1,28 +1,27 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: viewpet-redis
+  mongodb:
+    image: mongo:7
+    container_name: viewpet-mongodb
     ports:
-      - "6379:6379"
+      - "27017:27017"
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - mongodb_data:/data/db
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 3s
       retries: 5
     restart: unless-stopped
 
-  # LocalStack - Mock AWS services locally
+  # LocalStack — mock AWS services locally for S3 image storage
   localstack:
     image: localstack/localstack:latest
     container_name: viewpet-localstack
     ports:
-      - "4566:4566"  # LocalStack Gateway
-      - "4510-4559:4510-4559"  # External services port range
+      - "4566:4566"
+      - "4510-4559:4510-4559"
     environment:
       - SERVICES=s3
       - DEBUG=1
@@ -33,5 +32,5 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
 volumes:
-  redis_data:
+  mongodb_data:
     driver: local

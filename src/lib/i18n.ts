@@ -19,6 +19,7 @@ const LOCALE_ALIASES: Record<string, Locale> = {
 
 type Dictionary = {
   guardianContact: string;
+  guardianOther: string;
   name: string;
   email: string;
   cellphone: string;
@@ -71,6 +72,7 @@ type Dictionary = {
 const dictionaries: Record<Locale, Dictionary> = {
   "pt-BR": {
     guardianContact: "Meu Tutor",
+    guardianOther: "Outro tutor da família",
     name: "Nome",
     email: "E-mail",
     cellphone: "Celular",
@@ -122,6 +124,7 @@ const dictionaries: Record<Locale, Dictionary> = {
   },
   "en-US": {
     guardianContact: "Guardian Contact",
+    guardianOther: "Other guardian in the family",
     name: "Name",
     email: "Email",
     cellphone: "Cellphone",
