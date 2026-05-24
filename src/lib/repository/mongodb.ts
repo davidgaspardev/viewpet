@@ -158,6 +158,15 @@ export class MongoPetRepository implements Seedable {
     await database
       .collection<LostEventDoc>(MongoPetRepository.LOST_EVENTS)
       .createIndex({ petId: 1, endedAt: 1 });
+    // Enforce at most one open event per pet at the DB level. The partial
+    // filter restricts uniqueness to documents where endedAt is null (open),
+    // so closed events (endedAt: string) are not subject to the constraint.
+    await database
+      .collection<LostEventDoc>(MongoPetRepository.LOST_EVENTS)
+      .createIndex(
+        { petId: 1 },
+        { unique: true, partialFilterExpression: { endedAt: null } },
+      );
   }
 
   /**
@@ -222,7 +231,6 @@ export class MongoPetRepository implements Seedable {
         endedAt: null,
       };
 
-      const existing = await lostEvents.findOne({ petId: hashId, endedAt: null });
       const mutableFields = {
         ...(input.lastSeenLocation !== undefined
           ? { lastSeenLocation: input.lastSeenLocation }
@@ -231,22 +239,24 @@ export class MongoPetRepository implements Seedable {
         ...(input.alerts !== undefined ? { alerts: input.alerts } : {}),
       };
 
-      if (existing) {
-        await lostEvents.updateOne(
-          { _id: existing._id },
-          { $set: { ...mutableFields, updatedAt: now } },
-        );
-      } else {
-        await lostEvents.insertOne({
-          _id: new ObjectId(),
-          petId: hashId,
-          startedAt: input.startedAt,
-          endedAt: null,
-          ...mutableFields,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
+      // Atomic upsert: if an open event already exists update its mutable
+      // fields; otherwise create a new one. Combined with the partial unique
+      // index on { petId } where endedAt: null this guarantees at most one
+      // open event per pet even under concurrent writes.
+      await lostEvents.updateOne(
+        { petId: hashId, endedAt: null },
+        {
+          $set: { ...mutableFields, updatedAt: now },
+          $setOnInsert: {
+            _id: new ObjectId(),
+            petId: hashId,
+            startedAt: input.startedAt,
+            endedAt: null,
+            createdAt: now,
+          },
+        },
+        { upsert: true },
+      );
       return;
     }
 
@@ -293,6 +303,8 @@ export class MongoPetRepository implements Seedable {
                   },
                 },
               },
+              { $sort: { startedAt: -1 } },
+              { $limit: 1 },
             ],
             as: "openLostEvents",
           },
