@@ -77,6 +77,24 @@
           "instagram": "rafa.lima",
           "facebook": "rafael.lima"
         }
+      },
+      {
+        "name": "Juliana Lima",
+        "email": "juliana.lima@example.com",
+        "phones": [
+          {
+            "e164": "5521977661100",
+            "display": "(21) 97766-1100",
+            "channels": [
+              "call",
+              "whatsapp",
+              "sms"
+            ]
+          }
+        ],
+        "social": {
+          "instagram": "ju.lima"
+        }
       }
     ]
   },
@@ -121,6 +139,36 @@
             "channels": [
               "call",
               "whatsapp"
+            ]
+          }
+        ],
+        "social": {}
+      },
+      {
+        "name": "Fernanda Alves",
+        "email": "fernanda.alves@example.com",
+        "phones": [
+          {
+            "e164": "5541995512233",
+            "display": "(41) 99551-2233",
+            "channels": [
+              "whatsapp"
+            ]
+          }
+        ],
+        "social": {
+          "instagram": "feh.alves",
+          "tiktok": "feh.alves"
+        }
+      },
+      {
+        "name": "Vó Maria",
+        "phones": [
+          {
+            "e164": "5541933221100",
+            "display": "(41) 3322-1100",
+            "channels": [
+              "call"
             ]
           }
         ],
