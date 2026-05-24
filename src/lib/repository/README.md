@@ -6,10 +6,10 @@ Camada de persistência de pets e tutores. Toda a aplicação fala com a interfa
 
 ```
 src/lib/
-├── repository.ts          # IPetRepository + ISeedable — contratos de domínio
-└── database/
-    ├── local.ts           # LocalRepository (filesystem JSON)
-    ├── mongodb.ts         # MongoDBRepository (duas collections)
+└── repository/
+    ├── interface.ts       # PetRepository + Seedable — contratos de domínio
+    ├── local.ts           # LocalPetRepository (filesystem JSON)
+    ├── mongodb.ts         # MongoPetRepository (duas collections)
     └── index.ts           # factory + singleton + exports diretos
 ```
 
@@ -22,7 +22,7 @@ DATABASE_PROVIDER=mongodb  # produção — exige MONGODB_URI
 
 ## API
 
-`src/lib/database/index.ts` exporta as funções usadas pela aplicação:
+`src/lib/repository/index.ts` exporta as funções usadas pela aplicação:
 
 ```ts
 getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | empty | filled
@@ -46,7 +46,7 @@ Os três estados:
 
 Cada provider modela os dados de um jeito diferente, otimizado pro seu caso de uso:
 
-### LocalRepository
+### LocalPetRepository
 
 Flat. Um único JSON em `data/local.db.json`, mesma estrutura do mock `src/data/pets.json`:
 
@@ -59,7 +59,7 @@ Flat. Um único JSON em `data/local.db.json`, mesma estrutura do mock `src/data/
 
 Sem split de collection, sem dedup de tutores. É só dev/teste — manter o arquivo legível e fácil de editar à mão é mais importante que reproduzir a normalização do banco real.
 
-### MongoDBRepository
+### MongoPetRepository
 
 Duas collections. Pets referenciam tutores via `guardianIds: ObjectId[]` (ordem importa — índice 0 é o principal). Tutores com email são deduplicados, então um casal com dois pets compartilha um único documento — atualizar o telefone é um único write que reflete em todos os pets.
 
@@ -121,7 +121,7 @@ MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/viewpet
 
 ## Testes
 
-Os testes usam `LocalRepository` com um arquivo isolado (`data/test.db.json`) — sem Mongo, sem Docker.
+Os testes usam `LocalPetRepository` com um arquivo isolado (`data/test.db.json`) — sem Mongo, sem Docker.
 
 ```bash
 bun test src/lib/__tests__/database.test.ts
@@ -131,7 +131,7 @@ Pra testar o provider Mongo especificamente existe `mongodb.test.ts` que sobe um
 
 ## Adicionando um novo provider
 
-1. Cria `src/lib/database/<nome>.ts` com uma classe que implementa `ISeedable` (ou só `IPetRepository` de `@/lib/repository` se não precisar de reserva/listagem).
+1. Cria `src/lib/repository/<nome>.ts` com uma classe que implementa `Seedable` (ou só `PetRepository` de `@/lib/repository` se não precisar de reserva/listagem).
 2. Adiciona o case no factory de `index.ts`.
 3. Estende `DatabaseProviderType`.
 4. Documenta o novo `DATABASE_PROVIDER=<nome>` no README raiz.

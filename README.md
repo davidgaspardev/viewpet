@@ -85,7 +85,7 @@ bun run reserve --count 100 > qr-batch.txt
 
 ## Estados do banco
 
-`src/lib/database/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
+`src/lib/repository/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
 
 | Estado    | Quando                                            | Comportamento da página         |
 | --------- | ------------------------------------------------- | ------------------------------- |
@@ -288,11 +288,11 @@ src/
 │   └── pet-tag/                  # carousel 3D da plaquinha (Three.js / R3F)
 ├── ui/                           # primitives compartilhadas: Logo, Card, Tooltip, StickyHeader, icons
 ├── lib/
-│   ├── database/
+│   ├── repository/
 │   │   ├── index.ts              # factory + singleton + exports diretos
-│   │   ├── interface.ts          # IPetRepository / ISeedable
-│   │   ├── local.ts              # LocalRepository (filesystem JSON)
-│   │   └── mongodb.ts            # MongoDBRepository (duas collections)
+│   │   ├── interface.ts          # PetRepository / Seedable
+│   │   ├── local.ts              # LocalPetRepository (filesystem JSON)
+│   │   └── mongodb.ts            # MongoPetRepository (duas collections)
 │   ├── storage/                  # LocalStorageProvider / S3StorageProvider
 │   ├── utils/
 │   │   ├── age.ts                # cálculo dinâmico de idade

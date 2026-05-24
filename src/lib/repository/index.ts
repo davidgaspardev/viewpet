@@ -9,12 +9,20 @@ declare global {
   var _petRepository: PetRepository | undefined;
 }
 
+const VALID_PROVIDERS: DatabaseProviderType[] = ["local", "mongodb"];
+
 function getRepository(): PetRepository {
   if (!globalThis._petRepository) {
     // DATABASE_PROVIDER is read once at first call. Changing the env var after
     // the singleton is initialised has no effect — call resetRepositoryProvider()
     // to force re-initialisation (tests do this between cases via beforeEach).
-    const type = (process.env.DATABASE_PROVIDER ?? "local") as DatabaseProviderType;
+    const raw = process.env.DATABASE_PROVIDER ?? "local";
+    if (!VALID_PROVIDERS.includes(raw as DatabaseProviderType)) {
+      console.warn(
+        `[Repository] Unknown DATABASE_PROVIDER "${raw}" — falling back to "local". Valid values: ${VALID_PROVIDERS.join(", ")}.`,
+      );
+    }
+    const type = (VALID_PROVIDERS.includes(raw as DatabaseProviderType) ? raw : "local") as DatabaseProviderType;
     globalThis._petRepository =
       type === "mongodb" ? new MongoPetRepository() : new LocalPetRepository();
     if (process.env.NODE_ENV !== "test") {
