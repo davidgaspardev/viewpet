@@ -11,6 +11,9 @@ declare global {
 
 function getRepository(): IPetRepository {
   if (!globalThis._petRepository) {
+    // DATABASE_PROVIDER is read once at first call. Changing the env var after
+    // the singleton is initialised has no effect — call resetDatabaseProvider()
+    // to force re-initialisation (tests do this between cases via beforeEach).
     const type = (process.env.DATABASE_PROVIDER ?? "local") as DatabaseProviderType;
     globalThis._petRepository =
       type === "mongodb" ? new MongoDBRepository() : new LocalRepository();

@@ -90,9 +90,14 @@ async function db() {
   const client = await promise;
   const database = client.db(dbName);
 
-  // Cache the promise itself so concurrent first-calls share one ensureIndexes run.
+  // Cache the promise so concurrent first-calls share one ensureIndexes run.
+  // On rejection the cache is cleared so the next call retries rather than
+  // re-throwing the same failed promise for the lifetime of the process.
   if (!globalThis._mongoIndexesPromise) {
-    globalThis._mongoIndexesPromise = ensureIndexes(database);
+    globalThis._mongoIndexesPromise = ensureIndexes(database).catch((err) => {
+      globalThis._mongoIndexesPromise = undefined;
+      throw err;
+    });
   }
   await globalThis._mongoIndexesPromise;
 
@@ -225,8 +230,19 @@ export class MongoDBRepository implements ISeedable {
     const oldPetDoc = await pets.findOne({ _id: hashId }, { projection: { guardianIds: 1 } });
     const oldGuardianIds: ObjectId[] = oldPetDoc?.guardianIds ?? [];
 
+    // Deduplicate by email so two guardians with the same email in the input
+    // don't produce duplicate _ids in guardianIds (which would cause $lookup
+    // to return fewer docs than expected on read).
+    const seen = new Set<string>();
+    const uniqueGuardians = pet.guardians.filter((g) => {
+      if (!g.email) return true;
+      if (seen.has(g.email)) return false;
+      seen.add(g.email);
+      return true;
+    });
+
     const guardianIds: ObjectId[] = [];
-    for (const guardian of pet.guardians) {
+    for (const guardian of uniqueGuardians) {
       const id = await upsertGuardian(guardians, guardian, now);
       guardianIds.push(id);
     }

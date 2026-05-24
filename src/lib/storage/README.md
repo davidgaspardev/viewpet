@@ -202,7 +202,7 @@ bun run dev
 ### Option 3: LocalStack (offline S3 mock)
 
 ```bash
-docker-compose up -d          # starts Redis + LocalStack
+docker-compose up -d          # starts MongoDB + LocalStack
 bun run setup-localstack.ts   # creates bucket + policy
 ```
 
