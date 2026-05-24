@@ -105,9 +105,11 @@ function GuardianBlock({
         <PhoneRow key={phone.e164} phone={phone} dict={dict} />
       ))}
 
-      {/* Social — only show for primary to avoid clutter */}
+      {/* Social — only on the primary guardian. No top border so the section
+          stays visually anchored to the primary block instead of floating
+          between the primary and the "outro tutor" divider below. */}
       {isPrimary && hasSocial && (
-        <div className="border-t border-black/10 pt-4">
+        <div>
           <p className="mb-3 text-xs font-medium text-muted">{dict.social}</p>
           <SocialLinks social={guardian.social} />
         </div>
