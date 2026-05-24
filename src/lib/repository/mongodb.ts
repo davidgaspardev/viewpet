@@ -1,5 +1,5 @@
 /**
- * MongoDB implementation of the KVS provider interface.
+ * MongoDB implementation of the repository interface.
  *
  * Two collections
  * ───────────────
@@ -31,12 +31,9 @@
  * MONGODB_URI — MongoDB connection string (default: mongodb://localhost:27017/viewpet)
  */
 
-import { MongoClient, ObjectId, type Collection } from "mongodb";
-import type { ISeedable, PetPublicProfile, PetEntry } from "./interface";
+import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
+import type { Seedable, PetPublicProfile, PetEntry } from "./interface";
 import type { Guardian } from "@/types/pet";
-
-const PETS_COLLECTION = "pets";
-const GUARDIANS_COLLECTION = "guardians";
 
 type PetStatus = "reserved" | "active" | "lost";
 
@@ -71,55 +68,6 @@ declare global {
   var _mongoIndexesPromise: Promise<void> | undefined;
 }
 
-function getClientAndDb(): { promise: Promise<MongoClient>; dbName: string } {
-  if (!globalThis._mongoClientPromise) {
-    const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
-    const dbName = new URL(uri).pathname.slice(1) || "viewpet";
-    const client = new MongoClient(uri);
-    globalThis._mongoClientPromise = client.connect();
-    globalThis._mongoDbName = dbName;
-  }
-  return {
-    promise: globalThis._mongoClientPromise,
-    dbName: globalThis._mongoDbName ?? "viewpet",
-  };
-}
-
-async function db() {
-  const { promise, dbName } = getClientAndDb();
-  const client = await promise;
-  const database = client.db(dbName);
-
-  // Cache the promise so concurrent first-calls share one ensureIndexes run.
-  // On rejection the cache is cleared so the next call retries rather than
-  // re-throwing the same failed promise for the lifetime of the process.
-  if (!globalThis._mongoIndexesPromise) {
-    globalThis._mongoIndexesPromise = ensureIndexes(database).catch((err) => {
-      globalThis._mongoIndexesPromise = undefined;
-      throw err;
-    });
-  }
-  await globalThis._mongoIndexesPromise;
-
-  return {
-    pets: database.collection<PetDoc>(PETS_COLLECTION),
-    guardians: database.collection<GuardianDoc>(GUARDIANS_COLLECTION),
-  };
-}
-
-async function ensureIndexes(database: import("mongodb").Db): Promise<void> {
-  await database
-    .collection<GuardianDoc>(GUARDIANS_COLLECTION)
-    .createIndex(
-      { email: 1 },
-      { unique: true, partialFilterExpression: { email: { $type: "string" } } },
-    );
-  await database
-    .collection<PetDoc>(PETS_COLLECTION)
-    .createIndex({ guardianIds: 1 });
-  await database.collection<PetDoc>(PETS_COLLECTION).createIndex({ status: 1 });
-}
-
 /** Exposed for testing — resets the singleton so tests can inject a fresh URI. */
 export function resetMongoClient(): void {
   globalThis._mongoClientPromise = undefined;
@@ -127,56 +75,105 @@ export function resetMongoClient(): void {
   globalThis._mongoIndexesPromise = undefined;
 }
 
-/**
- * Upsert a guardian — by email when present (dedup) or by inserting a fresh
- * document when not. Returns the resulting _id.
- */
-async function upsertGuardian(
-  guardians: Collection<GuardianDoc>,
-  guardian: Guardian,
-  now: Date,
-): Promise<ObjectId> {
-  if (guardian.email) {
-    const result = await guardians.findOneAndUpdate(
-      { email: guardian.email },
-      {
-        $set: {
-          name: guardian.name,
-          email: guardian.email,
-          phones: guardian.phones,
-          social: guardian.social,
-          updatedAt: now,
-        },
-        $setOnInsert: { createdAt: now },
-      },
-      { upsert: true, returnDocument: "after" },
-    );
-    if (!result) throw new Error("Failed to upsert guardian");
-    return result._id;
+export class MongoPetRepository implements Seedable {
+  private static readonly PETS = "pets";
+  private static readonly GUARDIANS = "guardians";
+
+  // ── Private infrastructure ────────────────────────────────────────────────
+
+  private async db(): Promise<{ pets: Collection<PetDoc>; guardians: Collection<GuardianDoc> }> {
+    if (!globalThis._mongoClientPromise) {
+      const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/viewpet";
+      globalThis._mongoDbName = new URL(uri).pathname.slice(1) || "viewpet";
+      globalThis._mongoClientPromise = new MongoClient(uri).connect();
+    }
+
+    const client = await globalThis._mongoClientPromise;
+    const database = client.db(globalThis._mongoDbName ?? "viewpet");
+
+    // Cache the promise so concurrent first-calls share one ensureIndexes run.
+    // On rejection the cache is cleared so the next call retries rather than
+    // re-throwing the same failed promise for the lifetime of the process.
+    if (!globalThis._mongoIndexesPromise) {
+      globalThis._mongoIndexesPromise = this.ensureIndexes(database).catch((err) => {
+        globalThis._mongoIndexesPromise = undefined;
+        throw err;
+      });
+    }
+    await globalThis._mongoIndexesPromise;
+
+    return {
+      pets: database.collection<PetDoc>(MongoPetRepository.PETS),
+      guardians: database.collection<GuardianDoc>(MongoPetRepository.GUARDIANS),
+    };
   }
 
-  // No email → can't dedup. Always insert.
-  const insert = await guardians.insertOne({
-    _id: new ObjectId(),
-    name: guardian.name,
-    phones: guardian.phones,
-    social: guardian.social,
-    createdAt: now,
-    updatedAt: now,
-  });
-  return insert.insertedId;
-}
+  private async ensureIndexes(database: Db): Promise<void> {
+    await database
+      .collection<GuardianDoc>(MongoPetRepository.GUARDIANS)
+      .createIndex(
+        { email: 1 },
+        { unique: true, partialFilterExpression: { email: { $type: "string" } } },
+      );
+    await database
+      .collection<PetDoc>(MongoPetRepository.PETS)
+      .createIndex({ guardianIds: 1 });
+    await database
+      .collection<PetDoc>(MongoPetRepository.PETS)
+      .createIndex({ status: 1 });
+  }
 
-export class MongoDBRepository implements ISeedable {
+  /**
+   * Upsert a guardian — by email when present (dedup) or by inserting a fresh
+   * document when not. Returns the resulting _id.
+   */
+  private static async upsertGuardian(
+    guardians: Collection<GuardianDoc>,
+    guardian: Guardian,
+    now: Date,
+  ): Promise<ObjectId> {
+    if (guardian.email) {
+      const result = await guardians.findOneAndUpdate(
+        { email: guardian.email },
+        {
+          $set: {
+            name: guardian.name,
+            email: guardian.email,
+            phones: guardian.phones,
+            social: guardian.social,
+            updatedAt: now,
+          },
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true, returnDocument: "after" },
+      );
+      if (!result) throw new Error("Failed to upsert guardian");
+      return result._id;
+    }
+
+    // No email → can't dedup. Always insert.
+    const insert = await guardians.insertOne({
+      _id: new ObjectId(),
+      name: guardian.name,
+      phones: guardian.phones,
+      social: guardian.social,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return insert.insertedId;
+  }
+
+  // ── IPetRepository ────────────────────────────────────────────────────────
+
   async getPetEntry(hashId: string): Promise<PetEntry> {
-    const { pets } = await db();
+    const { pets } = await this.db();
 
     const docs = await pets
       .aggregate<PetDoc & { guardians?: GuardianDoc[] }>([
         { $match: { _id: hashId } },
         {
           $lookup: {
-            from: GUARDIANS_COLLECTION,
+            from: MongoPetRepository.GUARDIANS,
             localField: "guardianIds",
             foreignField: "_id",
             as: "guardians",
@@ -191,10 +188,7 @@ export class MongoDBRepository implements ISeedable {
 
     // Preserve the original order encoded in guardianIds (lookup result is unordered)
     const byId = new Map(
-      (doc.guardians ?? []).map((g) => [
-        g._id.toString(),
-        guardianDocToProfile(g),
-      ]),
+      (doc.guardians ?? []).map((g) => [g._id.toString(), guardianDocToProfile(g)]),
     );
     const guardians = (doc.guardianIds ?? [])
       .map((id) => byId.get(id.toString()))
@@ -218,7 +212,7 @@ export class MongoDBRepository implements ISeedable {
   }
 
   async setPet(hashId: string, pet: PetPublicProfile): Promise<void> {
-    const { pets, guardians } = await db();
+    const { pets, guardians } = await this.db();
     const now = new Date();
 
     // Read old guardianIds before writing so we can clean up replaced no-email
@@ -243,7 +237,7 @@ export class MongoDBRepository implements ISeedable {
 
     const guardianIds: ObjectId[] = [];
     for (const guardian of uniqueGuardians) {
-      const id = await upsertGuardian(guardians, guardian, now);
+      const id = await MongoPetRepository.upsertGuardian(guardians, guardian, now);
       guardianIds.push(id);
     }
 
@@ -275,8 +269,10 @@ export class MongoDBRepository implements ISeedable {
     );
   }
 
+  // ── ISeedable ─────────────────────────────────────────────────────────────
+
   async reservePetId(hashId: string): Promise<void> {
-    const { pets } = await db();
+    const { pets } = await this.db();
     const now = new Date();
     await pets.updateOne(
       { _id: hashId },
@@ -293,7 +289,7 @@ export class MongoDBRepository implements ISeedable {
   }
 
   async listPetIds(): Promise<string[]> {
-    const { pets } = await db();
+    const { pets } = await this.db();
     const docs = await pets.find({}, { projection: { _id: 1 } }).toArray();
     return docs.map((d) => d._id);
   }
@@ -301,7 +297,7 @@ export class MongoDBRepository implements ISeedable {
   async listPetEntries(): Promise<
     Array<{ id: string; status: PetEntry["status"]; name?: string }>
   > {
-    const { pets } = await db();
+    const { pets } = await this.db();
     const docs = await pets
       .find({}, { projection: { _id: 1, status: 1, name: 1 } })
       .toArray();

@@ -1,12 +1,12 @@
 /**
- * Integration tests for MongoDBRepository using an in-memory MongoDB instance.
+ * Integration tests for MongoPetRepository using an in-memory MongoDB instance.
  * Run with: bun test src/lib/__tests__/mongodb.test.ts
  */
 
 import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { MongoClient } from "mongodb";
-import { MongoDBRepository, resetMongoClient } from "../database/mongodb";
+import { MongoPetRepository, resetMongoClient } from "../repository/mongodb";
 import type { PetPublicProfile } from "@/types/pet";
 
 let mongod: MongoMemoryServer;
@@ -57,23 +57,23 @@ beforeEach(async () => {
   resetMongoClient();
 });
 
-describe("MongoDBRepository", () => {
+describe("MongoPetRepository", () => {
   describe("getPetEntry", () => {
     test("returns missing for unknown hashId", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const entry = await provider.getPetEntry("nonexistent");
       expect(entry.status).toBe("missing");
     });
 
     test("returns empty for reserved hashId", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("reserved1");
       const entry = await provider.getPetEntry("reserved1");
       expect(entry.status).toBe("empty");
     });
 
     test("returns filled with pet data for set pet", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const pet = makePet({ name: "Lupe" });
       await provider.setPet("abc123", pet);
       const entry = await provider.getPetEntry("abc123");
@@ -88,7 +88,7 @@ describe("MongoDBRepository", () => {
 
   describe("setPet", () => {
     test("stores and retrieves full pet profile", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const pet = makePet({ name: "Mel" });
       await provider.setPet("mel123", pet);
       const entry = await provider.getPetEntry("mel123");
@@ -97,7 +97,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("overwrites existing pet data", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.setPet("dup1", makePet({ name: "Old" }));
       await provider.setPet("dup1", makePet({ name: "New" }));
       const entry = await provider.getPetEntry("dup1");
@@ -105,7 +105,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("upgrades a reserved slot to filled", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("slot1");
       await provider.setPet("slot1", makePet({ name: "Upgraded" }));
       const entry = await provider.getPetEntry("slot1");
@@ -113,7 +113,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("stores 'reserved' status as document field, not as pet status", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("check1");
       const raw = await cleanupClient
         .db("viewpet")
@@ -123,7 +123,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("stored document has status from pet (active/lost), not 'reserved'", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.setPet("filled1", makePet({ status: "active" }));
       const raw = await cleanupClient
         .db("viewpet")
@@ -135,14 +135,14 @@ describe("MongoDBRepository", () => {
 
   describe("reservePetId", () => {
     test("reserves a new ID", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("new1");
       const entry = await provider.getPetEntry("new1");
       expect(entry.status).toBe("empty");
     });
 
     test("does not overwrite an existing filled pet", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.setPet("existing1", makePet({ name: "Keep me" }));
       await provider.reservePetId("existing1");
       const entry = await provider.getPetEntry("existing1");
@@ -151,7 +151,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("does not overwrite an existing reserved slot", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("slot2");
       await provider.reservePetId("slot2"); // second call is a no-op
       const ids = await provider.listPetIds();
@@ -161,12 +161,12 @@ describe("MongoDBRepository", () => {
 
   describe("listPetIds", () => {
     test("returns empty array when collection is empty", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       expect(await provider.listPetIds()).toEqual([]);
     });
 
     test("returns all IDs regardless of status", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("id1");
       await provider.setPet("id2", makePet());
       const ids = await provider.listPetIds();
@@ -178,12 +178,12 @@ describe("MongoDBRepository", () => {
 
   describe("listPetEntries", () => {
     test("returns empty array when collection is empty", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       expect(await provider.listPetEntries()).toEqual([]);
     });
 
     test("returns correct status and name for each entry", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       await provider.reservePetId("empty1");
       await provider.setPet("filled1", makePet({ name: "Buddy" }));
 
@@ -202,7 +202,7 @@ describe("MongoDBRepository", () => {
 
   describe("multi-guardian behavior", () => {
     test("preserves guardian order on round-trip", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const pet = makePet({
         guardians: [
           { name: "Primary", email: "primary@example.com", phones: [], social: {} },
@@ -219,7 +219,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("dedup by email: two pets sharing a guardian share one guardian doc", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const sharedGuardian = { name: "Shared", email: "shared@example.com", phones: [], social: {} };
       await provider.setPet("pet1", makePet({ name: "Pet One", guardians: [sharedGuardian] }));
       await provider.setPet("pet2", makePet({ name: "Pet Two", guardians: [sharedGuardian] }));
@@ -232,7 +232,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("no-email guardian is cleaned up when pet is updated", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const noEmail = { name: "No Email", phones: [], social: {} };
       await provider.setPet("pet-update", makePet({ guardians: [noEmail] }));
 
@@ -247,7 +247,7 @@ describe("MongoDBRepository", () => {
     });
 
     test("lostInfo is unset when pet is updated without it", async () => {
-      const provider = new MongoDBRepository();
+      const provider = new MongoPetRepository();
       const withLost = makePet({
         status: "lost",
         lostInfo: { since: "2026-01-01T00:00:00.000Z", lastSeenLocation: "Parque" },

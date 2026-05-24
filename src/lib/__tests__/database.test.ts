@@ -1,13 +1,13 @@
 /**
- * Tests for the database provider abstraction and LocalRepository.
+ * Tests for the database provider abstraction and LocalPetRepository.
  * Run with: bun test src/lib/__tests__/database.test.ts
  */
 
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getDatabaseProvider, resetDatabaseProvider } from "../database";
-import { LocalRepository } from "../database/local";
+import { getRepositoryProvider, resetRepositoryProvider } from "../repository";
+import { LocalPetRepository } from "../repository/local";
 import type { PetPublicProfile, Guardian } from "@/types/pet";
 
 const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
@@ -39,39 +39,39 @@ function makePet(overrides: Partial<PetPublicProfile> = {}): PetPublicProfile {
 
 describe("Database Provider Abstraction", () => {
   beforeEach(() => {
-    resetDatabaseProvider();
+    resetRepositoryProvider();
     delete process.env.DATABASE_PROVIDER;
   });
 
   afterEach(() => {
-    resetDatabaseProvider();
+    resetRepositoryProvider();
   });
 
   describe("Factory", () => {
     test("returns a singleton instance", () => {
-      const provider1 = getDatabaseProvider();
-      const provider2 = getDatabaseProvider();
+      const provider1 = getRepositoryProvider();
+      const provider2 = getRepositoryProvider();
       expect(provider1).toBe(provider2);
     });
 
     test("defaults to local (filesystem) provider", () => {
-      const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(LocalRepository);
+      const provider = getRepositoryProvider();
+      expect(provider).toBeInstanceOf(LocalPetRepository);
     });
 
     test("uses local provider when DATABASE_PROVIDER=local", () => {
       process.env.DATABASE_PROVIDER = "local";
-      const provider = getDatabaseProvider();
-      expect(provider).toBeInstanceOf(LocalRepository);
+      const provider = getRepositoryProvider();
+      expect(provider).toBeInstanceOf(LocalPetRepository);
     });
   });
 
-  describe("LocalRepository", () => {
-    let provider: LocalRepository;
+  describe("LocalPetRepository", () => {
+    let provider: LocalPetRepository;
 
     beforeEach(() => {
       cleanupTestDb();
-      provider = new LocalRepository(TEST_DB_PATH);
+      provider = new LocalPetRepository(TEST_DB_PATH);
     });
 
     afterEach(() => {
@@ -218,29 +218,29 @@ describe("Database Provider Abstraction", () => {
 
       test("data persists across provider instances", async () => {
         await provider.setPet("persist1", makePet({ name: "Persistent" }));
-        const provider2 = new LocalRepository(TEST_DB_PATH);
+        const provider2 = new LocalPetRepository(TEST_DB_PATH);
         const entry = await provider2.getPetEntry("persist1");
         expect(entry.status).toBe("filled");
       });
     });
   });
 
-  describe("LocalRepository — full workflow", () => {
+  describe("LocalPetRepository — full workflow", () => {
     const FACADE_DB_PATH = join(process.cwd(), "data", "facade.test.db.json");
 
     beforeEach(() => {
       if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
-      resetDatabaseProvider();
+      resetRepositoryProvider();
       process.env.DATABASE_PROVIDER = "local";
     });
 
     afterEach(() => {
-      resetDatabaseProvider();
+      resetRepositoryProvider();
       if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
     });
 
     test("facade delegates to the active provider", async () => {
-      const facadeProvider = new LocalRepository(FACADE_DB_PATH);
+      const facadeProvider = new LocalPetRepository(FACADE_DB_PATH);
 
       const missingEntry = await facadeProvider.getPetEntry("nonexistent");
       expect(missingEntry.status).toBe("missing");

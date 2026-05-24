@@ -7,14 +7,14 @@ type PetEntrySummary = Array<{
 }>;
 
 /** Production interface — the three operations the request path actually needs. */
-export interface IPetRepository {
+export interface PetRepository {
   getPetEntry(hashId: string): Promise<PetEntry>;
   setPet(hashId: string, pet: PetPublicProfile): Promise<void>;
   listPetEntries(): Promise<PetEntrySummary>;
 }
 
-/** Extends IPetRepository with operations only needed by seed scripts and admin tooling. */
-export interface ISeedable extends IPetRepository {
+/** Extends PetRepository with operations only needed by seed scripts and admin tooling. */
+export interface Seedable extends PetRepository {
   reservePetId(hashId: string): Promise<void>;
   listPetIds(): Promise<string[]>;
 }

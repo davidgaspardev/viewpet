@@ -16,12 +16,12 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { ISeedable, PetPublicProfile, PetEntry } from "./interface";
+import type { Seedable, PetPublicProfile, PetEntry } from "./interface";
 import type { PetStore } from "@/types/pet";
 
 const DEFAULT_PATH = join(process.cwd(), "data", "local.db.json");
 
-export class LocalRepository implements ISeedable {
+export class LocalPetRepository implements Seedable {
   private readonly dbPath: string;
 
   constructor(dbPath = DEFAULT_PATH) {

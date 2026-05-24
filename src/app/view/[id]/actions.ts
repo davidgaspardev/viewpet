@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
-import { setPet } from "@/lib/database";
+import { setPet } from "@/lib/repository";
 import type { PetPublicProfile, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [

@@ -13,7 +13,7 @@
 
 import { promises as fs, writeFileSync } from "node:fs";
 import path from "node:path";
-import { setPet, reservePetId, listPetIds } from "../src/lib/database";
+import { setPet, reservePetId, listPetIds } from "../src/lib/repository";
 import type { PetStore } from "../src/types/pet";
 
 const PETS_JSON_PATH = path.join(process.cwd(), "src/data/pets.json");

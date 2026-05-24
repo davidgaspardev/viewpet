@@ -5,11 +5,12 @@ Camada de persistência de pets e tutores. Toda a aplicação fala com a interfa
 ## Estrutura
 
 ```
-src/lib/database/
-├── interface.ts   # IPetRepository (produção) + ISeedable (scripts/admin)
-├── local.ts       # LocalRepository (filesystem JSON)
-├── mongodb.ts     # MongoDBRepository (duas collections)
-└── index.ts       # factory + singleton + exports diretos
+src/lib/
+├── repository.ts          # IPetRepository + ISeedable — contratos de domínio
+└── database/
+    ├── local.ts           # LocalRepository (filesystem JSON)
+    ├── mongodb.ts         # MongoDBRepository (duas collections)
+    └── index.ts           # factory + singleton + exports diretos
 ```
 
 ## Provider selection
@@ -130,7 +131,7 @@ Pra testar o provider Mongo especificamente existe `mongodb.test.ts` que sobe um
 
 ## Adicionando um novo provider
 
-1. Cria `src/lib/database/<nome>.ts` com uma classe que implementa `IPetRepository` (ou `ISeedable` se precisar de reserva/listagem).
+1. Cria `src/lib/database/<nome>.ts` com uma classe que implementa `ISeedable` (ou só `IPetRepository` de `@/lib/repository` se não precisar de reserva/listagem).
 2. Adiciona o case no factory de `index.ts`.
 3. Estende `DatabaseProviderType`.
 4. Documenta o novo `DATABASE_PROVIDER=<nome>` no README raiz.
