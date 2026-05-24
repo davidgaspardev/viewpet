@@ -146,7 +146,7 @@ export function GuardianContact({ guardians, locale }: GuardianContactProps) {
             key={`${g.email ?? g.name}-${i}`}
             className="border-t border-black/10 pt-5"
           >
-            <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted">
               {dict.guardianOther}
             </p>
             <GuardianBlock guardian={g} dict={dict} isPrimary={false} />
