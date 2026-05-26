@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { setPet } from "@/lib/repository";
-import type { Pet, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
+import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "instagram",
@@ -13,7 +13,9 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "tiktok",
 ];
 
-const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp", "sms"];
+const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp"];
+
+const MAX_GUARDIANS = 2;
 
 export type SubmitState = {
   status: "idle" | "success" | "error";
@@ -31,24 +33,35 @@ function toE164Brazil(phone: string): string {
   return `55${digits}`;
 }
 
-function readPhone(form: FormData): Phone | null {
-  const display = readString(form, "guardianPhone");
+function readGuardian(form: FormData, i: number): Guardian | null {
+  const p = `g${i}_`;
+  // Caller is responsible for checking name presence before calling this.
+  // Returns null only when phone is missing (partial fill).
+  const display = readString(form, `${p}phone`);
   if (!display) return null;
-  const e164 = toE164Brazil(display);
-  const channels = PHONE_CHANNELS.filter(
-    (ch) => form.get(`guardianPhone_${ch}`) === "on",
-  );
-  return { e164, display, channels };
-}
 
-function readSocial(form: FormData) {
+  const name = readString(form, `${p}name`);
+
+  const phone: Phone = {
+    e164: toE164Brazil(display),
+    display,
+    channels: PHONE_CHANNELS.filter((ch) => form.get(`${p}phone_${ch}`) === "on"),
+  };
+
   const social: Partial<Record<SocialPlatform, string>> = {};
   for (const platform of SOCIAL_PLATFORMS) {
-    const raw = readString(form, `social_${platform}`);
-    if (!raw) continue;
-    social[platform] = raw.replace(/^@+/, "");
+    const raw = readString(form, `${p}social_${platform}`);
+    if (raw) social[platform] = raw.replace(/^@+/, "");
   }
-  return social;
+
+  const email = readString(form, `${p}email`);
+
+  return {
+    name,
+    ...(email ? { email } : {}),
+    phones: [phone],
+    social,
+  };
 }
 
 export async function submitPet(
@@ -58,12 +71,9 @@ export async function submitPet(
 ): Promise<SubmitState> {
   const name = readString(form, "name");
   const birthdate = readString(form, "birthdate");
-  const guardianName = readString(form, "guardianName");
-  const guardianEmail = readString(form, "guardianEmail");
-  const phone = readPhone(form);
   const pictureField = form.get("picture");
 
-  if (!name || !birthdate || !guardianName || !phone) {
+  if (!name || !birthdate) {
     return { status: "error", message: "missing_fields" };
   }
   if (!(pictureField instanceof File) || pictureField.size === 0) {
@@ -72,6 +82,19 @@ export async function submitPet(
   const parsed = new Date(birthdate);
   if (Number.isNaN(parsed.getTime())) {
     return { status: "error", message: "invalid_birthdate" };
+  }
+
+  const guardians: Guardian[] = [];
+  for (let i = 0; i < MAX_GUARDIANS; i++) {
+    const name = readString(form, `g${i}_name`);
+    if (!name) {
+      if (i === 0) return { status: "error", message: "missing_fields" };
+      break; // secondary guardian completely empty — stop here
+    }
+    // name present but phone missing → partial fill → validation error
+    const guardian = readGuardian(form, i);
+    if (!guardian) return { status: "error", message: "missing_fields" };
+    guardians.push(guardian);
   }
 
   let pictureUrl: string;
@@ -94,14 +117,7 @@ export async function submitPet(
     pictureUrl,
     birthdate: parsed.toISOString(),
     status: "active",
-    guardians: [
-      {
-        name: guardianName,
-        ...(guardianEmail ? { email: guardianEmail } : {}),
-        phones: [phone],
-        social: readSocial(form),
-      },
-    ],
+    guardians,
   };
 
   await setPet(hashId, pet);
