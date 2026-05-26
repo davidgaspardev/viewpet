@@ -36,11 +36,12 @@ function applyPhoneMask(value: string): string {
 
 function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
   const p = `g${index}_`;
+  const isPrimary = index === 0;
   const [phone, setPhone] = useState("");
 
   return (
     <>
-      <Field label={dict.guardianName} name={`${p}name`} required autoComplete="name" />
+      <Field label={dict.guardianName} name={`${p}name`} required={isPrimary} autoComplete="name" />
       <Field
         label={dict.guardianEmailOptional}
         name={`${p}email`}
@@ -53,12 +54,12 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
         <label className="block">
           <span className="text-xs font-medium text-muted">
             {dict.guardianPhone}
-            <span className="ml-1 text-red-500">*</span>
+            {isPrimary && <span className="ml-1 text-red-500">*</span>}
           </span>
           <input
             name={`${p}phone`}
             type="tel"
-            required
+            required={isPrimary}
             autoComplete="tel"
             value={phone}
             placeholder="(48) 98123-4567"
@@ -69,7 +70,7 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
         <div className="mt-2 flex gap-4">
           {(
             [
-              { name: `${p}phone_call`, label: "Chamadas" },
+              { name: `${p}phone_call`, label: dict.phoneChannelCall },
               { name: `${p}phone_whatsapp`, label: "WhatsApp" },
             ] as const
           ).map(({ name, label }) => (

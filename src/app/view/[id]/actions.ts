@@ -15,7 +15,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
 
 const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp"];
 
-const MAX_GUARDIANS = 4;
+const MAX_GUARDIANS = 2;
 
 export type SubmitState = {
   status: "idle" | "success" | "error";
@@ -35,11 +35,12 @@ function toE164Brazil(phone: string): string {
 
 function readGuardian(form: FormData, i: number): Guardian | null {
   const p = `g${i}_`;
-  const name = readString(form, `${p}name`);
-  if (!name) return null;
-
+  // Caller is responsible for checking name presence before calling this.
+  // Returns null only when phone is missing (partial fill).
   const display = readString(form, `${p}phone`);
   if (!display) return null;
+
+  const name = readString(form, `${p}name`);
 
   const phone: Phone = {
     e164: toE164Brazil(display),
@@ -85,11 +86,14 @@ export async function submitPet(
 
   const guardians: Guardian[] = [];
   for (let i = 0; i < MAX_GUARDIANS; i++) {
-    const guardian = readGuardian(form, i);
-    if (!guardian) {
+    const name = readString(form, `g${i}_name`);
+    if (!name) {
       if (i === 0) return { status: "error", message: "missing_fields" };
-      break;
+      break; // secondary guardian completely empty — stop here
     }
+    // name present but phone missing → partial fill → validation error
+    const guardian = readGuardian(form, i);
+    if (!guardian) return { status: "error", message: "missing_fields" };
     guardians.push(guardian);
   }
 

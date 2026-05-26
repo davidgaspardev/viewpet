@@ -58,6 +58,7 @@ type Dictionary = {
   addGuardian: string;
   removeGuardian: string;
   guardianNumber: (n: number) => string;
+  phoneChannelCall: string;
   socialPlaceholder: string;
   optional: string;
   submit: string;
@@ -123,6 +124,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     addGuardian: "Adicionar tutor",
     removeGuardian: "Remover",
     guardianNumber: (n) => `Tutor ${n}`,
+    phoneChannelCall: "Chamadas",
     socialPlaceholder: "@usuario",
     optional: "opcional",
     submit: "Publicar",
@@ -184,6 +186,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     addGuardian: "Add guardian",
     removeGuardian: "Remove",
     guardianNumber: (n) => `Guardian ${n}`,
+    phoneChannelCall: "Calls",
     socialPlaceholder: "@username",
     optional: "optional",
     submit: "Publish",
