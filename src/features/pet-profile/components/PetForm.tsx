@@ -12,7 +12,7 @@ import { getDictionary } from "@/lib/i18n";
 import { submitPet, type SubmitState } from "@/app/view/[id]/actions";
 import { ImageUpload } from "./ImageUpload";
 
-const MAX_GUARDIANS = 4;
+const MAX_GUARDIANS = 2;
 const initialState: SubmitState = { status: "idle" };
 
 type Dict = ReturnType<typeof getDictionary>;
@@ -71,14 +71,13 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
             [
               { name: `${p}phone_call`, label: "Chamadas" },
               { name: `${p}phone_whatsapp`, label: "WhatsApp" },
-              { name: `${p}phone_sms`, label: "SMS" },
             ] as const
           ).map(({ name, label }) => (
             <label key={name} className="flex items-center gap-1.5 text-xs text-muted">
               <input
                 type="checkbox"
                 name={name}
-                defaultChecked={!name.endsWith("_sms")}
+                defaultChecked
                 className="rounded"
               />
               {label}

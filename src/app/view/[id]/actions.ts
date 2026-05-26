@@ -13,7 +13,7 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "tiktok",
 ];
 
-const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp", "sms"];
+const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp"];
 
 const MAX_GUARDIANS = 4;
 
