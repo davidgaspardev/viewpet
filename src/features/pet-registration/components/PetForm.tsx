@@ -9,7 +9,7 @@ import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
-import { submitPet, type SubmitState } from "@/app/view/[id]/actions";
+import { submitPet, type SubmitState } from "../actions";
 import { ImageUpload } from "./ImageUpload";
 
 const MAX_GUARDIANS = 2;
