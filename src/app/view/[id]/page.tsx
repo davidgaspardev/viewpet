@@ -9,7 +9,7 @@ import { GuardianContact } from "@/features/pet-profile/components/GuardianConta
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
 import { Logo } from "@/ui/Logo";
 
-import { PetForm } from "@/features/pet-profile/components/PetForm";
+import { PetForm } from "@/features/pet-registration/components/PetForm";
 
 // Force dynamic rendering — every page render hits the database
 export const dynamic = "force-dynamic";
