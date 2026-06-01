@@ -1,6 +1,7 @@
 import type { Guardian, Phone } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
+import { maskPhoneDisplay } from "@/lib/utils/phone";
 import { ActionButton } from "./ActionButton";
 import { SocialLinks } from "./SocialLinks";
 import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/ui/icons";
@@ -24,7 +25,7 @@ function PhoneRow({
       <div className="min-w-0 flex-1">
         <dt className="text-xs font-medium text-muted">{dict.cellphone}</dt>
         <dd className="mt-0.5 text-base font-semibold text-ink">
-          {phone.display ?? `+${phone.e164}`}
+          {maskPhoneDisplay(phone.display ?? `+${phone.e164}`)}
         </dd>
       </div>
       <div className="flex gap-2">

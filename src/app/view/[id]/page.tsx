@@ -27,10 +27,21 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const entry = await getPetEntry(id);
-  if (entry.status !== "filled") return { title: "View Pet" };
+
+  // Keep public pet profiles out of search engines. The page is meant to be
+  // reached via the QR on the tag, not surfaced by a generic Google query —
+  // and the guardian's phone/email shouldn't be discoverable that way.
+  // Applies to every state (missing/empty/filled) so the form view and 404
+  // page are also out of the index.
+  const robots = { index: false, follow: false } as const;
+
+  if (entry.status !== "filled") {
+    return { title: "View Pet", robots };
+  }
   return {
     title: `${entry.pet.name} · View Pet`,
     description: `Página pública de ${entry.pet.name}.`,
+    robots,
   };
 }
 
