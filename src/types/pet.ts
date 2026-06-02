@@ -1,6 +1,7 @@
 export type SocialPlatform = "instagram" | "facebook" | "x" | "tiktok";
 export type PhoneChannel = "call" | "whatsapp" | "sms";
 export type PetStatus = "active" | "lost";
+export type PetGender = "male" | "female";
 
 export interface Phone {
   /** Digits-only E.164 without "+" (e.g. "5548985596882") */
@@ -61,6 +62,7 @@ export interface Pet {
   /** ISO-8601 */
   birthdate: string;
   status: PetStatus;
+  gender?: PetGender;
   /** only populated when status === "lost" */
   lostEvent?: LostEvent;
   /** ordered: [0] is the primary guardian */

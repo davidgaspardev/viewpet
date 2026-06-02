@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { getPetEntry } from "@/lib/repository";
 import { formatAge } from "@/lib/utils/age";
+import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
@@ -67,12 +68,16 @@ export default async function ViewPetPage(props: PageProps) {
 
   const pet = entry.pet;
   const ageLabel = formatAge(pet.birthdate, locale);
+  const dict = getDictionary(locale);
+  const genderLabel = pet.gender
+    ? `${pet.gender === "male" ? "♂" : "♀"} ${pet.gender === "male" ? dict.genderMale : dict.genderFemale}`
+    : undefined;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
-      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} />
+      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} genderLabel={genderLabel} />
 
       <div className="px-4 pt-8">
         <GuardianContact guardians={pet.guardians} locale={locale} />

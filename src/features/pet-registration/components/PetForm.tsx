@@ -190,6 +190,31 @@ export function PetForm({ hashId, locale }: PetFormProps) {
         <form action={formAction} className="space-y-8">
           <Card title={dict.petSection}>
             <Field label={dict.petName} name="name" required autoComplete="off" />
+            {/* Gender segmented control */}
+            <div>
+              <span className="text-xs font-medium text-muted">
+                {dict.petGender}
+                <span className="ml-1 text-red-500">*</span>
+              </span>
+              <div className="mt-1 flex gap-2">
+                {([["male", dict.genderMale], ["female", dict.genderFemale]] as const).map(
+                  ([value, label]) => (
+                    <label key={value} className="flex-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={value}
+                        required
+                        className="sr-only peer"
+                      />
+                      <span className="block rounded-lg border border-black/10 bg-white px-4 py-2 text-center text-sm text-ink transition peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white">
+                        {label}
+                      </span>
+                    </label>
+                  ),
+                )}
+              </div>
+            </div>
             <ImageUpload name="picture" required locale={locale} />
             <Field label={dict.petBirthdate} name="birthdate" type="date" required />
           </Card>

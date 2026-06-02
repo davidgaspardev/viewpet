@@ -3,6 +3,7 @@
     "name": "Lupe",
     "pictureUrl": "https://bestforpet.com.au/wp-content/uploads/2025/11/Husky.jpg",
     "birthdate": "2018-04-21T18:21:09.372Z",
+    "gender": "male",
     "status": "active",
     "guardians": [
       {
@@ -31,6 +32,7 @@
     "name": "Mel",
     "pictureUrl": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200&q=80",
     "birthdate": "2022-08-10T10:00:00.000Z",
+    "gender": "female",
     "status": "active",
     "guardians": [
       {
@@ -58,6 +60,7 @@
     "name": "Thor",
     "pictureUrl": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1200&q=80",
     "birthdate": "2016-01-15T08:30:00.000Z",
+    "gender": "male",
     "status": "lost",
     "lostEvent": {
       "startedAt": "2026-05-22T18:00:00.000Z",
@@ -107,6 +110,7 @@
     "name": "Bob",
     "pictureUrl": "https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=1200&q=80",
     "birthdate": "2020-03-02T14:00:00.000Z",
+    "gender": "male",
     "status": "active",
     "guardians": [
       {
@@ -132,6 +136,7 @@
     "name": "Luna",
     "pictureUrl": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=1200&q=80",
     "birthdate": "2019-11-20T09:15:00.000Z",
+    "gender": "female",
     "status": "active",
     "guardians": [
       {
@@ -185,6 +190,7 @@
     "name": "Scooby",
     "pictureUrl": "/uploads/vcjv2sx3s5bd.png",
     "birthdate": "2026-03-01T00:00:00.000Z",
+    "gender": "male",
     "status": "active",
     "guardians": [
       {
@@ -210,6 +216,7 @@
     "name": "Mel",
     "pictureUrl": "/uploads/6pb46abtj58e.jpg",
     "birthdate": "2026-02-01T00:00:00.000Z",
+    "gender": "female",
     "status": "active",
     "guardians": [
       {

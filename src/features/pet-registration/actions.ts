@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { setPet } from "@/lib/repository";
-import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform } from "@/types/pet";
+import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform, PetGender } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "instagram",
@@ -71,9 +71,12 @@ export async function submitPet(
 ): Promise<SubmitState> {
   const name = readString(form, "name");
   const birthdate = readString(form, "birthdate");
+  const genderRaw = readString(form, "gender");
+  const gender: PetGender | undefined =
+    genderRaw === "male" || genderRaw === "female" ? genderRaw : undefined;
   const pictureField = form.get("picture");
 
-  if (!name || !birthdate) {
+  if (!name || !birthdate || !gender) {
     return { status: "error", message: "missing_fields" };
   }
   if (!(pictureField instanceof File) || pictureField.size === 0) {
@@ -117,6 +120,7 @@ export async function submitPet(
     pictureUrl,
     birthdate: parsed.toISOString(),
     status: "active",
+    gender,
     guardians,
   };
 
