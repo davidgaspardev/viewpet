@@ -44,6 +44,9 @@ type Dictionary = {
   guardianSection: string;
   socialSectionOptional: string;
   petName: string;
+  petGender: string;
+  genderMale: string;
+  genderFemale: string;
   petPicture: string;
   petPictureDropzone: string;
   petPictureCamera: string;
@@ -110,6 +113,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     guardianSection: "Contato do tutor",
     socialSectionOptional: "Redes sociais (opcional)",
     petName: "Nome do pet",
+    petGender: "Sexo",
+    genderMale: "Macho",
+    genderFemale: "Fêmea",
     petPicture: "Foto do pet",
     petPictureDropzone: "Arraste uma foto aqui",
     petPictureCamera: "Tirar foto agora",
@@ -172,6 +178,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     guardianSection: "Guardian contact",
     socialSectionOptional: "Social (optional)",
     petName: "Pet name",
+    petGender: "Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
     petPicture: "Pet picture",
     petPictureDropzone: "Drag a photo here",
     petPictureCamera: "Take a photo now",

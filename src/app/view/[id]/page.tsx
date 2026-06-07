@@ -67,12 +67,11 @@ export default async function ViewPetPage(props: PageProps) {
 
   const pet = entry.pet;
   const ageLabel = formatAge(pet.birthdate, locale);
-
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
-      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} />
+      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} gender={pet.gender ?? undefined} />
 
       <div className="px-4 pt-8">
         <GuardianContact guardians={pet.guardians} locale={locale} />

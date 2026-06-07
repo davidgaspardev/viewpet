@@ -5,9 +5,10 @@ type PetHeroProps = {
   name: string;
   pictureUrl: string;
   ageLabel: string;
+  gender?: "male" | "female";
 };
 
-export function PetHero({ name, pictureUrl, ageLabel }: PetHeroProps) {
+export function PetHero({ name, pictureUrl, ageLabel, gender }: PetHeroProps) {
   return (
     <div className="relative w-full">
       <div className="relative aspect-[3/4] w-full overflow-hidden sm:aspect-[4/3] md:aspect-[16/10]">
@@ -32,8 +33,11 @@ export function PetHero({ name, pictureUrl, ageLabel }: PetHeroProps) {
       </div>
 
       {/* Name pill overlapping the bottom of the image */}
-      <div className="relative -mt-16 flex justify-center">
-        <span className="rounded-full bg-white/65 backdrop-blur-md px-8 py-3 text-lg font-bold text-ink">
+      <div className="relative -mt-16 flex flex-col items-center">
+        <span className="rounded-full bg-white/65 backdrop-blur-md px-6 py-3 text-lg font-bold text-ink">
+          {gender && (
+            <span className="mr-2">{gender === "male" ? "♂" : "♀"}</span>
+          )}
           {name}
         </span>
       </div>

@@ -44,7 +44,7 @@
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
 import type { Seedable, Pet, PetEntry } from "./interface";
-import type { Guardian, LostEvent } from "@/types/pet";
+import type { Guardian, LostEvent, PetGender } from "@/types/pet";
 
 type PetStatus = "reserved" | "active" | "lost";
 
@@ -54,6 +54,7 @@ type PetDoc = {
   name?: string;
   pictureUrl?: string;
   birthdate?: string;
+  gender?: PetGender;
   guardianIds?: ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -338,6 +339,7 @@ export class MongoPetRepository implements Seedable {
       pictureUrl: doc.pictureUrl,
       birthdate: doc.birthdate,
       status: doc.status,
+      ...(doc.gender ? { gender: doc.gender } : {}),
       ...(openEvent ? { lostEvent: lostEventDocToEntity(openEvent) } : {}),
       guardians,
     };
@@ -389,6 +391,7 @@ export class MongoPetRepository implements Seedable {
           name: pet.name,
           pictureUrl: pet.pictureUrl,
           birthdate: pet.birthdate,
+          ...(pet.gender ? { gender: pet.gender } : {}),
           guardianIds,
           updatedAt: now,
         },
