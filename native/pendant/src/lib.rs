@@ -37,7 +37,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mesh = rounded_box(1.4, 1.8, 0.25, 0.35, 8);
+    let mesh = rounded_box(3.2, 1.8, 0.16, 0.24, 8);
 
     commands.spawn((
         Mesh3d(meshes.add(mesh)),
