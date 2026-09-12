@@ -16,7 +16,7 @@ export default function PendantCanvas() {
   }, []);
 
   return (
-    <div className='w-full h-[480px]'>
+    <div className='w-full h-screen'>
       <canvas id="pendant-canvas" />
     </div>
   )
