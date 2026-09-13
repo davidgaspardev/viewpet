@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:local": "DATABASE_PROVIDER=local next dev",
     "build": "next build",
+    "build:pendant": "cd native/pendant && wasm-pack build --target web --out-dir ../../public/wasm --out-name pendant --release && rm -f ../../public/wasm/.gitignore",
     "start": "next start",
     "lint": "next lint",
     "test": "bun test",

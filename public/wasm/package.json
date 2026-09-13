@@ -1,0 +1,15 @@
+{
+  "name": "pendant",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "pendant_bg.wasm",
+    "pendant.js",
+    "pendant.d.ts"
+  ],
+  "main": "pendant.js",
+  "types": "pendant.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

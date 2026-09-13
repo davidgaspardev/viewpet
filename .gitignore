@@ -49,3 +49,6 @@ bun.lockb
 
 # local filesystem database
 /data/*.db.json
+
+# native
+/native/pendant/target/
