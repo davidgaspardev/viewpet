@@ -13,8 +13,10 @@
 
 import { promises as fs, writeFileSync } from "node:fs";
 import path from "node:path";
-import { setPet, reservePetId, listPetIds } from "../src/lib/repository";
+import { PetRepositoryFactory } from "../src/lib/repository";
 import type { PetStore } from "../src/types/pet";
+
+const repository = PetRepositoryFactory.getInstance();
 
 const PETS_JSON_PATH = path.join(process.cwd(), "src/data/pets.json");
 const LOCAL_DB_PATH = path.join(process.cwd(), "data", "local.db.json");
@@ -57,10 +59,10 @@ async function main(): Promise<void> {
   for (const [hashId, petData] of Object.entries(petsData)) {
     try {
       if (petData === null) {
-        await reservePetId(hashId);
+        await repository.reservePetId(hashId);
         console.log(`🔒 Reserved: ${hashId} (empty slot)`);
       } else {
-        await setPet(hashId, petData);
+        await repository.setPet(hashId, petData);
         console.log(`🐾 Seeded: ${hashId} - ${petData.name}`);
       }
       seededCount++;
@@ -79,7 +81,7 @@ async function main(): Promise<void> {
   }
   console.log("=".repeat(50) + "\n");
 
-  const ids = await listPetIds();
+  const ids = await repository.listPetIds();
   console.log(`🔍 Verification: Found ${ids.length} pet entries`);
 }
 

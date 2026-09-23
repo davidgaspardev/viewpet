@@ -6,7 +6,7 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getRepositoryProvider, resetRepositoryProvider } from "../repository";
+import { PetRepositoryFactory } from "../repository";
 import { LocalPetRepository } from "../repository/local";
 import type { Pet, Guardian } from "@/types/pet";
 
@@ -39,29 +39,29 @@ function makePet(overrides: Partial<Pet> = {}): Pet {
 
 describe("Database Provider Abstraction", () => {
   beforeEach(() => {
-    resetRepositoryProvider();
+    PetRepositoryFactory.reset();
     delete process.env.DATABASE_PROVIDER;
   });
 
   afterEach(() => {
-    resetRepositoryProvider();
+    PetRepositoryFactory.reset();
   });
 
   describe("Factory", () => {
     test("returns a singleton instance", () => {
-      const provider1 = getRepositoryProvider();
-      const provider2 = getRepositoryProvider();
+      const provider1 = PetRepositoryFactory.getInstance();
+      const provider2 = PetRepositoryFactory.getInstance();
       expect(provider1).toBe(provider2);
     });
 
     test("defaults to local (filesystem) provider", () => {
-      const provider = getRepositoryProvider();
+      const provider = PetRepositoryFactory.getInstance();
       expect(provider).toBeInstanceOf(LocalPetRepository);
     });
 
     test("uses local provider when DATABASE_PROVIDER=local", () => {
       process.env.DATABASE_PROVIDER = "local";
-      const provider = getRepositoryProvider();
+      const provider = PetRepositoryFactory.getInstance();
       expect(provider).toBeInstanceOf(LocalPetRepository);
     });
   });
@@ -230,12 +230,12 @@ describe("Database Provider Abstraction", () => {
 
     beforeEach(() => {
       if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
-      resetRepositoryProvider();
+      PetRepositoryFactory.reset();
       process.env.DATABASE_PROVIDER = "local";
     });
 
     afterEach(() => {
-      resetRepositoryProvider();
+      PetRepositoryFactory.reset();
       if (existsSync(FACADE_DB_PATH)) rmSync(FACADE_DB_PATH);
     });
 

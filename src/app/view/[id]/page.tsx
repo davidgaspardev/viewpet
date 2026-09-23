@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { getPetEntry } from "@/lib/repository";
+import { PetRepositoryFactory } from "@/lib/repository";
 import { formatAge } from "@/lib/utils/age";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
@@ -26,7 +26,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const entry = await getPetEntry(id);
+  const entry = await PetRepositoryFactory.getInstance().getPetEntry(id);
 
   // Keep public pet profiles out of search engines. The page is meant to be
   // reached via the QR on the tag, not surfaced by a generic Google query —
@@ -56,7 +56,7 @@ export default async function ViewPetPage(props: PageProps) {
   const { id } = await params;
   const { lang } = await searchParams;
 
-  const entry = await getPetEntry(id);
+  const entry = await PetRepositoryFactory.getInstance().getPetEntry(id);
   if (entry.status === "missing") notFound();
 
   const locale = await resolveLocale(lang);

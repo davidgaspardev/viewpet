@@ -13,7 +13,7 @@
  *   bun run reserve -n 100 > qr-batch.txt
  */
 import { generateHashId } from "../src/lib/utils/ids";
-import { reservePetId } from "../src/lib/repository";
+import { PetRepositoryFactory } from "../src/lib/repository";
 
 function parseArgs(argv: string[]): { count: number } {
   const args = argv.slice(2);
@@ -46,10 +46,11 @@ function parseArgs(argv: string[]): { count: number } {
 
 async function main(): Promise<void> {
   const { count } = parseArgs(process.argv);
+  const repository = PetRepositoryFactory.getInstance();
   const ids: string[] = [];
   for (let i = 0; i < count; i++) {
     const id = generateHashId();
-    await reservePetId(id);
+    await repository.reservePetId(id);
     ids.push(id);
   }
   for (const id of ids) console.log(id);
