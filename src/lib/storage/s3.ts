@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import { validateImageUpload } from "./interface";
+import { validateImageUpload, joinUrl } from "./interface";
 
 /**
  * AWS S3 storage provider.
@@ -130,14 +130,12 @@ export class S3StorageProvider implements StorageProvider {
   private buildPublicUrl(key: string): string {
     // CloudFront takes precedence
     if (this.cloudfrontDomain) {
-      const domain = this.cloudfrontDomain.replace(/\/$/, "");
-      return `${domain}/${key}`;
+      return joinUrl(this.cloudfrontDomain, key);
     }
 
     // Custom public URL (e.g., for custom domains)
     if (this.publicUrl) {
-      const baseUrl = this.publicUrl.replace(/\/$/, "");
-      return `${baseUrl}/${key}`;
+      return joinUrl(this.publicUrl, key);
     }
 
     // Standard S3 URL

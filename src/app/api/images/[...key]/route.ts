@@ -27,10 +27,24 @@ const SUPPORTED_EXTENSIONS = new Set(
  * `<basePath>/<hashId>.<ext>`. `basePath` comes from the live provider
  * instance (not a hardcoded "uploads" literal) so this can't drift from
  * whatever `R2StorageProvider` is actually configured to write.
+ *
+ * The regex is cached by `basePath` — the provider is a singleton for the
+ * life of the process, so in practice this compiles once, not per request.
  */
+const keyPatternCache = new Map<string, RegExp>();
+
+function keyPatternFor(basePath: string): RegExp {
+  let pattern = keyPatternCache.get(basePath);
+  if (!pattern) {
+    const escapedBasePath = basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    pattern = new RegExp(`^${escapedBasePath}/([^/.]+)\\.([a-z0-9]+)$`);
+    keyPatternCache.set(basePath, pattern);
+  }
+  return pattern;
+}
+
 function isValidKey(key: string, basePath: string): boolean {
-  const escapedBasePath = basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = new RegExp(`^${escapedBasePath}/([^/.]+)\\.([a-z0-9]+)$`).exec(key);
+  const match = keyPatternFor(basePath).exec(key);
   if (!match) return false;
   const [, hashId, ext] = match;
   return isHashId(hashId) && SUPPORTED_EXTENSIONS.has(ext);

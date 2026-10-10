@@ -95,3 +95,12 @@ export function validateImageUpload(hashId: string, file: File): string {
 
   return ext;
 }
+
+/**
+ * Join a configured base URL (CloudFront domain, S3/R2 public URL base,
+ * etc.) with an object key, tolerating an optional trailing slash on the
+ * base. Shared so Local/S3/R2's `buildPublicUrl()` can't drift on this.
+ */
+export function joinUrl(base: string, key: string): string {
+  return `${base.replace(/\/$/, "")}/${key}`;
+}

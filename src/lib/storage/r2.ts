@@ -5,7 +5,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import { validateImageUpload } from "./interface";
+import { validateImageUpload, joinUrl } from "./interface";
 
 /** Route that proxies reads through our own server — see `getImage()` below. */
 const IMAGE_PROXY_PATH = "/api/images";
@@ -147,8 +147,7 @@ export class R2StorageProvider implements StorageProvider {
    */
   private buildPublicUrl(key: string): string {
     if (this.publicUrlBase) {
-      const baseUrl = this.publicUrlBase.replace(/\/$/, "");
-      return `${baseUrl}/${key}`;
+      return joinUrl(this.publicUrlBase, key);
     }
     return `${IMAGE_PROXY_PATH}/${key}`;
   }
