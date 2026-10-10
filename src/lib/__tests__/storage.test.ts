@@ -500,6 +500,15 @@ describe("Storage Provider Abstraction", () => {
       mockSend = mock(() => Promise.resolve({}));
     });
 
+    afterEach(() => {
+      mockSend?.mockRestore?.();
+      delete process.env.R2_BUCKET;
+      delete process.env.R2_ACCOUNT_ID;
+      delete process.env.R2_ACCESS_KEY_ID;
+      delete process.env.R2_SECRET_ACCESS_KEY;
+      delete process.env.R2_PUBLIC_URL_BASE;
+    });
+
     test("throws when R2_BUCKET is missing", () => {
       delete process.env.R2_BUCKET;
       expect(() => new R2StorageProvider()).toThrow("R2 bucket not configured");

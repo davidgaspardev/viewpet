@@ -1,3 +1,5 @@
+import { isHashId } from "../utils/ids";
+
 /**
  * Storage provider interface for image persistence.
  *
@@ -60,4 +62,36 @@ export interface StorageProvider {
  */
 export function getExtensionFromMime(mimeType: string): string | undefined {
   return MIME_TO_EXT[mimeType];
+}
+
+/**
+ * Shared validation every `StorageProvider.saveImage()` implementation needs
+ * before touching its backend — hashId shape, and the file's
+ * presence/type/size. Factored out so Local/S3/R2 can't silently diverge on
+ * these rules.
+ *
+ * @returns The resolved file extension (e.g. `"jpg"`) on success.
+ * @throws {Error} For an invalid hashId format.
+ * @throws {SaveImageException} For client-correctable file problems.
+ */
+export function validateImageUpload(hashId: string, file: File): string {
+  // Validate hashId to prevent path traversal and key manipulation
+  if (!isHashId(hashId)) {
+    throw new Error("Invalid hashId format");
+  }
+
+  if (!file || file.size === 0) {
+    throw new SaveImageException("empty");
+  }
+
+  const ext = getExtensionFromMime(file.type);
+  if (!ext) {
+    throw new SaveImageException("invalid_type");
+  }
+
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new SaveImageException("too_large");
+  }
+
+  return ext;
 }

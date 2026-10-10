@@ -5,12 +5,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import {
-  MAX_IMAGE_BYTES,
-  SaveImageException,
-  getExtensionFromMime,
-} from "./interface";
-import { isHashId } from "../utils/ids";
+import { validateImageUpload } from "./interface";
 
 /** Route that proxies reads through our own server — see `getImage()` below. */
 const IMAGE_PROXY_PATH = "/api/images";
@@ -96,24 +91,7 @@ export class R2StorageProvider implements StorageProvider {
    *   under our own `/api/images/<key>` proxy route.
    */
   async saveImage(hashId: string, file: File): Promise<string> {
-    // Validate hashId to prevent path traversal and key manipulation
-    if (!isHashId(hashId)) {
-      throw new Error("Invalid hashId format");
-    }
-
-    // Validate file
-    if (!file || file.size === 0) {
-      throw new SaveImageException("empty");
-    }
-
-    const ext = getExtensionFromMime(file.type);
-    if (!ext) {
-      throw new SaveImageException("invalid_type");
-    }
-
-    if (file.size > MAX_IMAGE_BYTES) {
-      throw new SaveImageException("too_large");
-    }
+    const ext = validateImageUpload(hashId, file);
 
     try {
       const buffer = Buffer.from(await file.arrayBuffer());

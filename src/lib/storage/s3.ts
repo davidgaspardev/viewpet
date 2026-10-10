@@ -1,11 +1,6 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import {
-  MAX_IMAGE_BYTES,
-  SaveImageException,
-  getExtensionFromMime,
-} from "./interface";
-import { isHashId } from "../utils/ids";
+import { validateImageUpload } from "./interface";
 
 /**
  * AWS S3 storage provider.
@@ -91,24 +86,7 @@ export class S3StorageProvider implements StorageProvider {
    * @returns Public S3 or CloudFront URL
    */
   async saveImage(hashId: string, file: File): Promise<string> {
-    // Validate hashId to prevent path traversal and key manipulation
-    if (!isHashId(hashId)) {
-      throw new Error("Invalid hashId format");
-    }
-
-    // Validate file
-    if (!file || file.size === 0) {
-      throw new SaveImageException("empty");
-    }
-
-    const ext = getExtensionFromMime(file.type);
-    if (!ext) {
-      throw new SaveImageException("invalid_type");
-    }
-
-    if (file.size > MAX_IMAGE_BYTES) {
-      throw new SaveImageException("too_large");
-    }
+    const ext = validateImageUpload(hashId, file);
 
     try {
       // Convert File to Buffer

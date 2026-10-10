@@ -30,6 +30,20 @@ function isValidKey(key: string): boolean {
   return isHashId(hashId) && SUPPORTED_EXTENSIONS.has(ext);
 }
 
+/**
+ * True for a missing-object error from R2's GetObjectCommand.
+ *
+ * Checks the HTTP status first — it's set directly from R2's response and
+ * doesn't depend on the AWS SDK recognizing the exact S3 error code/casing
+ * in the (S3-compatible, not S3-identical) XML body. `.name === "NoSuchKey"`
+ * is kept as a fallback for the normal case where the SDK does model it.
+ */
+function isNotFoundError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+  return status === 404 || err.name === "NoSuchKey";
+}
+
 type Params = { key: string[] };
 
 export async function GET(
@@ -58,7 +72,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    if (err instanceof Error && err.name === "NoSuchKey") {
+    if (isNotFoundError(err)) {
       return new NextResponse("Not found", { status: 404 });
     }
     console.error(`[api/images] failed to fetch "${key}" from R2:`, err);
