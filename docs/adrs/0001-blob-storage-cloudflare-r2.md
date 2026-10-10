@@ -16,6 +16,14 @@ Add `R2StorageProvider` as a third storage provider, selected via `STORAGE_PROVI
 
 R2 implements the S3 API, so the new provider reuses `@aws-sdk/client-s3` pointed at the R2 account endpoint (`https://<account-id>.r2.cloudflarestorage.com`, `region: "auto"`, path-style addressing) instead of introducing a new SDK. `savePetImage()`'s signature and every consumer of it are unaffected — this is purely a new leaf behind the existing `StorageProvider` port (see `PATTERN.md` — Dependency Inversion).
 
+**Public URL has two modes, not one.** R2 buckets are private by default and have no bucket-policy equivalent to S3's public-read JSON — enabling public access is an explicit, easy-to-get-wrong Cloudflare dashboard step (confirmed the hard way: the first rollout attempt left the bucket private, so the "public" URL `saveImage()` returned 403'd in the browser). Making `R2_PUBLIC_URL_BASE` a hard requirement, as the initial version of this ADR did, means a misconfigured dashboard silently breaks every pet photo in production with no app-level signal.
+
+So `R2StorageProvider` picks the URL shape based on what's actually configured:
+- `R2_PUBLIC_URL_BASE` set → direct URL, same shape as S3 (`<base>/<key>`). Zero-egress, served from Cloudflare's CDN — the actual cost win this migration is for.
+- `R2_PUBLIC_URL_BASE` unset (default) → `/api/images/<key>`, a new authenticated route (`src/app/api/images/[...key]/route.ts`) that holds the R2 credentials, fetches the object server-side (`R2StorageProvider.getImage()`), and streams it back. Works with a fully private bucket — no dashboard step can break it — at the cost of proxying bytes through our own server instead of straight from R2.
+
+The proxy response reuses the same `Cache-Control: public, max-age=31536000, immutable` set at upload time, so the platform's edge cache (not this route) serves repeat views — the egress-cost gap between the two modes is mostly a first-request-per-image cost, not a per-view one.
+
 ## Alternatives considered
 
 - **Stay on S3 + add CloudFront.** Works, but adds a service to configure and still has egress cost at the CloudFront edge.
@@ -26,8 +34,9 @@ R2 implements the S3 API, so the new provider reuses `@aws-sdk/client-s3` pointe
 ## Consequences
 
 - No consumer code changes — the provider abstraction already absorbed this (`src/lib/storage/interface.ts`).
-- New required env vars for the `r2` provider: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL_BASE` — documented in `src/lib/storage/README.md`.
-- Unlike S3, R2 has no canonical default public URL derivable from account id + bucket name (no bucket-policy equivalent) — public access and a domain (custom or `pub-<hash>.r2.dev`) must be configured explicitly in the Cloudflare dashboard before the provider is usable. `R2StorageProvider` throws eagerly at construction if `R2_PUBLIC_URL_BASE` is missing, same pattern `S3StorageProvider` uses for a missing bucket.
+- Required env vars for the `r2` provider: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. `R2_PUBLIC_URL_BASE` is optional (see above) — documented in `src/lib/storage/README.md`.
+- A new route, `src/app/api/images/[...key]/route.ts`, exists purely to serve R2 objects when the bucket is private. It validates the requested key against the exact shape `saveImage()` writes (`uploads/<hashId>.<ext>`, hashId passing `isHashId()`) before touching R2, and checks the active provider is actually `R2StorageProvider` — it's a 404, not a generic bucket-object proxy, by design.
 - **No São Paulo region on R2** (R2 is edge-global, not single-region). Not a data-residency problem under LGPD for pet photos (not personal/sensitive data in the strict sense), but worth revisiting if that policy stance changes.
 - **Vendor lock-in to Cloudflare** is mitigated by the S3-compatible API — exiting R2 later costs the same effort as this migration did.
-- **Cutover for existing S3-backed pets is a separate, manual operational step**, not covered by this ADR's code change: migrate objects with `rclone copy s3remote:bucket r2remote:bucket`, then rewrite `pictureUrl` values already stored in MongoDB to the new `R2_PUBLIC_URL_BASE`, then flip `STORAGE_PROVIDER=r2` in production. Keep the S3 bucket read-only for a safety window before deleting it. See `src/lib/storage/README.md` → "Migrating existing objects from S3".
+- **Cutover for existing S3-backed pets is a separate, manual operational step**, not covered by this ADR's code change: migrate objects with `rclone copy s3remote:bucket r2remote:bucket`, then rewrite `pictureUrl` values already stored in MongoDB to the new URL shape (direct `R2_PUBLIC_URL_BASE` URL, or `/api/images/<key>` if staying on the proxy), then flip `STORAGE_PROVIDER=r2` in production. Keep the S3 bucket read-only for a safety window before deleting it. See `src/lib/storage/README.md` → "Migrating existing objects from S3".
+- **Follow-up, not blocking**: revisit enabling and verifying R2 public access later to drop the proxy hop and get the full zero-egress benefit. Nothing about the current code needs to change for that — just set `R2_PUBLIC_URL_BASE` once it's confirmed working.

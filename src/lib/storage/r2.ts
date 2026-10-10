@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  type S3ClientConfig,
+} from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
 import {
   MAX_IMAGE_BYTES,
@@ -6,6 +11,9 @@ import {
   getExtensionFromMime,
 } from "./interface";
 import { isHashId } from "../utils/ids";
+
+/** Route that proxies reads through our own server — see `getImage()` below. */
+const IMAGE_PROXY_PATH = "/api/images";
 
 /**
  * Cloudflare R2 storage provider.
@@ -19,30 +27,40 @@ import { isHashId } from "../utils/ids";
  * - R2_ACCESS_KEY_ID: R2 API token access key
  * - R2_SECRET_ACCESS_KEY: R2 API token secret
  * - R2_BUCKET: R2 bucket name
- * - R2_PUBLIC_URL_BASE: base URL images are served from (custom domain, or
- *   the bucket's `pub-<hash>.r2.dev` dev subdomain). Unlike S3, R2 has no
- *   canonical public URL derivable from account id + bucket name — the
- *   bucket's public access has to be enabled explicitly and this value
- *   copied from the Cloudflare dashboard, so there's no safe default.
+ *
+ * Optional:
+ * - R2_PUBLIC_URL_BASE: base URL images are served from directly (custom
+ *   domain, or the bucket's `pub-<hash>.r2.dev` dev subdomain), once public
+ *   access is actually enabled and confirmed working in the Cloudflare
+ *   dashboard. When unset, `saveImage()` returns a URL under
+ *   `/api/images/<key>` instead — our own route (`src/app/api/images/`)
+ *   fetches the object with the credentials above and serves the bytes.
+ *   R2 buckets are private by default and public access is an explicit,
+ *   easy-to-get-wrong dashboard step, so the proxy is the safe default —
+ *   it always works, at the cost of routing image bytes through our own
+ *   server instead of Cloudflare's CDN. Set `R2_PUBLIC_URL_BASE` once
+ *   public access is confirmed to skip that hop and get R2's full
+ *   zero-egress benefit back.
  *
  * Suitable for:
- * - Public, immutable assets served at scale (zero egress fees)
+ * - Public, immutable assets served at scale (zero egress fees, once
+ *   `R2_PUBLIC_URL_BASE` is in play)
  * - Production deployments already comfortable with the S3 API
  */
 export class R2StorageProvider implements StorageProvider {
   private client: S3Client;
   private readonly bucketName: string;
   private readonly basePath: string;
-  private readonly publicUrlBase: string;
+  private readonly publicUrlBase?: string;
 
   constructor(bucketName?: string, basePath: string = "uploads") {
     this.bucketName = bucketName || process.env.R2_BUCKET || "";
     this.basePath = basePath;
+    this.publicUrlBase = process.env.R2_PUBLIC_URL_BASE || undefined;
 
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-    this.publicUrlBase = process.env.R2_PUBLIC_URL_BASE || "";
 
     if (!this.bucketName) {
       throw new Error("R2 bucket not configured. Set R2_BUCKET environment variable.");
@@ -53,11 +71,6 @@ export class R2StorageProvider implements StorageProvider {
     if (!accessKeyId || !secretAccessKey) {
       throw new Error(
         "R2 credentials not configured. Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY environment variables.",
-      );
-    }
-    if (!this.publicUrlBase) {
-      throw new Error(
-        "R2 public URL not configured. Set R2_PUBLIC_URL_BASE to the bucket's public domain.",
       );
     }
 
@@ -79,7 +92,8 @@ export class R2StorageProvider implements StorageProvider {
    *
    * @param hashId - Unique identifier for this pet
    * @param file - The uploaded File object
-   * @returns Public URL under `R2_PUBLIC_URL_BASE`
+   * @returns `R2_PUBLIC_URL_BASE` + key when configured, otherwise a URL
+   *   under our own `/api/images/<key>` proxy route.
    */
   async saveImage(hashId: string, file: File): Promise<string> {
     // Validate hashId to prevent path traversal and key manipulation
@@ -129,9 +143,34 @@ export class R2StorageProvider implements StorageProvider {
     }
   }
 
-  /** Build the public URL for the uploaded file under `R2_PUBLIC_URL_BASE`. */
+  /**
+   * Fetch an object's bytes directly from R2 using our own credentials.
+   * Used by the `/api/images/[...key]` route to serve images when
+   * `R2_PUBLIC_URL_BASE` isn't configured (bucket stays private).
+   *
+   * @throws Error with `.name === "NoSuchKey"` when the object doesn't exist
+   *   (same shape the AWS SDK throws, so callers can branch on it the same way).
+   */
+  async getImage(key: string): Promise<{ body: Uint8Array; contentType: string }> {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
+    );
+    if (!result.Body) {
+      throw new Error(`R2 object "${key}" has no body`);
+    }
+    const body = await result.Body.transformToByteArray();
+    return { body, contentType: result.ContentType ?? "application/octet-stream" };
+  }
+
+  /**
+   * Build the URL for the uploaded file — direct to R2 when
+   * `R2_PUBLIC_URL_BASE` is configured, otherwise through our own proxy.
+   */
   private buildPublicUrl(key: string): string {
-    const baseUrl = this.publicUrlBase.replace(/\/$/, "");
-    return `${baseUrl}/${key}`;
+    if (this.publicUrlBase) {
+      const baseUrl = this.publicUrlBase.replace(/\/$/, "");
+      return `${baseUrl}/${key}`;
+    }
+    return `${IMAGE_PROXY_PATH}/${key}`;
   }
 }

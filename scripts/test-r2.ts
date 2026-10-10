@@ -9,8 +9,9 @@
  *   - R2_ACCESS_KEY_ID
  *   - R2_SECRET_ACCESS_KEY
  *   - R2_BUCKET
- *   - R2_PUBLIC_URL_BASE
  *   - STORAGE_PROVIDER=r2
+ *   - R2_PUBLIC_URL_BASE (optional — unset serves via /api/images/<key> instead,
+ *     which works even with a private bucket)
  */
 
 import { StorageProviderFactory } from "../src/lib/storage";
@@ -67,10 +68,6 @@ async function testR2Upload() {
         console.log("💡 Troubleshooting:");
         console.log("   - Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY");
         console.log("   - Generate an R2 API token in the Cloudflare dashboard\n");
-      } else if (error.message.includes("public URL not configured")) {
-        console.log("💡 Troubleshooting:");
-        console.log("   - Set R2_PUBLIC_URL_BASE to the bucket's public domain");
-        console.log("     (custom domain, or the pub-<hash>.r2.dev dev subdomain)\n");
       } else if (error.message.includes("Access Denied")) {
         console.log("💡 Troubleshooting:");
         console.log("   - Check the R2 API token has Object Read & Write permissions\n");

@@ -277,6 +277,7 @@ src/
 │   ├── page.tsx                  # landing
 │   ├── globals.css               # tailwind base/components/utilities
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
+│   ├── api/images/[...key]/route.ts  # proxy autenticado pro bucket R2 privado
 │   └── view/[id]/
 │       ├── page.tsx              # branch missing/empty/filled
 │       ├── actions.ts            # Server Action do submit
@@ -314,7 +315,7 @@ Camada de abstração em `src/lib/storage/`:
 | -------- | --------------- | ------------------------------------------------------------ |
 | `local`  | Desenvolvimento | `/uploads/abc123.jpg` (gravado em `public/uploads/`)         |
 | `s3`     | Produção        | `https://bucket.s3.region.amazonaws.com/uploads/abc123.jpg` |
-| `r2`     | Produção (zero egress) | `https://<seu-dominio-ou-pub-xyz.r2.dev>/uploads/abc123.jpg` |
+| `r2`     | Produção (zero egress) | `/api/images/uploads/abc123.jpg` (proxy, padrão) ou direto se `R2_PUBLIC_URL_BASE` estiver setada |
 
 ```bash
 STORAGE_PROVIDER=local   # padrão
@@ -333,7 +334,7 @@ R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET=viewpet-images-prod
-R2_PUBLIC_URL_BASE=https://img.viewpet.com
+R2_PUBLIC_URL_BASE=https://img.viewpet.com  # opcional — sem isso, serve via /api/images/<key>
 ```
 
 Detalhes de setup: [`src/lib/storage/README.md`](src/lib/storage/README.md).

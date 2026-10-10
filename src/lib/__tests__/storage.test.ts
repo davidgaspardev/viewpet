@@ -15,7 +15,7 @@ import { S3StorageProvider } from "../storage/s3";
 import { R2StorageProvider } from "../storage/r2";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 // Test utilities
 const TEST_UPLOADS_DIR = path.join(process.cwd(), "test-uploads");
@@ -111,7 +111,6 @@ describe("Storage Provider Abstraction", () => {
       process.env.R2_ACCOUNT_ID = "test-account";
       process.env.R2_ACCESS_KEY_ID = "test-key";
       process.env.R2_SECRET_ACCESS_KEY = "test-secret";
-      process.env.R2_PUBLIC_URL_BASE = "https://pub-test.r2.dev";
       const provider = StorageProviderFactory.getInstance();
       expect(provider).toBeInstanceOf(R2StorageProvider);
     });
@@ -516,9 +515,9 @@ describe("Storage Provider Abstraction", () => {
       expect(() => new R2StorageProvider()).toThrow("R2 credentials not configured");
     });
 
-    test("throws when R2_PUBLIC_URL_BASE is missing", () => {
+    test("does not throw when R2_PUBLIC_URL_BASE is missing", () => {
       delete process.env.R2_PUBLIC_URL_BASE;
-      expect(() => new R2StorageProvider()).toThrow("R2 public URL not configured");
+      expect(() => new R2StorageProvider()).not.toThrow();
     });
 
     test("saveImage calls S3Client.send once", async () => {
@@ -544,7 +543,7 @@ describe("Storage Provider Abstraction", () => {
       expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
     });
 
-    test("saveImage builds public URL from R2_PUBLIC_URL_BASE", async () => {
+    test("saveImage builds public URL from R2_PUBLIC_URL_BASE when configured", async () => {
       const provider = new R2StorageProvider();
       (provider as any).client.send = mockSend;
       const file = createTestImage();
@@ -552,6 +551,17 @@ describe("Storage Provider Abstraction", () => {
       const url = await provider.saveImage(TEST_HASH_ID, file);
 
       expect(url).toBe(`https://pub-test.r2.dev/uploads/${TEST_HASH_ID}.png`);
+    });
+
+    test("saveImage returns a proxy URL when R2_PUBLIC_URL_BASE is not set", async () => {
+      delete process.env.R2_PUBLIC_URL_BASE;
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const file = createTestImage();
+
+      const url = await provider.saveImage(TEST_HASH_ID, file);
+
+      expect(url).toBe(`/api/images/uploads/${TEST_HASH_ID}.png`);
     });
 
     test("saveImage validates file type", async () => {
@@ -600,6 +610,63 @@ describe("Storage Provider Abstraction", () => {
       await expect(provider.saveImage("../evil", file)).rejects.toThrow(
         "Invalid hashId format",
       );
+    });
+
+    describe("getImage", () => {
+      test("returns bytes and content type", async () => {
+        const provider = new R2StorageProvider();
+        const bytes = new Uint8Array([1, 2, 3]);
+        (provider as any).client.send = mock(() =>
+          Promise.resolve({
+            ContentType: "image/png",
+            Body: { transformToByteArray: () => Promise.resolve(bytes) },
+          }),
+        );
+
+        const result = await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
+
+        expect(result.body).toBe(bytes);
+        expect(result.contentType).toBe("image/png");
+      });
+
+      test("defaults contentType when the object omits it", async () => {
+        const provider = new R2StorageProvider();
+        (provider as any).client.send = mock(() =>
+          Promise.resolve({
+            Body: { transformToByteArray: () => Promise.resolve(new Uint8Array()) },
+          }),
+        );
+
+        const result = await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
+
+        expect(result.contentType).toBe("application/octet-stream");
+      });
+
+      test("throws when the object has no body", async () => {
+        const provider = new R2StorageProvider();
+        (provider as any).client.send = mock(() => Promise.resolve({}));
+
+        await expect(
+          provider.getImage(`uploads/${TEST_HASH_ID}.png`),
+        ).rejects.toThrow("has no body");
+      });
+
+      test("uses GetObjectCommand with the correct bucket and key", async () => {
+        const provider = new R2StorageProvider();
+        const send: any = mock(() =>
+          Promise.resolve({
+            Body: { transformToByteArray: () => Promise.resolve(new Uint8Array()) },
+          }),
+        );
+        (provider as any).client.send = send;
+
+        await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
+
+        const call = send.mock.calls[0][0];
+        expect(call).toBeInstanceOf(GetObjectCommand);
+        expect(call.input.Bucket).toBe("test-bucket");
+        expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
+      });
     });
   });
 

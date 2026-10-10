@@ -79,7 +79,7 @@ const url = await provider.saveImage(hashId, file);
 | `R2_ACCESS_KEY_ID` | R2 | — | R2 API token access key |
 | `R2_SECRET_ACCESS_KEY` | R2 | — | R2 API token secret |
 | `R2_BUCKET` | R2 | — | R2 bucket name |
-| `R2_PUBLIC_URL_BASE` | R2 | — | Public domain the bucket is served from (custom domain or `pub-<hash>.r2.dev`) |
+| `R2_PUBLIC_URL_BASE` | No | — (proxy) | Public domain the bucket is served from directly (custom domain or `pub-<hash>.r2.dev`). Unset → images are served through `/api/images/<key>` instead, which works with a private bucket |
 
 ### Provider Selection
 
@@ -106,8 +106,10 @@ STORAGE_PROVIDER env var
 ### R2StorageProvider
 
 - **Storage**: R2 bucket at key `uploads/<hashId>.<ext>` (same S3-compatible API as `S3StorageProvider`, pointed at the R2 endpoint)
-- **URLs**: `R2_PUBLIC_URL_BASE` + key — a custom domain or the bucket's `pub-<hash>.r2.dev` dev subdomain. Unlike S3, there's no canonical default URL, so this is required.
-- **Best for**: production, public/immutable assets served at scale — R2 has zero egress fees, which dominates the cost of serving pet photos on every public profile view
+- **URLs**: two modes, picked automatically based on config —
+  - `R2_PUBLIC_URL_BASE` set → direct URL (`R2_PUBLIC_URL_BASE` + key), same shape as S3. Needs the bucket's public access enabled and confirmed working in the Cloudflare dashboard.
+  - `R2_PUBLIC_URL_BASE` unset (default) → `/api/images/<key>`, our own route (`src/app/api/images/[...key]/route.ts`) that fetches the object with R2 credentials and serves it. Works with a fully private bucket — no dashboard public-access step needed — at the cost of proxying the bytes through our own server instead of straight from R2/Cloudflare's CDN. Responses carry the same 1-year immutable `Cache-Control` as the upload, so repeat views hit the platform's edge cache rather than this route.
+- **Best for**: production, public/immutable assets served at scale — R2 has zero egress fees, which dominates the cost of serving pet photos on every public profile view. Set `R2_PUBLIC_URL_BASE` once public access is confirmed working to get that benefit without the proxy hop.
 
 ### FirebaseStorageProvider
 
@@ -191,12 +193,16 @@ bun run test-s3-upload.ts
 1. Go to **R2** → **Create bucket**
 2. Note the bucket name and your account id (shown in the R2 overview sidebar — also the subdomain of `https://dash.cloudflare.com/<account-id>/r2`)
 
-### 2. Enable Public Access
+### 2. Public Access (optional)
 
-R2 buckets are private by default — there's no bucket-policy equivalent to S3's public-read JSON.
+R2 buckets are **private by default** — there's no bucket-policy equivalent to S3's public-read JSON, and no `R2_PUBLIC_URL_BASE` default to fall back on. Skip this step entirely and the app serves images through `/api/images/<key>` (our own authenticated proxy — see `R2StorageProvider`) instead, no dashboard changes needed.
+
+To get direct URLs (skips the proxy hop, gets the full zero-egress benefit via Cloudflare's CDN):
 
 - **Quick/dev**: bucket **Settings** → **Public access** → enable the `pub-<hash>.r2.dev` dev subdomain. Use that as `R2_PUBLIC_URL_BASE`.
-- **Production**: bucket **Settings** → **Custom Domains** → connect a domain you control (e.g. `img.viewpet.com`). Use that as `R2_PUBLIC_URL_BASE` — it's also what puts images behind Cloudflare's CDN at no extra cost.
+- **Production**: bucket **Settings** → **Custom Domains** → connect a domain you control (e.g. `img.viewpet.com`). Use that as `R2_PUBLIC_URL_BASE`.
+
+Verify the URL actually works (loads without credentials, in an incognito window) before setting `R2_PUBLIC_URL_BASE` — a half-finished public-access setup is indistinguishable from a private one until someone's browser hits a 403/"AccessDenied" page instead of the pet photo. When in doubt, leave `R2_PUBLIC_URL_BASE` unset and use the proxy; it always works.
 
 ### 3. API Token (minimal permissions)
 
@@ -210,8 +216,11 @@ R2_ACCOUNT_ID=your-cloudflare-account-id
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET=viewpet-images-prod
-R2_PUBLIC_URL_BASE=https://img.viewpet.com   # or https://pub-<hash>.r2.dev for dev
 STORAGE_PROVIDER=r2
+
+# Optional — only if step 2's public access is enabled and verified working.
+# Unset: images are served through /api/images/<key> instead.
+R2_PUBLIC_URL_BASE=https://img.viewpet.com   # or https://pub-<hash>.r2.dev for dev
 ```
 
 ### 5. CORS (for browser uploads)
@@ -242,7 +251,7 @@ R2's S3-compatible API makes `rclone` a drop-in migration tool:
 rclone copy s3remote:your-s3-bucket r2remote:your-r2-bucket --progress
 ```
 
-Keep the S3 bucket around (read-only) for a safety window after cutover, then delete it once R2 is confirmed serving traffic correctly. Existing `pictureUrl` values already stored in MongoDB point at the old S3 URLs — those need a one-time rewrite to the new `R2_PUBLIC_URL_BASE` as part of cutover (outside the scope of this abstraction layer; see the ADR for the full rollout plan).
+Keep the S3 bucket around (read-only) for a safety window after cutover, then delete it once R2 is confirmed serving traffic correctly. Existing `pictureUrl` values already stored in MongoDB point at the old S3 URLs — those need a one-time rewrite as part of cutover: to the new `R2_PUBLIC_URL_BASE` if public access is enabled, or to `/api/images/uploads/<hashId>.<ext>` if serving through the proxy. Outside the scope of this abstraction layer; see the ADR for the full rollout plan.
 
 ## Local Testing Options
 
@@ -296,7 +305,7 @@ R2_ACCOUNT_ID=your-account-id
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 R2_BUCKET=your-bucket
-R2_PUBLIC_URL_BASE=https://pub-xyz.r2.dev
+# R2_PUBLIC_URL_BASE optional — leave unset to serve via /api/images/<key>
 ```
 
 ```bash
@@ -359,12 +368,12 @@ Possible further providers: **Cloudinary** (image transforms), **DigitalOcean Sp
 - [ ] Images publicly accessible via URL
 
 **R2:**
-- [ ] R2 bucket created with public access enabled (dev subdomain or custom domain)
+- [ ] R2 bucket created
 - [ ] API token scoped to the bucket with Object Read & Write only
 - [ ] Environment variables set in production
 - [ ] Upload test: `bun run test:r2-upload`
-- [ ] Images publicly accessible via `R2_PUBLIC_URL_BASE`
-- [ ] If migrating from S3: existing `pictureUrl` values rewritten to the new base URL
+- [ ] Images load at the returned URL (either `/api/images/<key>` proxy, or confirm public access actually works before setting `R2_PUBLIC_URL_BASE`)
+- [ ] If migrating from S3: existing `pictureUrl` values rewritten to the new URL shape
 
 ## Troubleshooting
 
@@ -378,9 +387,9 @@ Possible further providers: **Cloudinary** (image transforms), **DigitalOcean Sp
 
 **Local images not showing** → Ensure `public/uploads/` exists; restart dev server after first upload
 
-**"R2 public URL not configured"** → Set `R2_PUBLIC_URL_BASE` to the bucket's dev subdomain or custom domain
+**R2 upload succeeds but the returned URL 404s/403s** → Only possible if `R2_PUBLIC_URL_BASE` is set and public access isn't actually enabled on the bucket (R2 buckets are private by default). Either enable public access and confirm it works in an incognito window, or unset `R2_PUBLIC_URL_BASE` to use the `/api/images/<key>` proxy instead — it works with a private bucket.
 
-**R2 upload succeeds but the URL 404s** → Public access isn't enabled on the bucket yet (R2 buckets are private by default) — enable it in the Cloudflare dashboard before trusting the URL
+**`/api/images/<key>` returns 404** → Either the key doesn't match `uploads/<hashId>.<ext>` (the route only serves that shape, by design), or `STORAGE_PROVIDER` isn't `r2` on the server handling the request, or the object genuinely doesn't exist in the bucket.
 
 ## Known Gaps
 
