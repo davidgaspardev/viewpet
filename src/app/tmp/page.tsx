@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { listPetEntries } from "@/lib/repository";
+import { PetRepositoryFactory } from "@/lib/repository";
 import { getDictionary } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n.server";
 import { Logo } from "@/ui/Logo";
@@ -13,7 +13,7 @@ export default async function HomePage() {
   if (process.env.NODE_ENV === "production") notFound();
 
   const [entries, locale] = await Promise.all([
-    listPetEntries(),
+    PetRepositoryFactory.getInstance().listPetEntries(),
     resolveLocale(),
   ]);
   const dict = getDictionary(locale);

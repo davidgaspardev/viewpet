@@ -1,5 +1,5 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
-import type { IStorageProvider } from "./interface";
+import type { StorageProvider } from "./interface";
 import {
   MAX_IMAGE_BYTES,
   SaveImageException,
@@ -34,7 +34,7 @@ import { isHashId } from "../utils/ids";
  * - High-scale applications
  * - Cost-effective storage
  */
-export class S3StorageProvider implements IStorageProvider {
+export class S3StorageProvider implements StorageProvider {
   private client: S3Client;
   private readonly bucketName: string;
   private readonly region: string;

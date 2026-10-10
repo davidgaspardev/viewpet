@@ -10,7 +10,8 @@ src/lib/
     ├── interface.ts       # PetRepository + Seedable — contratos de domínio
     ├── local.ts           # LocalPetRepository (filesystem JSON)
     ├── mongodb.ts         # MongoPetRepository (três collections)
-    └── index.ts           # factory + singleton + exports diretos
+    ├── factory.ts         # PetRepositoryFactory — seleção de provider + singleton
+    └── index.ts           # barrel puro
 ```
 
 ## Provider selection
@@ -22,16 +23,20 @@ DATABASE_PROVIDER=mongodb  # produção — exige MONGODB_URI
 
 ## API
 
-`src/lib/repository/index.ts` exporta as funções usadas pela aplicação:
+`src/lib/repository/index.ts` exporta a `PetRepositoryFactory`, que constrói e cacheia o provider ativo (singleton):
 
 ```ts
-getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | empty | filled
-setPet(hashId, pet): Promise<void>
-listPetEntries(): Promise<Array<{ id, status, name? }>>
+const repository = PetRepositoryFactory.getInstance();  // sempre Seedable
 
-// scripts/admin only (ISeedable):
-reservePetId(hashId): Promise<void>
-listPetIds(): Promise<string[]>
+repository.getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | empty | filled
+repository.setPet(hashId, pet): Promise<void>
+repository.listPetEntries(): Promise<Array<{ id, status, name? }>>
+
+// scripts/admin only (Seedable):
+repository.reservePetId(hashId): Promise<void>
+repository.listPetIds(): Promise<string[]>
+
+PetRepositoryFactory.reset(): void  // usado por testes entre casos
 ```
 
 Os três estados:
@@ -144,6 +149,6 @@ Pra testar o provider Mongo especificamente existe `mongodb.test.ts` que sobe um
 ## Adicionando um novo provider
 
 1. Cria `src/lib/repository/<nome>.ts` com uma classe que implementa `Seedable` (ou só `PetRepository` de `@/lib/repository` se não precisar de reserva/listagem).
-2. Adiciona o case no factory de `index.ts`.
+2. Adiciona o case no `PetRepositoryFactory` (`factory.ts`).
 3. Estende `DatabaseProviderType`.
 4. Documenta o novo `DATABASE_PROVIDER=<nome>` no README raiz.

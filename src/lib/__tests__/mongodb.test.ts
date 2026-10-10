@@ -6,7 +6,7 @@
 import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { MongoClient } from "mongodb";
-import { MongoPetRepository, resetMongoClient } from "../repository/mongodb";
+import { MongoPetRepository, resetMongoClient } from "../repository/mongodb/mongodb";
 import type { Pet } from "@/types/pet";
 
 let mongod: MongoMemoryServer;

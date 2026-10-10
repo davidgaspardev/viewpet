@@ -3,7 +3,7 @@
  *
  * This module provides a backward-compatible API while implementing
  * dependency inversion. The actual storage implementation is determined
- * by the factory in `./storage/index.ts`, which selects between:
+ * by `StorageProviderFactory` in `./storage/factory.ts`, which selects between:
  *
  * - LocalStorageProvider: writes to `public/uploads/` (development)
  * - S3StorageProvider: uploads to AWS S3 (production)
@@ -23,7 +23,7 @@
  */
 
 import {
-  getStorageProvider,
+  StorageProviderFactory,
   SUPPORTED_IMAGE_MIMES,
   MAX_IMAGE_BYTES,
   SaveImageException,
@@ -45,6 +45,6 @@ export async function savePetImage(
   hashId: string,
   file: File,
 ): Promise<string> {
-  const provider = getStorageProvider();
+  const provider = StorageProviderFactory.getInstance();
   return provider.saveImage(hashId, file);
 }
