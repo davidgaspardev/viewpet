@@ -9,12 +9,12 @@ High-Level Code (actions.ts)
         ↓ depends on
 Facade (src/lib/blobs.ts)
         ↓ uses
-Factory (src/lib/storage/index.ts)
+StorageProviderFactory (src/lib/storage/factory.ts)
         ↓ returns
 Interface (IStorageProvider)
         ↓ implemented by
 ┌───────────┬────────────┬──────────────┐
-│  Local    │  Firebase  │     S3       │
+│  Local    │    Blob    │     S3       │
 │ Provider  │  Provider  │   Provider   │
 └───────────┴────────────┴──────────────┘
 ```
@@ -28,7 +28,9 @@ src/lib/
     ├── interface.ts          # IStorageProvider interface + types
     ├── local.ts              # LocalStorageProvider (filesystem)
     ├── s3.ts                 # S3StorageProvider (AWS S3)
-    └── index.ts              # Factory + provider selection
+    ├── blob.ts               # BlobStorageProvider (Vercel Blob)
+    ├── factory.ts            # StorageProviderFactory — singleton, provider selection
+    └── index.ts              # barrel puro
 ```
 
 ## Quick Start
@@ -53,9 +55,9 @@ try {
 ### Direct provider usage
 
 ```typescript
-import { getStorageProvider } from "@/lib/storage";
+import { StorageProviderFactory } from "@/lib/storage";
 
-const provider = getStorageProvider();
+const provider = StorageProviderFactory.getInstance();
 const url = await provider.saveImage(hashId, file);
 ```
 
@@ -255,7 +257,7 @@ try {
 ## Adding New Providers
 
 1. Create `src/lib/storage/newprovider.ts` implementing `IStorageProvider`
-2. Add a case to the factory in `index.ts`
+2. Add a case to `StorageProviderFactory` (`factory.ts`)
 3. Add tests
 
 ```typescript

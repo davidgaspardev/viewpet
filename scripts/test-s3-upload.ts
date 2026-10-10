@@ -12,14 +12,14 @@
  *   - STORAGE_PROVIDER=s3 (or it will auto-detect in production)
  */
 
-import { getStorageProvider } from "../src/lib/storage";
+import { StorageProviderFactory } from "../src/lib/storage";
 
 async function testS3Upload() {
   console.log("🧪 Testing S3 upload...\n");
 
   try {
     // Get the storage provider
-    const storage = getStorageProvider();
+    const storage = StorageProviderFactory.getInstance();
     console.log("✓ Storage provider initialized\n");
 
     // Create a fake image File

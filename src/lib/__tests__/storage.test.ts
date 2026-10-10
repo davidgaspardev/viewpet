@@ -5,8 +5,7 @@
 
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
 import {
-  getStorageProvider,
-  resetStorageProvider,
+  StorageProviderFactory,
   SaveImageException,
   SUPPORTED_IMAGE_MIMES,
   MAX_IMAGE_BYTES,
@@ -70,7 +69,7 @@ const TEST_HASH_ID = "abc23456defg";
 describe("Storage Provider Abstraction", () => {
   beforeEach(async () => {
     // Reset singleton before each test
-    resetStorageProvider();
+    StorageProviderFactory.reset();
     // Clear environment variables
     delete process.env.STORAGE_PROVIDER;
     // Clean up test files
@@ -78,37 +77,37 @@ describe("Storage Provider Abstraction", () => {
   });
 
   afterEach(async () => {
-    resetStorageProvider();
+    StorageProviderFactory.reset();
     await cleanupTestFiles();
   });
 
   describe("Factory", () => {
     test("returns singleton instance", () => {
-      const provider1 = getStorageProvider();
-      const provider2 = getStorageProvider();
+      const provider1 = StorageProviderFactory.getInstance();
+      const provider2 = StorageProviderFactory.getInstance();
       expect(provider1).toBe(provider2);
     });
 
     test("respects STORAGE_PROVIDER environment variable for local", () => {
-      resetStorageProvider();
+      StorageProviderFactory.reset();
       process.env.STORAGE_PROVIDER = "local";
-      const provider = getStorageProvider();
+      const provider = StorageProviderFactory.getInstance();
       expect(provider).toBeInstanceOf(LocalStorageProvider);
     });
 
     test("respects STORAGE_PROVIDER environment variable for S3", () => {
-      resetStorageProvider();
+      StorageProviderFactory.reset();
       process.env.STORAGE_PROVIDER = "s3";
       process.env.AWS_S3_BUCKET = "test-bucket";
-      const provider = getStorageProvider();
+      const provider = StorageProviderFactory.getInstance();
       expect(provider).toBeInstanceOf(S3StorageProvider);
     });
 
-    test("resets singleton with resetStorageProvider", () => {
-      const provider1 = getStorageProvider();
-      resetStorageProvider();
+    test("resets singleton with StorageProviderFactory.reset()", () => {
+      const provider1 = StorageProviderFactory.getInstance();
+      StorageProviderFactory.reset();
       process.env.STORAGE_PROVIDER = "local";
-      const provider2 = getStorageProvider();
+      const provider2 = StorageProviderFactory.getInstance();
       expect(provider1).not.toBe(provider2);
     });
   });
@@ -515,7 +514,7 @@ describe("Storage Provider Abstraction", () => {
 
       // Set up environment to use local provider
       process.env.STORAGE_PROVIDER = "local";
-      resetStorageProvider();
+      StorageProviderFactory.reset();
 
       const file = createTestImage();
       const url = await savePetImage(TEST_HASH_ID, file);

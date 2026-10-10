@@ -3,7 +3,7 @@
  * Provider selection and the singleton live in `./factory`.
  */
 
-export { getStorageProvider, resetStorageProvider } from "./factory";
+export { StorageProviderFactory } from "./factory";
 export type { StorageProviderType } from "./factory";
 
 export type { IStorageProvider } from "./interface";
