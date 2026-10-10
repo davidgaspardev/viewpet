@@ -11,7 +11,7 @@ Código de alto nível depende de uma abstração (a "porta"), não de uma imple
 | Porta | Arquivo | Adapters |
 |---|---|---|
 | `PetRepository` / `Seedable` | `src/lib/repository/interface.ts` | `local.ts` (JSON em disco), `mongodb.ts` (MongoDB) |
-| `IStorageProvider` | `src/lib/storage/interface.ts` | `local.ts` (`public/uploads/`), `s3.ts` (AWS S3), `blob.ts` (Vercel Blob) |
+| `StorageProvider` | `src/lib/storage/interface.ts` | `local.ts` (`public/uploads/`), `s3.ts` (AWS S3) |
 
 **Anatomia do padrão nesses dois casos:**
 
@@ -20,7 +20,7 @@ consumidor (actions.ts, page.tsx, scripts/*)
         │
         ▼
    interface.ts   ◄──── implementa ────  local.ts
-  (a "porta")                             mongodb.ts / s3.ts / blob.ts
+  (a "porta")                             mongodb.ts / s3.ts
         ▲
         │ escolhe qual instanciar (lê env var)
      index.ts   (factory + singleton)

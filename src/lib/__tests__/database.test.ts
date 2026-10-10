@@ -8,6 +8,7 @@ import { rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { PetRepositoryFactory } from "../repository";
 import { LocalPetRepository } from "../repository/local";
+import { MongoPetRepository } from "../repository/mongodb/mongodb";
 import type { Pet, Guardian } from "@/types/pet";
 
 const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
@@ -63,6 +64,31 @@ describe("Database Provider Abstraction", () => {
       process.env.DATABASE_PROVIDER = "local";
       const provider = PetRepositoryFactory.getInstance();
       expect(provider).toBeInstanceOf(LocalPetRepository);
+    });
+
+    test("uses mongodb provider when DATABASE_PROVIDER=mongodb", () => {
+      process.env.DATABASE_PROVIDER = "mongodb";
+      const provider = PetRepositoryFactory.getInstance();
+      expect(provider).toBeInstanceOf(MongoPetRepository);
+    });
+
+    test("falls back to local provider for an unknown DATABASE_PROVIDER value", () => {
+      process.env.DATABASE_PROVIDER = "dynamodb";
+      const provider = PetRepositoryFactory.getInstance();
+      expect(provider).toBeInstanceOf(LocalPetRepository);
+    });
+
+    test("ignores DATABASE_PROVIDER changes after the singleton is built", () => {
+      process.env.DATABASE_PROVIDER = "local";
+      const provider1 = PetRepositoryFactory.getInstance();
+
+      // Changing the env var without calling reset() has no effect — the
+      // singleton already picked its provider.
+      process.env.DATABASE_PROVIDER = "mongodb";
+      const provider2 = PetRepositoryFactory.getInstance();
+
+      expect(provider2).toBe(provider1);
+      expect(provider2).toBeInstanceOf(LocalPetRepository);
     });
   });
 

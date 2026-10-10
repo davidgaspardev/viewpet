@@ -9,7 +9,7 @@
 
 import type { Seedable } from "./interface";
 import { LocalPetRepository } from "./local";
-import { MongoPetRepository } from "./mongodb";
+import { MongoPetRepository } from "./mongodb/mongodb";
 
 export type DatabaseProviderType = "local" | "mongodb";
 

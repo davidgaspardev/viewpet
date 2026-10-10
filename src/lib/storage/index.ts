@@ -6,6 +6,6 @@
 export { StorageProviderFactory } from "./factory";
 export type { StorageProviderType } from "./factory";
 
-export type { IStorageProvider } from "./interface";
+export type { StorageProvider } from "./interface";
 export { SUPPORTED_IMAGE_MIMES, MAX_IMAGE_BYTES, SaveImageException } from "./interface";
 export type { SaveImageError } from "./interface";

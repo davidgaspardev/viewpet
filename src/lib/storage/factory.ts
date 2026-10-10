@@ -1,47 +1,37 @@
 /**
  * Composition root for the storage layer — a singleton factory that picks
- * the concrete IStorageProvider implementation on first use and hands back
+ * the concrete StorageProvider implementation on first use and hands back
  * the same instance on every subsequent call.
  *
  * Kept separate from `index.ts` so the barrel stays a pure re-export list
  * (see PATTERN.md — Barrel pattern).
  */
 
-import { BlobStorageProvider } from "./blob";
-import type { IStorageProvider } from "./interface";
+import type { StorageProvider } from "./interface";
 import { LocalStorageProvider } from "./local";
 import { S3StorageProvider } from "./s3";
 
-export type StorageProviderType = "local" | "s3" | "blob";
+export type StorageProviderType = "local" | "s3";
 
 declare global {
   // eslint-disable-next-line no-var
   var _storageProviderFactory: StorageProviderFactory | undefined;
 }
 
-const VALID_PROVIDERS: StorageProviderType[] = ["local", "s3", "blob"];
+const VALID_PROVIDERS: StorageProviderType[] = ["local", "s3"];
 
 /**
  * Singleton — the constructor is private, so the only way to get one is
- * through `getInstance()`. It picks the concrete IStorageProvider
+ * through `getInstance()`. It picks the concrete StorageProvider
  * implementation once, chosen via `STORAGE_PROVIDER`, and keeps it for the
  * life of the singleton.
  */
 export class StorageProviderFactory {
-  private readonly provider: IStorageProvider;
+  private readonly provider: StorageProvider;
 
   private constructor() {
     const type = StorageProviderFactory.resolveProviderType();
-    switch (type) {
-      case "s3":
-        this.provider = new S3StorageProvider();
-        break;
-      case "blob":
-        this.provider = new BlobStorageProvider();
-        break;
-      default:
-        this.provider = new LocalStorageProvider();
-    }
+    this.provider = type === "s3" ? new S3StorageProvider() : new LocalStorageProvider();
     if (process.env.NODE_ENV !== "test") {
       console.log(`[Storage] Using ${type} provider`);
     }
@@ -63,7 +53,7 @@ export class StorageProviderFactory {
   }
 
   /** Returns the active storage provider, creating the singleton on first call. */
-  static getInstance(): IStorageProvider {
+  static getInstance(): StorageProvider {
     if (!globalThis._storageProviderFactory) {
       globalThis._storageProviderFactory = new StorageProviderFactory();
     }

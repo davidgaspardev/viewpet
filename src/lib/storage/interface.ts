@@ -42,7 +42,7 @@ export class SaveImageException extends Error {
  * - Returning a publicly accessible URL
  * - Handling re-uploads (replacing previous images with same hashId)
  */
-export interface IStorageProvider {
+export interface StorageProvider {
   /**
    * Save an uploaded image and return the public URL.
    *

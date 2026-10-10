@@ -43,44 +43,9 @@
  */
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
-import type { Seedable, Pet, PetEntry } from "./interface";
-import type { Guardian, LostEvent, PetGender } from "@/types/pet";
-
-type PetStatus = "reserved" | "active" | "lost";
-
-type PetDoc = {
-  _id: string;
-  status: PetStatus;
-  name?: string;
-  pictureUrl?: string;
-  birthdate?: string;
-  gender?: PetGender;
-  guardianIds?: ObjectId[];
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type GuardianDoc = {
-  _id: ObjectId;
-  name: string;
-  email?: string;
-  phones: Guardian["phones"];
-  social: Guardian["social"];
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type LostEventDoc = {
-  _id: ObjectId;
-  petId: string;
-  startedAt: string;
-  endedAt: string | null;
-  lastSeenLocation?: string;
-  lastSeenAt?: string;
-  alerts?: string[];
-  createdAt: Date;
-  updatedAt: Date;
-};
+import type { Seedable, Pet, PetEntry } from "../interface";
+import type { Guardian, LostEvent } from "@/types/pet";
+import { PetDoc, GuardianDoc, LostEventDoc } from "./dto";
 
 type Collections = {
   pets: Collection<PetDoc>;

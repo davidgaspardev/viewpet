@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { IStorageProvider } from "./interface";
+import type { StorageProvider } from "./interface";
 import {
   MAX_IMAGE_BYTES,
   SaveImageException,
@@ -25,7 +25,7 @@ import { isHashId } from "../utils/ids";
  * - Serverless/edge deployments
  * - High-scale production (use cloud storage instead)
  */
-export class LocalStorageProvider implements IStorageProvider {
+export class LocalStorageProvider implements StorageProvider {
   private readonly uploadsDir: string;
   private readonly publicPrefix: string;
 

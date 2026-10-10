@@ -1,6 +1,6 @@
 # Storage Layer
 
-Image storage abstraction using the Dependency Inversion Principle. High-level code depends on `IStorageProvider`, not on any specific backend.
+Image storage abstraction using the Dependency Inversion Principle. High-level code depends on `StorageProvider`, not on any specific backend.
 
 ## Architecture
 
@@ -11,12 +11,12 @@ Facade (src/lib/blobs.ts)
         ↓ uses
 StorageProviderFactory (src/lib/storage/factory.ts)
         ↓ returns
-Interface (IStorageProvider)
+Interface (StorageProvider)
         ↓ implemented by
-┌───────────┬────────────┬──────────────┐
-│  Local    │    Blob    │     S3       │
-│ Provider  │  Provider  │   Provider   │
-└───────────┴────────────┴──────────────┘
+┌───────────┬──────────────┐
+│  Local    │     S3       │
+│ Provider  │   Provider   │
+└───────────┴──────────────┘
 ```
 
 ## File Structure
@@ -25,10 +25,9 @@ Interface (IStorageProvider)
 src/lib/
 ├── blobs.ts                  # Facade — backward-compatible public API
 └── storage/
-    ├── interface.ts          # IStorageProvider interface + types
+    ├── interface.ts          # StorageProvider interface + types
     ├── local.ts              # LocalStorageProvider (filesystem)
     ├── s3.ts                 # S3StorageProvider (AWS S3)
-    ├── blob.ts               # BlobStorageProvider (Vercel Blob)
     ├── factory.ts            # StorageProviderFactory — singleton, provider selection
     └── index.ts              # barrel puro
 ```
@@ -223,7 +222,7 @@ Verify: `docker exec viewpet-localstack awslocal s3 ls s3://view-pet-storage/upl
 ## Interface
 
 ```typescript
-interface IStorageProvider {
+interface StorageProvider {
   saveImage(hashId: string, file: File): Promise<string>;
 }
 
@@ -256,13 +255,13 @@ try {
 
 ## Adding New Providers
 
-1. Create `src/lib/storage/newprovider.ts` implementing `IStorageProvider`
+1. Create `src/lib/storage/newprovider.ts` implementing `StorageProvider`
 2. Add a case to `StorageProviderFactory` (`factory.ts`)
 3. Add tests
 
 ```typescript
 // Example: Cloudflare R2 (S3-compatible)
-export class R2StorageProvider implements IStorageProvider {
+export class R2StorageProvider implements StorageProvider {
   async saveImage(hashId: string, file: File): Promise<string> {
     // R2 uses the same S3Client with a custom endpoint
     return `https://pub-xyz.r2.dev/uploads/${hashId}.jpg`;
@@ -270,7 +269,7 @@ export class R2StorageProvider implements IStorageProvider {
 }
 ```
 
-Possible providers: **Cloudflare R2** (zero egress), **Cloudinary** (image transforms), **Vercel Blob**, **DigitalOcean Spaces**, **Azure Blob Storage**.
+Possible providers: **Cloudflare R2** (zero egress), **Cloudinary** (image transforms), **DigitalOcean Spaces**, **Azure Blob Storage**.
 
 ## Production Checklist
 

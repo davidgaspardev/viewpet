@@ -103,6 +103,27 @@ describe("Storage Provider Abstraction", () => {
       expect(provider).toBeInstanceOf(S3StorageProvider);
     });
 
+    test("falls back to local provider for an unknown STORAGE_PROVIDER value", () => {
+      StorageProviderFactory.reset();
+      process.env.STORAGE_PROVIDER = "firebase";
+      const provider = StorageProviderFactory.getInstance();
+      expect(provider).toBeInstanceOf(LocalStorageProvider);
+    });
+
+    test("ignores STORAGE_PROVIDER changes after the singleton is built", () => {
+      StorageProviderFactory.reset();
+      process.env.STORAGE_PROVIDER = "local";
+      const provider1 = StorageProviderFactory.getInstance();
+
+      // Changing the env var without calling reset() has no effect — the
+      // singleton already picked its provider.
+      process.env.STORAGE_PROVIDER = "s3";
+      const provider2 = StorageProviderFactory.getInstance();
+
+      expect(provider2).toBe(provider1);
+      expect(provider2).toBeInstanceOf(LocalStorageProvider);
+    });
+
     test("resets singleton with StorageProviderFactory.reset()", () => {
       const provider1 = StorageProviderFactory.getInstance();
       StorageProviderFactory.reset();
