@@ -22,9 +22,15 @@ const SUPPORTED_EXTENSIONS = new Set(
   SUPPORTED_IMAGE_MIMES.map(getExtensionFromMime).filter((ext): ext is string => Boolean(ext)),
 );
 
-/** Only ever serve exactly what `R2StorageProvider.saveImage()` writes — `uploads/<hashId>.<ext>`. */
-function isValidKey(key: string): boolean {
-  const match = /^uploads\/([^/.]+)\.([a-z0-9]+)$/.exec(key);
+/**
+ * Only ever serve exactly what `R2StorageProvider.saveImage()` writes —
+ * `<basePath>/<hashId>.<ext>`. `basePath` comes from the live provider
+ * instance (not a hardcoded "uploads" literal) so this can't drift from
+ * whatever `R2StorageProvider` is actually configured to write.
+ */
+function isValidKey(key: string, basePath: string): boolean {
+  const escapedBasePath = basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`^${escapedBasePath}/([^/.]+)\\.([a-z0-9]+)$`).exec(key);
   if (!match) return false;
   const [, hashId, ext] = match;
   return isHashId(hashId) && SUPPORTED_EXTENSIONS.has(ext);
@@ -53,17 +59,17 @@ export async function GET(
   const { key: segments } = await params;
   const key = segments.join("/");
 
-  if (!isValidKey(key)) {
-    return new NextResponse("Not found", { status: 404 });
-  }
-
-  const provider = StorageProviderFactory.getInstance();
-  if (!(provider instanceof R2StorageProvider)) {
-    // Active provider isn't R2 — this route has nothing to serve.
-    return new NextResponse("Not found", { status: 404 });
-  }
-
   try {
+    const provider = StorageProviderFactory.getInstance();
+    if (!(provider instanceof R2StorageProvider)) {
+      // Active provider isn't R2 — this route has nothing to serve.
+      return new NextResponse("Not found", { status: 404 });
+    }
+
+    if (!isValidKey(key, provider.basePath)) {
+      return new NextResponse("Not found", { status: 404 });
+    }
+
     const { body, contentType } = await provider.getImage(key);
     return new NextResponse(Buffer.from(body), {
       headers: {

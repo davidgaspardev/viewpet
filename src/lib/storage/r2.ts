@@ -45,7 +45,8 @@ const IMAGE_PROXY_PATH = "/api/images";
 export class R2StorageProvider implements StorageProvider {
   private client: S3Client;
   private readonly bucketName: string;
-  private readonly basePath: string;
+  /** Public so the `/api/images` proxy route can derive its key-matching regex from it. */
+  readonly basePath: string;
   private readonly publicUrlBase?: string;
 
   constructor(bucketName?: string, basePath: string = "uploads") {
