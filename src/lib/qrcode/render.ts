@@ -20,6 +20,14 @@ const LOGO_RATIO = 0.22;
 /** Height, in modules, of the band under the quiet zone that holds the label. */
 const LABEL_BAND = 4;
 
+/** Label typography, in modules. Monospace glyphs advance ~0.6em. */
+const LABEL_FONT_SIZE = 2.2;
+const LABEL_LETTER_SPACING = 0.2;
+const LABEL_ADVANCE = 0.6 * LABEL_FONT_SIZE + LABEL_LETTER_SPACING;
+
+/** Free space kept on each side of the label, in modules. */
+const LABEL_SIDE_PADDING = 2;
+
 /** Fraction of a module's cell covered by its dot. */
 const DOT_RATIO = 0.84;
 
@@ -31,7 +39,6 @@ const DOT_RATIO = 0.84;
  */
 export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
   const { logoHref, label, color = "#111b25", background = "#ffffff" } = options;
-  const hasLogo = Boolean(logoHref);
 
   const { modules } = QRCode.create(text, { errorCorrectionLevel: "H" });
   const fg = escapeAttr(color);
@@ -52,7 +59,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       const cx = col + MARGIN + 0.5;
       const cy = row + MARGIN + 0.5;
       // Leave the logo area empty (plus half a module of breathing room).
-      if (hasLogo && Math.hypot(cx - centre, cy - centre) < logoRadius + 0.5) continue;
+      if (logoHref && Math.hypot(cx - centre, cy - centre) < logoRadius + 0.5) continue;
       dots.push(`<circle cx="${cx}" cy="${cy}" r="${DOT_RATIO / 2}"/>`);
     }
   }
@@ -71,15 +78,21 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       `width="${logoRadius * 1.7}" height="${logoRadius * 1.7}"/>`
     : "";
 
+  // Squeeze labels that wouldn't fit between the side paddings instead of clipping them.
+  const labelMaxWidth = size - LABEL_SIDE_PADDING * 2;
+  const labelFit =
+    label && label.length * LABEL_ADVANCE > labelMaxWidth
+      ? ` textLength="${labelMaxWidth}" lengthAdjust="spacingAndGlyphs"`
+      : "";
   const labelSvg = label
     ? `<text x="${centre}" y="${size + LABEL_BAND * 0.62}" text-anchor="middle" ` +
-      `font-family="ui-monospace, Menlo, Consolas, monospace" font-size="2.2" letter-spacing="0.2" ` +
-      `fill="${fg}">${escapeText(label)}</text>`
+      `font-family="ui-monospace, Menlo, Consolas, monospace" font-size="${LABEL_FONT_SIZE}" ` +
+      `letter-spacing="${LABEL_LETTER_SPACING}"${labelFit} fill="${fg}">${escapeText(label)}</text>`
     : "";
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${height}" ` +
-    `width="${size * 10}" height="${height * 10}" role="img" aria-label="QR code">` +
+    `width="${size * 10}" height="${height * 10}" role="img" aria-label="${escapeAttr(label ? `QR code ${label}` : "QR code")}">` +
     `<rect width="${size}" height="${height}" fill="${bg}"/>` +
     `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}${labelSvg}</svg>`
   );

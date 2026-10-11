@@ -23,6 +23,11 @@ if (!viewBox || !lineArt) {
 }
 
 const [, d, fill] = lineArt;
+const rgb = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(fill);
+if (rgb && Math.min(...rgb.slice(1).map(Number)) > 200) {
+  console.error(`The first <path> in public/logo.svg is ${fill}, a light colour; expected the dark line art.`);
+  process.exit(1);
+}
 const svg =
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">` +
   `<path d="${d}" fill="${fill}"/></svg>`;

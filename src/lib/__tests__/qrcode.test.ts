@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import QRCode from "qrcode";
+import { LOGO_DATA_URI } from "../qrcode/logo";
 import { renderQrSvg } from "../qrcode/render";
 
 const MARGIN = 4;
@@ -88,6 +91,19 @@ describe("renderQrSvg label", () => {
     expect(dotCells(labelled)).toEqual(dotCells(plain));
   });
 
+  test("squeezes a label that is too wide instead of letting it clip", () => {
+    const [, width] = /viewBox="0 0 (\d+) /.exec(renderQrSvg(url, { label: "x" }))!.map(Number);
+    const long = renderQrSvg(url, { label: "a".repeat(30) });
+    const fitted = Number(/textLength="([\d.]+)"/.exec(long)![1]);
+    expect(fitted).toBeLessThan(width);
+    expect(renderQrSvg(url, { label: "ay7vkdat8gdf" })).not.toContain("textLength");
+  });
+
+  test("names the image after its label", () => {
+    expect(renderQrSvg(url, { label: "ay7vkdat8gdf" })).toContain('aria-label="QR code ay7vkdat8gdf"');
+    expect(renderQrSvg(url)).toContain('aria-label="QR code"');
+  });
+
   test("escapes the label text", () => {
     expect(renderQrSvg(url, { label: "<b>&" })).toContain("&lt;b&gt;&amp;");
   });
@@ -98,5 +114,16 @@ describe("renderQrSvg escaping", () => {
     const svg = renderQrSvg("x", { logoHref: 'a"><script>', color: '"red', background: "<b" });
     expect(svg).not.toContain("<script>");
     expect(svg).toContain("&quot;");
+  });
+});
+
+describe("LOGO_DATA_URI", () => {
+  test("is in sync with public/logo.svg (run `bun run qr-logo` if this fails)", () => {
+    const source = readFileSync(join(import.meta.dir, "../../../public/logo.svg"), "utf8");
+    const linePath = /<path d="([^"]+)"/.exec(source)![1];
+    const logo = Buffer.from(LOGO_DATA_URI.split(",")[1], "base64").toString("utf8");
+    expect(logo).toContain(`d="${linePath}"`);
+    // Line art only: an opaque background path would paint over neighbouring dots.
+    expect(logo.match(/<path/g)).toHaveLength(1);
   });
 });

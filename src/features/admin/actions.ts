@@ -28,13 +28,14 @@ export type GenerateQrResult =
 export async function generateQr(): Promise<GenerateQrResult> {
   // The middleware already guards /admin; re-check here since server actions
   // are plain POST endpoints.
-  if (!(await isAdminAuthorized((await headers()).get("authorization")))) {
+  const requestHeaders = await headers();
+  if (!(await isAdminAuthorized(requestHeaders.get("authorization")))) {
     return { status: "error", message: "unauthorized" };
   }
 
   // Resolve (and validate) the origin before touching the database so a bad
   // SITE_URL can't leave reserved ids behind with no QR.
-  const origin = resolveOrigin(process.env.SITE_URL, await headers());
+  const origin = resolveOrigin(process.env.SITE_URL, requestHeaders);
   if (!origin) return { status: "error", message: "invalid_site_url" };
 
   const id = await reserveFreshId(PetRepositoryFactory.getInstance(), generateHashId);

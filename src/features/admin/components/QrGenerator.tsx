@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { memo, useMemo, useState, useTransition } from "react";
 
 import { Card } from "@/ui/Card";
 
@@ -27,33 +27,32 @@ function downloadSvg({ id, svg }: GeneratedQr) {
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 }
 
-function QrCard({ qr }: { qr: GeneratedQr }) {
+const QrCard = memo(function QrCard({ qr }: { qr: GeneratedQr }) {
+  // An <img> keeps each card at one DOM node (the inline SVG has ~600) and
+  // means no server-produced markup is ever injected into the page.
+  const src = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qr.svg)}`, [qr.svg]);
+
   return (
-    <div className="w-72">
-      <Card
-        title={qr.id}
-        headerAction={
-          <button
-            type="button"
-            onClick={() => downloadSvg(qr)}
-            className="mr-2 rounded-lg border border-black/20 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-black/5"
-          >
-            Download SVG
-          </button>
-        }
-      >
-        <div
-          className="rounded-lg bg-white p-2 [&_svg]:h-auto [&_svg]:w-full"
-          // Markup is produced server-side by renderQrSvg from our own data.
-          dangerouslySetInnerHTML={{ __html: qr.svg }}
-        />
-        <a href={qr.url} className="block break-all text-xs text-muted underline" target="_blank" rel="noreferrer">
-          {qr.url}
-        </a>
-      </Card>
-    </div>
+    <Card
+      title={qr.id}
+      headerAction={
+        <button
+          type="button"
+          onClick={() => downloadSvg(qr)}
+          className="mr-2 rounded-lg border border-black/20 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-black/5"
+        >
+          Download SVG
+        </button>
+      }
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- data: URI, nothing for next/image to optimise */}
+      <img src={src} alt={`QR code ${qr.id}`} className="h-auto w-full rounded-lg bg-white p-2" />
+      <a href={qr.url} className="block break-all text-xs text-muted underline" target="_blank" rel="noreferrer">
+        {qr.url}
+      </a>
+    </Card>
   );
-}
+});
 
 export function QrGenerator() {
   const [history, setHistory] = useState<GeneratedQr[]>([]);
@@ -83,7 +82,7 @@ export function QrGenerator() {
       ) : (
         <ul className="flex flex-wrap gap-4">
           {history.map((qr) => (
-            <li key={qr.id}>
+            <li key={qr.id} className="w-72">
               <QrCard qr={qr} />
             </li>
           ))}
