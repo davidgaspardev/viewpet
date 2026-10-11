@@ -93,6 +93,12 @@ export async function GET(
     });
   } catch (err) {
     if (isNotFoundError(err)) {
+      // Logged (not silent) because "not found" from R2 is ambiguous: it
+      // covers both "this key genuinely doesn't exist" (expected for a
+      // stale/bad pictureUrl) and "R2_BUCKET/R2_ACCOUNT_ID point at the
+      // wrong bucket" (a config bug — S3-compatible APIs 404 on
+      // NoSuchBucket too). The error name/message below tells you which.
+      console.warn(`[api/images] "${key}" not found in R2:`, err);
       return new NextResponse("Not found", { status: 404 });
     }
     console.error(`[api/images] failed to fetch "${key}" from R2:`, err);
