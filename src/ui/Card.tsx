@@ -6,7 +6,7 @@ type CardProps = {
 
 export function Card({ title, headerAction, children }: CardProps) {
   return (
-    <section className="rounded-xl bg-surface">
+    <section className="rounded-xl bg-surface bg-[url(/noise-light.png)]">
       <header className="mx-2 flex h-16 items-center justify-between border-b border-black/10 py-4">
         <h2 className="pl-2 text-lg font-bold tracking-tight text-ink">{title}</h2>
         {headerAction}

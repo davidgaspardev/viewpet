@@ -15,6 +15,7 @@
     "seed": "bun run scripts/seed.ts",
     "test:s3": "bun run scripts/test-s3.ts",
     "test:s3-upload": "bun run scripts/test-s3-upload.ts",
+    "test:r2-upload": "bun run scripts/test-r2.ts",
     "setup:localstack": "bun run scripts/setup-localstack.ts"
   },
   "dependencies": {

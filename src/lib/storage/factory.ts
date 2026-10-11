@@ -9,16 +9,17 @@
 
 import type { StorageProvider } from "./interface";
 import { LocalStorageProvider } from "./local";
-import { S3StorageProvider } from "./s3";
+import { S3StorageProvider } from "./aws/s3";
+import { R2StorageProvider } from "./cloudflare/r2";
 
-export type StorageProviderType = "local" | "s3";
+export type StorageProviderType = "local" | "s3" | "r2";
 
 declare global {
   // eslint-disable-next-line no-var
   var _storageProviderFactory: StorageProviderFactory | undefined;
 }
 
-const VALID_PROVIDERS: StorageProviderType[] = ["local", "s3"];
+const VALID_PROVIDERS: StorageProviderType[] = ["local", "s3", "r2"];
 
 /**
  * Singleton — the constructor is private, so the only way to get one is
@@ -31,7 +32,16 @@ export class StorageProviderFactory {
 
   private constructor() {
     const type = StorageProviderFactory.resolveProviderType();
-    this.provider = type === "s3" ? new S3StorageProvider() : new LocalStorageProvider();
+    switch (type) {
+      case "s3":
+        this.provider = new S3StorageProvider();
+        break;
+      case "r2":
+        this.provider = new R2StorageProvider();
+        break;
+      default:
+        this.provider = new LocalStorageProvider();
+    }
     if (process.env.NODE_ENV !== "test") {
       console.log(`[Storage] Using ${type} provider`);
     }
