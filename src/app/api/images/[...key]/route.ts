@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { StorageProviderFactory } from "@/lib/storage";
-import { R2StorageProvider } from "@/lib/storage/r2";
+import type { StorageProvider } from "@/lib/storage/interface";
 import { SUPPORTED_IMAGE_MIMES, getExtensionFromMime } from "@/lib/storage/interface";
 import { isHashId } from "@/lib/utils/ids";
 
@@ -50,6 +50,27 @@ function isValidKey(key: string, basePath: string): boolean {
   return isHashId(hashId) && SUPPORTED_EXTENSIONS.has(ext);
 }
 
+type ReadableProvider = StorageProvider & {
+  getImage(key: string): Promise<{ body: Uint8Array; contentType: string }>;
+  basePath: string;
+};
+
+/**
+ * Duck-types for `R2StorageProvider`'s read capability instead of
+ * `instanceof R2StorageProvider`. `instanceof` compares class *identity*,
+ * and in Next.js dev mode, Fast Refresh can re-evaluate the module that
+ * defines `R2StorageProvider` independently of the long-lived singleton
+ * cached on `globalThis` by `StorageProviderFactory` — the singleton then
+ * holds an instance built from the *previous* class definition, so
+ * `instanceof` against the freshly re-imported class returns false even
+ * though it's the same provider, same `constructor.name`, same everything
+ * that matters. Checking for the method directly sidesteps that entirely
+ * (and doesn't need to import the concrete class at all).
+ */
+function isReadableProvider(provider: StorageProvider): provider is ReadableProvider {
+  return typeof (provider as Partial<ReadableProvider>).getImage === "function";
+}
+
 /**
  * True for a missing-object error from R2's GetObjectCommand.
  *
@@ -75,13 +96,14 @@ export async function GET(
 
   try {
     const provider = StorageProviderFactory.getInstance();
-    if (!(provider instanceof R2StorageProvider)) {
-      // Active provider isn't R2 — this route has nothing to serve. Logged
-      // because this is always a config issue (STORAGE_PROVIDER isn't "r2"
-      // in *this* process/env), never something a client did — a URL built
-      // by R2StorageProvider.saveImage() should never reach here otherwise.
+    if (!isReadableProvider(provider)) {
+      // Active provider doesn't support getImage() — this route has nothing
+      // to serve. Logged because this is always a config issue
+      // (STORAGE_PROVIDER isn't "r2" in *this* process/env), never
+      // something a client did — a URL built by R2StorageProvider's
+      // saveImage() should never reach here otherwise.
       console.warn(
-        `[api/images] "${key}" requested but active provider is ${provider.constructor.name}, not R2StorageProvider — check STORAGE_PROVIDER for this process.`,
+        `[api/images] "${key}" requested but active provider is ${provider.constructor.name}, which doesn't support reads — check STORAGE_PROVIDER for this process.`,
       );
       return new NextResponse("Not found", { status: 404 });
     }
