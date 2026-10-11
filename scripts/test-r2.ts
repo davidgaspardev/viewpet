@@ -10,8 +10,10 @@
  *   - R2_SECRET_ACCESS_KEY
  *   - R2_BUCKET
  *   - STORAGE_PROVIDER=r2
- *   - R2_PUBLIC_URL_BASE (optional — unset serves via /api/images/<key> instead,
- *     which works even with a private bucket)
+ *
+ * The returned URL is relative (/api/images/<key>) — it's served by this
+ * app's own route, not R2 directly, so open it against a running dev
+ * server (e.g. http://localhost:3000/api/images/...), not as a bare URL.
  */
 
 import { StorageProviderFactory } from "../src/lib/storage";
@@ -45,11 +47,11 @@ async function testR2Upload() {
     const url = await storage.saveImage(testHashId, file);
 
     console.log("\n✅ Upload successful!");
-    console.log(`📸 Image URL: ${url}\n`);
+    console.log(`📸 Image path: ${url}\n`);
 
     console.log("🎉 Test completed successfully!");
     console.log("\n💡 You can now:");
-    console.log(`   1. Open the URL in your browser: ${url}`);
+    console.log(`   1. With "bun run dev" running, open http://localhost:3000${url}`);
     console.log("   2. Verify the image appears correctly");
     console.log("   3. Check your R2 bucket (Cloudflare dashboard) to confirm the upload\n");
   } catch (error) {

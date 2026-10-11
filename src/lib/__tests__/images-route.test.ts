@@ -23,7 +23,6 @@ describe("GET /api/images/[...key]", () => {
     delete process.env.R2_ACCOUNT_ID;
     delete process.env.R2_ACCESS_KEY_ID;
     delete process.env.R2_SECRET_ACCESS_KEY;
-    delete process.env.R2_PUBLIC_URL_BASE;
   });
 
   afterEach(() => {
@@ -33,7 +32,6 @@ describe("GET /api/images/[...key]", () => {
     delete process.env.R2_ACCOUNT_ID;
     delete process.env.R2_ACCESS_KEY_ID;
     delete process.env.R2_SECRET_ACCESS_KEY;
-    delete process.env.R2_PUBLIC_URL_BASE;
   });
 
   test("returns 404 when the active provider isn't R2", async () => {

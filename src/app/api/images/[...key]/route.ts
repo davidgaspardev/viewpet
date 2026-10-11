@@ -5,13 +5,13 @@ import { SUPPORTED_IMAGE_MIMES, getExtensionFromMime } from "@/lib/storage/inter
 import { isHashId } from "@/lib/utils/ids";
 
 /**
- * Authenticated proxy for private R2 objects.
+ * Authenticated proxy for R2 objects.
  *
- * Only exists for the `STORAGE_PROVIDER=r2` + no `R2_PUBLIC_URL_BASE` case
- * (see `R2StorageProvider`) — the bucket stays private, and this route holds
- * the R2 credentials so the browser never needs them. `local` serves its
- * images as real static files under `public/uploads/`, and `s3` always
- * returns a direct (CloudFront/bucket) URL, so neither needs this route.
+ * Only exists for `STORAGE_PROVIDER=r2` (see `R2StorageProvider`) — that
+ * bucket is always private, and this route holds the R2 credentials so the
+ * browser never needs them. `local` serves its images as real static files
+ * under `public/uploads/`, and `s3` returns a direct (CloudFront/bucket)
+ * URL, so neither needs this route.
  *
  * Images are immutable per hashId, so responses are cached for a year —
  * repeat views hit the platform's edge cache, not this function, keeping

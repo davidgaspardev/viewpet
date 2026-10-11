@@ -495,7 +495,6 @@ describe("Storage Provider Abstraction", () => {
       process.env.R2_ACCOUNT_ID = "test-account";
       process.env.R2_ACCESS_KEY_ID = "test-key";
       process.env.R2_SECRET_ACCESS_KEY = "test-secret";
-      process.env.R2_PUBLIC_URL_BASE = "https://pub-test.r2.dev";
 
       mockSend = mock(() => Promise.resolve({}));
     });
@@ -506,7 +505,6 @@ describe("Storage Provider Abstraction", () => {
       delete process.env.R2_ACCOUNT_ID;
       delete process.env.R2_ACCESS_KEY_ID;
       delete process.env.R2_SECRET_ACCESS_KEY;
-      delete process.env.R2_PUBLIC_URL_BASE;
     });
 
     test("throws when R2_BUCKET is missing", () => {
@@ -522,11 +520,6 @@ describe("Storage Provider Abstraction", () => {
     test("throws when R2 credentials are missing", () => {
       delete process.env.R2_ACCESS_KEY_ID;
       expect(() => new R2StorageProvider()).toThrow("R2 credentials not configured");
-    });
-
-    test("does not throw when R2_PUBLIC_URL_BASE is missing", () => {
-      delete process.env.R2_PUBLIC_URL_BASE;
-      expect(() => new R2StorageProvider()).not.toThrow();
     });
 
     test("saveImage calls S3Client.send once", async () => {
@@ -552,18 +545,7 @@ describe("Storage Provider Abstraction", () => {
       expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
     });
 
-    test("saveImage builds public URL from R2_PUBLIC_URL_BASE when configured", async () => {
-      const provider = new R2StorageProvider();
-      (provider as any).client.send = mockSend;
-      const file = createTestImage();
-
-      const url = await provider.saveImage(TEST_HASH_ID, file);
-
-      expect(url).toBe(`https://pub-test.r2.dev/uploads/${TEST_HASH_ID}.png`);
-    });
-
-    test("saveImage returns a proxy URL when R2_PUBLIC_URL_BASE is not set", async () => {
-      delete process.env.R2_PUBLIC_URL_BASE;
+    test("saveImage returns a proxy URL under /api/images", async () => {
       const provider = new R2StorageProvider();
       (provider as any).client.send = mockSend;
       const file = createTestImage();

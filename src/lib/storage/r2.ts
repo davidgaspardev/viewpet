@@ -5,7 +5,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import { validateImageUpload, joinUrl } from "./interface";
+import { validateImageUpload } from "./interface";
 
 /** Route that proxies reads through our own server — see `getImage()` below. */
 const IMAGE_PROXY_PATH = "/api/images";
@@ -15,7 +15,7 @@ const IMAGE_PROXY_PATH = "/api/images";
  *
  * R2 implements the S3 API, so this reuses `@aws-sdk/client-s3` pointed at
  * the R2 account endpoint instead of AWS — same upload path as
- * `S3StorageProvider`, different credentials and public URL shape.
+ * `S3StorageProvider`, different credentials and read path.
  *
  * Environment variables required:
  * - R2_ACCOUNT_ID: Cloudflare account id (builds the R2 endpoint)
@@ -23,23 +23,18 @@ const IMAGE_PROXY_PATH = "/api/images";
  * - R2_SECRET_ACCESS_KEY: R2 API token secret
  * - R2_BUCKET: R2 bucket name
  *
- * Optional:
- * - R2_PUBLIC_URL_BASE: base URL images are served from directly (custom
- *   domain, or the bucket's `pub-<hash>.r2.dev` dev subdomain), once public
- *   access is actually enabled and confirmed working in the Cloudflare
- *   dashboard. When unset, `saveImage()` returns a URL under
- *   `/api/images/<key>` instead — our own route (`src/app/api/images/`)
- *   fetches the object with the credentials above and serves the bytes.
- *   R2 buckets are private by default and public access is an explicit,
- *   easy-to-get-wrong dashboard step, so the proxy is the safe default —
- *   it always works, at the cost of routing image bytes through our own
- *   server instead of Cloudflare's CDN. Set `R2_PUBLIC_URL_BASE` once
- *   public access is confirmed to skip that hop and get R2's full
- *   zero-egress benefit back.
+ * R2 buckets are private by default — there's no bucket-policy equivalent
+ * to S3's public-read JSON, and enabling public access is an explicit,
+ * easy-to-get-wrong Cloudflare dashboard step. So the bucket just always
+ * stays private: `saveImage()` always returns a URL under our own
+ * `/api/images/<key>` proxy route (`src/app/api/images/`), which holds
+ * these same credentials and fetches the object server-side via
+ * `getImage()`. The browser never touches R2 directly.
  *
  * Suitable for:
- * - Public, immutable assets served at scale (zero egress fees, once
- *   `R2_PUBLIC_URL_BASE` is in play)
+ * - Public, immutable assets served at scale (zero egress fees on the
+ *   R2 side — the proxy response is cached for a year, so repeat views
+ *   hit the platform's edge cache, not this provider)
  * - Production deployments already comfortable with the S3 API
  */
 export class R2StorageProvider implements StorageProvider {
@@ -47,12 +42,10 @@ export class R2StorageProvider implements StorageProvider {
   private readonly bucketName: string;
   /** Public so the `/api/images` proxy route can derive its key-matching regex from it. */
   readonly basePath: string;
-  private readonly publicUrlBase?: string;
 
   constructor(bucketName?: string, basePath: string = "uploads") {
     this.bucketName = bucketName || process.env.R2_BUCKET || "";
     this.basePath = basePath;
-    this.publicUrlBase = process.env.R2_PUBLIC_URL_BASE || undefined;
 
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
@@ -88,8 +81,7 @@ export class R2StorageProvider implements StorageProvider {
    *
    * @param hashId - Unique identifier for this pet
    * @param file - The uploaded File object
-   * @returns `R2_PUBLIC_URL_BASE` + key when configured, otherwise a URL
-   *   under our own `/api/images/<key>` proxy route.
+   * @returns A URL under our own `/api/images/<key>` proxy route.
    */
   async saveImage(hashId: string, file: File): Promise<string> {
     const ext = validateImageUpload(hashId, file);
@@ -107,13 +99,11 @@ export class R2StorageProvider implements StorageProvider {
         ContentType: file.type,
         // Cache for 1 year (immutable content)
         CacheControl: "public, max-age=31536000, immutable",
-        // Note: public access is controlled by the bucket's public-access
-        // setting in the Cloudflare dashboard, not by an object ACL.
       });
 
       await this.client.send(command);
 
-      return this.buildPublicUrl(key);
+      return `${IMAGE_PROXY_PATH}/${key}`;
     } catch (err) {
       if (err instanceof Error) {
         throw new Error(`R2 upload failed: ${err.message}`);
@@ -124,8 +114,8 @@ export class R2StorageProvider implements StorageProvider {
 
   /**
    * Fetch an object's bytes directly from R2 using our own credentials.
-   * Used by the `/api/images/[...key]` route to serve images when
-   * `R2_PUBLIC_URL_BASE` isn't configured (bucket stays private).
+   * Used by the `/api/images/[...key]` route to serve images — the bucket
+   * stays private, so this is the only way to read them.
    *
    * @throws Error with `.name === "NoSuchKey"` when the object doesn't exist
    *   (same shape the AWS SDK throws, so callers can branch on it the same way).
@@ -139,16 +129,5 @@ export class R2StorageProvider implements StorageProvider {
     }
     const body = await result.Body.transformToByteArray();
     return { body, contentType: result.ContentType ?? "application/octet-stream" };
-  }
-
-  /**
-   * Build the URL for the uploaded file — direct to R2 when
-   * `R2_PUBLIC_URL_BASE` is configured, otherwise through our own proxy.
-   */
-  private buildPublicUrl(key: string): string {
-    if (this.publicUrlBase) {
-      return joinUrl(this.publicUrlBase, key);
-    }
-    return `${IMAGE_PROXY_PATH}/${key}`;
   }
 }
