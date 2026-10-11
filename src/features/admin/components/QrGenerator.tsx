@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { Card } from "@/ui/Card";
+
 import { generateQr, type GeneratedQr, type GenerateQrResult } from "../actions";
 
 type ErrorCode = Extract<GenerateQrResult, { status: "error" }>["message"];
@@ -25,12 +27,38 @@ function downloadSvg({ id, svg }: GeneratedQr) {
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 }
 
+function QrCard({ qr }: { qr: GeneratedQr }) {
+  return (
+    <div className="w-72">
+      <Card
+        title={qr.id}
+        headerAction={
+          <button
+            type="button"
+            onClick={() => downloadSvg(qr)}
+            className="mr-2 rounded-lg border border-black/20 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-black/5"
+          >
+            Download SVG
+          </button>
+        }
+      >
+        <div
+          className="rounded-lg bg-white p-2 [&_svg]:h-auto [&_svg]:w-full"
+          // Markup is produced server-side by renderQrSvg from our own data.
+          dangerouslySetInnerHTML={{ __html: qr.svg }}
+        />
+        <a href={qr.url} className="block break-all text-xs text-muted underline" target="_blank" rel="noreferrer">
+          {qr.url}
+        </a>
+      </Card>
+    </div>
+  );
+}
+
 export function QrGenerator() {
   const [history, setHistory] = useState<GeneratedQr[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-
-  const current = history[0];
 
   function handleGenerate() {
     setError(null);
@@ -49,58 +77,34 @@ export function QrGenerator() {
   }
 
   return (
-    <div className="space-y-6">
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={pending}
-        className="rounded-xl bg-ink px-5 py-3 font-semibold text-white disabled:opacity-60"
-      >
-        {pending ? "Generating…" : "Generate new QR code"}
-      </button>
-
-      {error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
+    <>
+      {history.length === 0 ? (
+        <p className="text-sm text-muted">No QR codes generated yet. Use the button at the bottom right.</p>
+      ) : (
+        <ul className="flex flex-wrap gap-4">
+          {history.map((qr) => (
+            <li key={qr.id}>
+              <QrCard qr={qr} />
+            </li>
+          ))}
+        </ul>
       )}
 
-      {current && (
-        <section className="space-y-3">
-          <div
-            className="w-full max-w-xs rounded-xl border border-black/10 p-2 [&_svg]:h-auto [&_svg]:w-full"
-            // Markup is produced server-side by renderQrSvg from our own data.
-            dangerouslySetInnerHTML={{ __html: current.svg }}
-          />
-          <p className="font-mono text-sm">{current.id}</p>
-          <a href={current.url} className="block break-all text-sm underline" target="_blank" rel="noreferrer">
-            {current.url}
-          </a>
-          <button
-            type="button"
-            onClick={() => downloadSvg(current)}
-            className="rounded-xl border border-black/20 px-4 py-2 text-sm font-semibold"
-          >
-            Download SVG
-          </button>
-        </section>
-      )}
-
-      {history.length > 1 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Generated this session</h2>
-          <ul className="space-y-1 text-sm">
-            {history.map((qr) => (
-              <li key={qr.id} className="flex items-center gap-3">
-                <span className="font-mono">{qr.id}</span>
-                <button type="button" onClick={() => downloadSvg(qr)} className="underline">
-                  SVG
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        {error && (
+          <p role="alert" className="rounded-lg bg-white px-3 py-2 text-sm text-red-600 shadow-lg">
+            {error}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={pending}
+          className="rounded-full bg-ink px-6 py-4 font-semibold text-white shadow-lg disabled:opacity-60"
+        >
+          {pending ? "Generating…" : "Generate new QR code"}
+        </button>
+      </div>
+    </>
   );
 }

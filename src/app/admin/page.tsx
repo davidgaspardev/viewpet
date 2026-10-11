@@ -22,7 +22,7 @@ export default async function AdminPage() {
   return (
     <>
       <StickyHeader />
-      <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-14">
+      <main className="min-h-screen px-6 pb-32 pt-14">
         <header className="mt-8">
           <h1 className="text-xl font-bold text-ink">QR code generator</h1>
           <p className="mt-1 text-xs text-muted">
