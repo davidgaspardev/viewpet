@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
-import type { StorageProvider } from "./interface";
-import { validateImageUpload, joinUrl, IMMUTABLE_CACHE_CONTROL, wrapUploadError } from "./interface";
+import type { StorageProvider } from "../interface";
+import { validateImageUpload, joinUrl, IMMUTABLE_CACHE_CONTROL, wrapUploadError } from "../interface";
 
 /**
  * AWS S3 storage provider.

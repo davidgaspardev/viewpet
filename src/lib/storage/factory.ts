@@ -9,8 +9,8 @@
 
 import type { StorageProvider } from "./interface";
 import { LocalStorageProvider } from "./local";
-import { S3StorageProvider } from "./s3";
-import { R2StorageProvider } from "./r2";
+import { S3StorageProvider } from "./aws/s3";
+import { R2StorageProvider } from "./cloudflare/r2";
 
 export type StorageProviderType = "local" | "s3" | "r2";
 

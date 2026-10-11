@@ -11,11 +11,11 @@ import {
   MAX_IMAGE_BYTES,
 } from "../storage";
 import { LocalStorageProvider } from "../storage/local";
-import { S3StorageProvider } from "../storage/s3";
-import { R2StorageProvider } from "../storage/r2";
+import { S3StorageProvider } from "../storage/aws/s3";
+import { R2StorageProvider } from "../storage/cloudflare/r2";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Test utilities
 const TEST_UPLOADS_DIR = path.join(process.cwd(), "test-uploads");
@@ -111,6 +111,7 @@ describe("Storage Provider Abstraction", () => {
       process.env.R2_ACCOUNT_ID = "test-account";
       process.env.R2_ACCESS_KEY_ID = "test-key";
       process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+      process.env.R2_ACCESS_SUBDOMAIN = "https://pub-test.r2.dev";
       const provider = StorageProviderFactory.getInstance();
       expect(provider).toBeInstanceOf(R2StorageProvider);
     });
@@ -495,6 +496,7 @@ describe("Storage Provider Abstraction", () => {
       process.env.R2_ACCOUNT_ID = "test-account";
       process.env.R2_ACCESS_KEY_ID = "test-key";
       process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+      process.env.R2_ACCESS_SUBDOMAIN = "https://pub-test.r2.dev";
 
       mockSend = mock(() => Promise.resolve({}));
     });
@@ -505,6 +507,7 @@ describe("Storage Provider Abstraction", () => {
       delete process.env.R2_ACCOUNT_ID;
       delete process.env.R2_ACCESS_KEY_ID;
       delete process.env.R2_SECRET_ACCESS_KEY;
+      delete process.env.R2_ACCESS_SUBDOMAIN;
     });
 
     test("throws when R2_BUCKET is missing", () => {
@@ -520,6 +523,11 @@ describe("Storage Provider Abstraction", () => {
     test("throws when R2 credentials are missing", () => {
       delete process.env.R2_ACCESS_KEY_ID;
       expect(() => new R2StorageProvider()).toThrow("R2 credentials not configured");
+    });
+
+    test("throws when R2_ACCESS_SUBDOMAIN is missing", () => {
+      delete process.env.R2_ACCESS_SUBDOMAIN;
+      expect(() => new R2StorageProvider()).toThrow("R2 public access not configured");
     });
 
     test("saveImage calls S3Client.send once", async () => {
@@ -545,14 +553,14 @@ describe("Storage Provider Abstraction", () => {
       expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
     });
 
-    test("saveImage returns a proxy URL under /api/images", async () => {
+    test("saveImage builds public URL from R2_ACCESS_SUBDOMAIN", async () => {
       const provider = new R2StorageProvider();
       (provider as any).client.send = mockSend;
       const file = createTestImage();
 
       const url = await provider.saveImage(TEST_HASH_ID, file);
 
-      expect(url).toBe(`/api/images/uploads/${TEST_HASH_ID}.png`);
+      expect(url).toBe(`https://pub-test.r2.dev/uploads/${TEST_HASH_ID}.png`);
     });
 
     test("saveImage validates file type", async () => {
@@ -601,72 +609,6 @@ describe("Storage Provider Abstraction", () => {
       await expect(provider.saveImage("../evil", file)).rejects.toThrow(
         "Invalid hashId format",
       );
-    });
-
-    describe("getImage", () => {
-      function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
-        return new ReadableStream({
-          start(controller) {
-            controller.enqueue(bytes);
-            controller.close();
-          },
-        });
-      }
-
-      test("returns a stream and content type", async () => {
-        const provider = new R2StorageProvider();
-        const stream = streamOf(new Uint8Array([1, 2, 3]));
-        (provider as any).client.send = mock(() =>
-          Promise.resolve({
-            ContentType: "image/png",
-            Body: { transformToWebStream: () => stream },
-          }),
-        );
-
-        const result = await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
-
-        expect(result.body).toBe(stream);
-        expect(result.contentType).toBe("image/png");
-      });
-
-      test("defaults contentType when the object omits it", async () => {
-        const provider = new R2StorageProvider();
-        (provider as any).client.send = mock(() =>
-          Promise.resolve({
-            Body: { transformToWebStream: () => streamOf(new Uint8Array()) },
-          }),
-        );
-
-        const result = await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
-
-        expect(result.contentType).toBe("application/octet-stream");
-      });
-
-      test("throws when the object has no body", async () => {
-        const provider = new R2StorageProvider();
-        (provider as any).client.send = mock(() => Promise.resolve({}));
-
-        await expect(
-          provider.getImage(`uploads/${TEST_HASH_ID}.png`),
-        ).rejects.toThrow("has no body");
-      });
-
-      test("uses GetObjectCommand with the correct bucket and key", async () => {
-        const provider = new R2StorageProvider();
-        const send: any = mock(() =>
-          Promise.resolve({
-            Body: { transformToWebStream: () => streamOf(new Uint8Array()) },
-          }),
-        );
-        (provider as any).client.send = send;
-
-        await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
-
-        const call = send.mock.calls[0][0];
-        expect(call).toBeInstanceOf(GetObjectCommand);
-        expect(call.input.Bucket).toBe("test-bucket");
-        expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
-      });
     });
   });
 

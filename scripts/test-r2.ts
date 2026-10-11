@@ -9,11 +9,10 @@
  *   - R2_ACCESS_KEY_ID
  *   - R2_SECRET_ACCESS_KEY
  *   - R2_BUCKET
+ *   - R2_ACCESS_SUBDOMAIN (the bucket's pub-<hash>.r2.dev subdomain, or a
+ *     custom domain — requires public access enabled in the Cloudflare
+ *     dashboard first)
  *   - STORAGE_PROVIDER=r2
- *
- * The returned URL is relative (/api/images/<key>) — it's served by this
- * app's own route, not R2 directly, so open it against a running dev
- * server (e.g. http://localhost:3000/api/images/...), not as a bare URL.
  */
 
 import { StorageProviderFactory } from "../src/lib/storage";
@@ -51,11 +50,11 @@ async function testR2Upload() {
     const url = await storage.saveImage(testHashId, file);
 
     console.log("\n✅ Upload successful!");
-    console.log(`📸 Image path: ${url}\n`);
+    console.log(`📸 Image URL: ${url}\n`);
 
     console.log("🎉 Test completed successfully!");
     console.log("\n💡 You can now:");
-    console.log(`   1. With "bun run dev" running, open http://localhost:3000${url}`);
+    console.log(`   1. Open the URL in your browser: ${url}`);
     console.log("   2. Verify the image appears correctly");
     console.log("   3. Check your R2 bucket (Cloudflare dashboard) to confirm the upload\n");
   } catch (error) {
@@ -74,6 +73,10 @@ async function testR2Upload() {
         console.log("💡 Troubleshooting:");
         console.log("   - Set R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY");
         console.log("   - Generate an R2 API token in the Cloudflare dashboard\n");
+      } else if (error.message.includes("public access not configured")) {
+        console.log("💡 Troubleshooting:");
+        console.log("   - Enable public access on the bucket (Settings → Public access)");
+        console.log("   - Set R2_ACCESS_SUBDOMAIN to the resulting pub-<hash>.r2.dev URL\n");
       } else if (error.message.includes("Access Denied")) {
         console.log("💡 Troubleshooting:");
         console.log("   - Check the R2 API token has Object Read & Write permissions\n");
