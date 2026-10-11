@@ -26,8 +26,11 @@ const DOT_RATIO = 0.84;
  */
 export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
   const { logoHref, color = "#111b25", background = "#ffffff" } = options;
+  const hasLogo = Boolean(logoHref);
 
   const { modules } = QRCode.create(text, { errorCorrectionLevel: "H" });
+  const fg = escapeAttr(color);
+  const bg = escapeAttr(background);
   const count = modules.size;
   const size = count + MARGIN * 2;
   const centre = size / 2;
@@ -43,7 +46,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       const cx = col + MARGIN + 0.5;
       const cy = row + MARGIN + 0.5;
       // Leave the logo area empty (plus half a module of breathing room).
-      if (logo(logoHref) && Math.hypot(cx - centre, cy - centre) < logoRadius + 0.5) continue;
+      if (hasLogo && Math.hypot(cx - centre, cy - centre) < logoRadius + 0.5) continue;
       dots.push(`<circle cx="${cx}" cy="${cy}" r="${DOT_RATIO / 2}"/>`);
     }
   }
@@ -53,25 +56,29 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
     [0, count - 7],
     [count - 7, 0],
   ]
-    .map(([row, col]) => finder(col + MARGIN, row + MARGIN, color, background))
+    .map(([row, col]) => finder(col + MARGIN, row + MARGIN, fg, bg))
     .join("");
 
-  const logoSvg = logo(logoHref)
-    ? `<circle cx="${centre}" cy="${centre}" r="${logoRadius}" fill="${background}"/>` +
-      `<image href="${logoHref}" x="${centre - logoRadius * 0.85}" y="${centre - logoRadius * 0.85}" ` +
+  const logoSvg = logoHref
+    ? `<circle cx="${centre}" cy="${centre}" r="${logoRadius}" fill="${bg}"/>` +
+      `<image href="${escapeAttr(logoHref)}" x="${centre - logoRadius * 0.85}" y="${centre - logoRadius * 0.85}" ` +
       `width="${logoRadius * 1.7}" height="${logoRadius * 1.7}"/>`
     : "";
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +
     `width="${size * 10}" height="${size * 10}" role="img" aria-label="QR code">` +
-    `<rect width="${size}" height="${size}" fill="${background}"/>` +
-    `<g fill="${color}">${dots.join("")}</g>${finders}${logoSvg}</svg>`
+    `<rect width="${size}" height="${size}" fill="${bg}"/>` +
+    `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}</svg>`
   );
 }
 
-function logo(href: string | undefined): href is string {
-  return typeof href === "string" && href.length > 0;
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /** A 7×7-module finder pattern drawn as three concentric circles. */

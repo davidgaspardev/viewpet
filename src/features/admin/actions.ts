@@ -1,14 +1,14 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { headers } from "next/headers";
 
 import { PetRepositoryFactory } from "@/lib/repository";
+import { LOGO_DATA_URI } from "@/lib/qrcode/logo";
 import { renderQrSvg } from "@/lib/qrcode/render";
 import { generateHashId } from "@/lib/utils/ids";
 
 import { isAdminAuthorized } from "./auth";
+import { reserveFreshId } from "./reserve";
 
 export type GeneratedQr = {
   id: string;
@@ -20,8 +20,6 @@ export type GenerateQrResult =
   | { status: "success"; qr: GeneratedQr }
   | { status: "error"; message: "unauthorized" | "generation_failed" };
 
-const MAX_ID_ATTEMPTS = 5;
-
 /** Public origin used inside the QR: `SITE_URL` when set, else the request's own origin. */
 async function resolveOrigin(): Promise<string> {
   const configured = process.env.SITE_URL?.trim();
@@ -31,11 +29,6 @@ async function resolveOrigin(): Promise<string> {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
-}
-
-async function loadLogoHref(): Promise<string> {
-  const svg = await readFile(path.join(process.cwd(), "public", "logo.svg"));
-  return `data:image/svg+xml;base64,${svg.toString("base64")}`;
 }
 
 /**
@@ -49,20 +42,10 @@ export async function generateQr(): Promise<GenerateQrResult> {
     return { status: "error", message: "unauthorized" };
   }
 
-  const repository = PetRepositoryFactory.getInstance();
-
-  let id: string | undefined;
-  for (let attempt = 0; attempt < MAX_ID_ATTEMPTS && !id; attempt++) {
-    const candidate = generateHashId();
-    // reservePetId is an idempotent upsert, so look first to never "reserve"
-    // an id that already belongs to someone.
-    if ((await repository.getPetEntry(candidate)).status === "missing") id = candidate;
-  }
+  const id = await reserveFreshId(PetRepositoryFactory.getInstance(), generateHashId);
   if (!id) return { status: "error", message: "generation_failed" };
 
-  await repository.reservePetId(id);
-
   const url = `${await resolveOrigin()}/view/${id}`;
-  const svg = renderQrSvg(url, { logoHref: await loadLogoHref() });
+  const svg = renderQrSvg(url, { logoHref: LOGO_DATA_URI });
   return { status: "success", qr: { id, url, svg } };
 }

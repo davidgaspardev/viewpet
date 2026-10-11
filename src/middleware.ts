@@ -12,13 +12,16 @@ export async function middleware(request: NextRequest) {
     configured ? "Authentication required" : "Admin is disabled: ADMIN_PASSWORD is not set",
     {
       status: configured ? 401 : 503,
-      headers: configured
-        ? { "WWW-Authenticate": `Basic realm="${ADMIN_REALM}", charset="UTF-8"` }
-        : {},
+      headers: {
+        "Cache-Control": "no-store",
+        ...(configured && {
+          "WWW-Authenticate": `Basic realm="${ADMIN_REALM}", charset="UTF-8"`,
+        }),
+      },
     },
   );
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: ["/admin/:path*"],
 };

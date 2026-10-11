@@ -26,3 +26,11 @@ describe("renderQrSvg", () => {
     expect(dots(withLogo)).toBeLessThan(dots(plain));
   });
 });
+
+describe("renderQrSvg escaping", () => {
+  test("escapes attribute values", () => {
+    const svg = renderQrSvg("x", { logoHref: 'a"><script>', color: '"red', background: "<b" });
+    expect(svg).not.toContain("<script>");
+    expect(svg).toContain("&quot;");
+  });
+});
