@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { isAdminAuthorized } from "@/features/admin/auth";
 import { QrGenerator } from "@/features/admin/index.client";
+import { StickyHeader } from "@/ui/StickyHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +20,19 @@ export default async function AdminPage() {
   if (!(await isAdminAuthorized((await headers()).get("authorization")))) notFound();
 
   return (
-    <main className="mx-auto max-w-xl space-y-6 p-6">
-      <header>
-        <h1 className="text-2xl font-bold">QR code generator</h1>
-        <p className="text-sm text-black/60">
-          Each code reserves a new pet id. Scanning it opens the registration form for that pet.
-        </p>
-      </header>
-      <QrGenerator />
-    </main>
+    <>
+      <StickyHeader />
+      <main className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-14">
+        <header className="mt-8">
+          <h1 className="text-xl font-bold text-ink">QR code generator</h1>
+          <p className="mt-1 text-xs text-muted">
+            Each code reserves a new pet id. Scanning it opens the registration form for that pet.
+          </p>
+        </header>
+        <div className="mt-6">
+          <QrGenerator />
+        </div>
+      </main>
+    </>
   );
 }
