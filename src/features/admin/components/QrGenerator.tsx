@@ -3,6 +3,7 @@
 import { memo, useMemo, useState, useTransition } from "react";
 
 import { Card } from "@/ui/Card";
+import { useSnackbar } from "@/ui/Snackbar";
 
 import { generateQr, type GeneratedQr, type GenerateQrResult } from "../actions";
 
@@ -56,21 +57,21 @@ const QrCard = memo(function QrCard({ qr }: { qr: GeneratedQr }) {
 
 export function QrGenerator() {
   const [history, setHistory] = useState<GeneratedQr[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { show } = useSnackbar();
 
   function handleGenerate() {
-    setError(null);
     startTransition(async () => {
       try {
         const result = await generateQr();
         if (result.status === "success") {
           setHistory((prev) => [result.qr, ...prev]);
+          show(`Reserved ${result.qr.id}`, { variant: "info" });
         } else {
-          setError(ERRORS[result.message]);
+          show(ERRORS[result.message], { variant: "error" });
         }
       } catch {
-        setError("Something went wrong.");
+        show("Something went wrong.", { variant: "error" });
       }
     });
   }
@@ -89,12 +90,7 @@ export function QrGenerator() {
         </ul>
       )}
 
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-        {error && (
-          <p role="alert" className="rounded-lg bg-white px-3 py-2 text-sm text-red-600 shadow-lg">
-            {error}
-          </p>
-        )}
+      <div className="fixed bottom-6 right-6 z-40">
         <button
           type="button"
           onClick={handleGenerate}

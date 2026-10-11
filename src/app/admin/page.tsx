@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { isAdminAuthorized } from "@/features/admin/auth";
 import { QrGenerator } from "@/features/admin/index.client";
+import { SnackbarProvider } from "@/ui/Snackbar";
 import { StickyHeader } from "@/ui/StickyHeader";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,9 @@ export default async function AdminPage() {
           </p>
         </header>
         <div className="mt-6">
-          <QrGenerator />
+          <SnackbarProvider closeLabel="Close">
+            <QrGenerator />
+          </SnackbarProvider>
         </div>
       </main>
     </>

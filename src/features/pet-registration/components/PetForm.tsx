@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Card } from "@/ui/Card";
+import { SnackbarProvider, useSnackbar } from "@/ui/Snackbar";
 import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
 import { submitPet, type SubmitState } from "../actions";
+import { BirthdateField } from "./BirthdateField";
+import { INPUT_CLASS } from "./fieldStyles";
 import { ImageUpload } from "./ImageUpload";
 
 const MAX_GUARDIANS = 2;
@@ -64,7 +67,7 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
             value={phone}
             placeholder="(48) 98123-4567"
             onChange={(e) => setPhone(applyPhoneMask(e.target.value))}
-            className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-base text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
+            className={INPUT_CLASS}
           />
         </label>
         <div className="mt-2 flex gap-4">
@@ -156,8 +159,17 @@ type PetFormProps = {
   locale: Locale;
 };
 
-export function PetForm({ hashId, locale }: PetFormProps) {
+export function PetForm(props: PetFormProps) {
+  return (
+    <SnackbarProvider closeLabel={getDictionary(props.locale).close}>
+      <PetFormBody {...props} />
+    </SnackbarProvider>
+  );
+}
+
+function PetFormBody({ hashId, locale }: PetFormProps) {
   const dict = getDictionary(locale);
+  const { show } = useSnackbar();
   const [state, formAction] = useActionState<SubmitState, FormData>(
     submitPet.bind(null, hashId),
     initialState,
@@ -175,6 +187,11 @@ export function PetForm({ hashId, locale }: PetFormProps) {
               ? dict.errorBirthdate
               : dict.errorMissing
       : null;
+
+  // `state` is a new object on every submission, so a repeated error is shown again.
+  useEffect(() => {
+    if (errorMessage) show(errorMessage, { variant: "error" });
+  }, [state, errorMessage, show]);
 
   return (
     <>
@@ -216,19 +233,10 @@ export function PetForm({ hashId, locale }: PetFormProps) {
               </div>
             </div>
             <ImageUpload name="picture" required locale={locale} />
-            <Field label={dict.petBirthdate} name="birthdate" type="date" required />
+            <BirthdateField dict={dict} />
           </Card>
 
           <GuardianList dict={dict} />
-
-          {errorMessage && (
-            <p
-              role="alert"
-              className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
-            >
-              {errorMessage}
-            </p>
-          )}
 
           <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
         </form>
@@ -266,7 +274,7 @@ function Field({
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-base text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/10"
+        className={INPUT_CLASS}
       />
     </label>
   );

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { PetRepositoryFactory } from "@/lib/repository";
+import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
 import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform, PetGender } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
@@ -82,10 +83,12 @@ export async function submitPet(
   if (!(pictureField instanceof File) || pictureField.size === 0) {
     return { status: "error", message: "invalid_picture" };
   }
-  const parsed = new Date(birthdate);
-  if (Number.isNaN(parsed.getTime())) {
+  // The form submits a validated `YYYY-MM-DD`; re-check it strictly here. The
+  // upper bound is tomorrow (UTC) so a user ahead of UTC can still pick today.
+  if (!validateBirthdateIso(birthdate, tomorrowUtcIso()).ok) {
     return { status: "error", message: "invalid_birthdate" };
   }
+  const parsed = new Date(birthdate);
 
   const guardians: Guardian[] = [];
   for (let i = 0; i < MAX_GUARDIANS; i++) {
