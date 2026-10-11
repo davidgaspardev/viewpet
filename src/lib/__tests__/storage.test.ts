@@ -604,19 +604,28 @@ describe("Storage Provider Abstraction", () => {
     });
 
     describe("getImage", () => {
-      test("returns bytes and content type", async () => {
+      function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
+        return new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        });
+      }
+
+      test("returns a stream and content type", async () => {
         const provider = new R2StorageProvider();
-        const bytes = new Uint8Array([1, 2, 3]);
+        const stream = streamOf(new Uint8Array([1, 2, 3]));
         (provider as any).client.send = mock(() =>
           Promise.resolve({
             ContentType: "image/png",
-            Body: { transformToByteArray: () => Promise.resolve(bytes) },
+            Body: { transformToWebStream: () => stream },
           }),
         );
 
         const result = await provider.getImage(`uploads/${TEST_HASH_ID}.png`);
 
-        expect(result.body).toBe(bytes);
+        expect(result.body).toBe(stream);
         expect(result.contentType).toBe("image/png");
       });
 
@@ -624,7 +633,7 @@ describe("Storage Provider Abstraction", () => {
         const provider = new R2StorageProvider();
         (provider as any).client.send = mock(() =>
           Promise.resolve({
-            Body: { transformToByteArray: () => Promise.resolve(new Uint8Array()) },
+            Body: { transformToWebStream: () => streamOf(new Uint8Array()) },
           }),
         );
 
@@ -646,7 +655,7 @@ describe("Storage Provider Abstraction", () => {
         const provider = new R2StorageProvider();
         const send: any = mock(() =>
           Promise.resolve({
-            Body: { transformToByteArray: () => Promise.resolve(new Uint8Array()) },
+            Body: { transformToWebStream: () => streamOf(new Uint8Array()) },
           }),
         );
         (provider as any).client.send = send;

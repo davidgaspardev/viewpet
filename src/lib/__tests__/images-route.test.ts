@@ -7,6 +7,7 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
 import { GET } from "@/app/api/images/[...key]/route";
 import { StorageProviderFactory } from "@/lib/storage";
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/storage/interface";
 
 const VALID_HASH_ID = "abc23456defg"; // 12 chars, all in the hashId alphabet
 
@@ -69,11 +70,17 @@ describe("GET /api/images/[...key]", () => {
   test("serves the image bytes with correct headers when found", async () => {
     setUpR2();
     const bytes = new Uint8Array([1, 2, 3, 4]);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes);
+        controller.close();
+      },
+    });
     const provider = StorageProviderFactory.getInstance();
     (provider as any).client.send = mock(() =>
       Promise.resolve({
         ContentType: "image/png",
-        Body: { transformToByteArray: () => Promise.resolve(bytes) },
+        Body: { transformToWebStream: () => stream },
       }),
     );
 
@@ -81,7 +88,7 @@ describe("GET /api/images/[...key]", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("image/png");
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect(res.headers.get("Cache-Control")).toBe(IMMUTABLE_CACHE_CONTROL);
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(bytes);
   });
 

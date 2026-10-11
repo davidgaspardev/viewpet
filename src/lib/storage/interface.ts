@@ -104,3 +104,25 @@ export function validateImageUpload(hashId: string, file: File): string {
 export function joinUrl(base: string, key: string): string {
   return `${base.replace(/\/$/, "")}/${key}`;
 }
+
+/**
+ * Cache-Control for uploaded images — 1 year, immutable. Pet photos never
+ * change in place (re-uploads get a fresh hashId-based key), so this is
+ * safe to set unconditionally on both the upload (`PutObjectCommand`) and,
+ * for providers proxying reads through our own server, the response that
+ * serves them back. Shared so the two can't drift apart — the "repeat
+ * views hit the edge cache" guarantee this project's READMEs/ADRs document
+ * depends on both sides agreeing on the same value.
+ */
+export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
+/**
+ * Wrap a caught upload error with provider context and rethrow. Shared so
+ * S3/R2's `saveImage()` catch blocks can't drift on the wrapping format.
+ *
+ * @param providerLabel - e.g. `"S3"` or `"R2"`, used in the thrown message.
+ */
+export function wrapUploadError(providerLabel: string, err: unknown): never {
+  const reason = err instanceof Error ? err.message : String(err);
+  throw new Error(`${providerLabel} upload failed: ${reason}`);
+}

@@ -17,6 +17,7 @@
  */
 
 import { StorageProviderFactory } from "../src/lib/storage";
+import { generateHashId } from "../src/lib/utils/ids";
 
 async function testR2Upload() {
   console.log("🧪 Testing R2 upload...\n");
@@ -40,7 +41,10 @@ async function testR2Upload() {
     console.log(`   Type: ${file.type}`);
     console.log(`   Size: ${file.size} bytes\n`);
 
-    const testHashId = `test-${Date.now()}`;
+    // Must pass isHashId() — R2StorageProvider validates it the same way
+    // the real upload path does, so a `test-<timestamp>`-shaped id would
+    // fail validation before ever reaching R2.
+    const testHashId = generateHashId();
     console.log(`🔑 Using hash ID: ${testHashId}\n`);
 
     console.log("⬆️  Uploading to R2...");

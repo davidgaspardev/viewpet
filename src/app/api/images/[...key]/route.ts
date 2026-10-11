@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { StorageProviderFactory } from "@/lib/storage";
 import type { StorageProvider } from "@/lib/storage/interface";
-import { SUPPORTED_IMAGE_MIMES, getExtensionFromMime } from "@/lib/storage/interface";
+import {
+  SUPPORTED_IMAGE_MIMES,
+  getExtensionFromMime,
+  IMMUTABLE_CACHE_CONTROL,
+} from "@/lib/storage/interface";
 import { isHashId } from "@/lib/utils/ids";
 
 /**
@@ -51,7 +55,7 @@ function isValidKey(key: string, basePath: string): boolean {
 }
 
 type ReadableProvider = StorageProvider & {
-  getImage(key: string): Promise<{ body: Uint8Array; contentType: string }>;
+  getImage(key: string): Promise<{ body: ReadableStream<Uint8Array>; contentType: string }>;
   basePath: string;
 };
 
@@ -114,10 +118,10 @@ export async function GET(
     }
 
     const { body, contentType } = await provider.getImage(key);
-    return new NextResponse(Buffer.from(body), {
+    return new NextResponse(body, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control": IMMUTABLE_CACHE_CONTROL,
       },
     });
   } catch (err) {

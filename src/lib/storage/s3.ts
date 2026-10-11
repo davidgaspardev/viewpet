@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import { validateImageUpload, joinUrl } from "./interface";
+import { validateImageUpload, joinUrl, IMMUTABLE_CACHE_CONTROL, wrapUploadError } from "./interface";
 
 /**
  * AWS S3 storage provider.
@@ -102,8 +102,7 @@ export class S3StorageProvider implements StorageProvider {
         Key: key,
         Body: buffer,
         ContentType: file.type,
-        // Cache for 1 year (immutable content)
-        CacheControl: "public, max-age=31536000, immutable",
+        CacheControl: IMMUTABLE_CACHE_CONTROL,
         // Note: Public access is controlled by bucket policy, not ACL
       });
 
@@ -112,11 +111,7 @@ export class S3StorageProvider implements StorageProvider {
       // Build and return the public URL
       return this.buildPublicUrl(key);
     } catch (err) {
-      // Wrap AWS errors with more context
-      if (err instanceof Error) {
-        throw new Error(`S3 upload failed: ${err.message}`);
-      }
-      throw new Error(`S3 upload failed: ${String(err)}`);
+      wrapUploadError("S3", err);
     }
   }
 

@@ -5,7 +5,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import type { StorageProvider } from "./interface";
-import { validateImageUpload } from "./interface";
+import { validateImageUpload, IMMUTABLE_CACHE_CONTROL, wrapUploadError } from "./interface";
 
 /** Route that proxies reads through our own server — see `getImage()` below. */
 const IMAGE_PROXY_PATH = "/api/images";
@@ -97,37 +97,35 @@ export class R2StorageProvider implements StorageProvider {
         Key: key,
         Body: buffer,
         ContentType: file.type,
-        // Cache for 1 year (immutable content)
-        CacheControl: "public, max-age=31536000, immutable",
+        CacheControl: IMMUTABLE_CACHE_CONTROL,
       });
 
       await this.client.send(command);
 
       return `${IMAGE_PROXY_PATH}/${key}`;
     } catch (err) {
-      if (err instanceof Error) {
-        throw new Error(`R2 upload failed: ${err.message}`);
-      }
-      throw new Error(`R2 upload failed: ${String(err)}`);
+      wrapUploadError("R2", err);
     }
   }
 
   /**
-   * Fetch an object's bytes directly from R2 using our own credentials.
-   * Used by the `/api/images/[...key]` route to serve images — the bucket
+   * Fetch an object directly from R2 using our own credentials, as a
+   * web `ReadableStream` — not buffered into memory — so the
+   * `/api/images/[...key]` route can hand it straight to `NextResponse`
+   * without materializing the whole object server-side first. The bucket
    * stays private, so this is the only way to read them.
    *
    * @throws Error with `.name === "NoSuchKey"` when the object doesn't exist
    *   (same shape the AWS SDK throws, so callers can branch on it the same way).
    */
-  async getImage(key: string): Promise<{ body: Uint8Array; contentType: string }> {
+  async getImage(key: string): Promise<{ body: ReadableStream<Uint8Array>; contentType: string }> {
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
     );
     if (!result.Body) {
       throw new Error(`R2 object "${key}" has no body`);
     }
-    const body = await result.Body.transformToByteArray();
+    const body = result.Body.transformToWebStream();
     return { body, contentType: result.ContentType ?? "application/octet-stream" };
   }
 }
