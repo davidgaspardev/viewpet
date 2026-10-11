@@ -76,11 +76,18 @@ export async function GET(
   try {
     const provider = StorageProviderFactory.getInstance();
     if (!(provider instanceof R2StorageProvider)) {
-      // Active provider isn't R2 — this route has nothing to serve.
+      // Active provider isn't R2 — this route has nothing to serve. Logged
+      // because this is always a config issue (STORAGE_PROVIDER isn't "r2"
+      // in *this* process/env), never something a client did — a URL built
+      // by R2StorageProvider.saveImage() should never reach here otherwise.
+      console.warn(
+        `[api/images] "${key}" requested but active provider is ${provider.constructor.name}, not R2StorageProvider — check STORAGE_PROVIDER for this process.`,
+      );
       return new NextResponse("Not found", { status: 404 });
     }
 
     if (!isValidKey(key, provider.basePath)) {
+      console.warn(`[api/images] "${key}" doesn't match the expected <basePath>/<hashId>.<ext> shape`);
       return new NextResponse("Not found", { status: 404 });
     }
 
