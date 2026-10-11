@@ -1,11 +1,6 @@
 import { S3Client, PutObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
-import type { StorageProvider } from "./interface";
-import {
-  MAX_IMAGE_BYTES,
-  SaveImageException,
-  getExtensionFromMime,
-} from "./interface";
-import { isHashId } from "../utils/ids";
+import type { StorageProvider } from "../interface";
+import { validateImageUpload, joinUrl, IMMUTABLE_CACHE_CONTROL, wrapUploadError } from "../interface";
 
 /**
  * AWS S3 storage provider.
@@ -91,24 +86,7 @@ export class S3StorageProvider implements StorageProvider {
    * @returns Public S3 or CloudFront URL
    */
   async saveImage(hashId: string, file: File): Promise<string> {
-    // Validate hashId to prevent path traversal and key manipulation
-    if (!isHashId(hashId)) {
-      throw new Error("Invalid hashId format");
-    }
-
-    // Validate file
-    if (!file || file.size === 0) {
-      throw new SaveImageException("empty");
-    }
-
-    const ext = getExtensionFromMime(file.type);
-    if (!ext) {
-      throw new SaveImageException("invalid_type");
-    }
-
-    if (file.size > MAX_IMAGE_BYTES) {
-      throw new SaveImageException("too_large");
-    }
+    const ext = validateImageUpload(hashId, file);
 
     try {
       // Convert File to Buffer
@@ -124,8 +102,7 @@ export class S3StorageProvider implements StorageProvider {
         Key: key,
         Body: buffer,
         ContentType: file.type,
-        // Cache for 1 year (immutable content)
-        CacheControl: "public, max-age=31536000, immutable",
+        CacheControl: IMMUTABLE_CACHE_CONTROL,
         // Note: Public access is controlled by bucket policy, not ACL
       });
 
@@ -134,11 +111,7 @@ export class S3StorageProvider implements StorageProvider {
       // Build and return the public URL
       return this.buildPublicUrl(key);
     } catch (err) {
-      // Wrap AWS errors with more context
-      if (err instanceof Error) {
-        throw new Error(`S3 upload failed: ${err.message}`);
-      }
-      throw new Error(`S3 upload failed: ${String(err)}`);
+      wrapUploadError("S3", err);
     }
   }
 
@@ -152,14 +125,12 @@ export class S3StorageProvider implements StorageProvider {
   private buildPublicUrl(key: string): string {
     // CloudFront takes precedence
     if (this.cloudfrontDomain) {
-      const domain = this.cloudfrontDomain.replace(/\/$/, "");
-      return `${domain}/${key}`;
+      return joinUrl(this.cloudfrontDomain, key);
     }
 
     // Custom public URL (e.g., for custom domains)
     if (this.publicUrl) {
-      const baseUrl = this.publicUrl.replace(/\/$/, "");
-      return `${baseUrl}/${key}`;
+      return joinUrl(this.publicUrl, key);
     }
 
     // Standard S3 URL

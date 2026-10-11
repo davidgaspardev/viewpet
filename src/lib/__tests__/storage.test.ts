@@ -11,7 +11,8 @@ import {
   MAX_IMAGE_BYTES,
 } from "../storage";
 import { LocalStorageProvider } from "../storage/local";
-import { S3StorageProvider } from "../storage/s3";
+import { S3StorageProvider } from "../storage/aws/s3";
+import { R2StorageProvider } from "../storage/cloudflare/r2";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -101,6 +102,18 @@ describe("Storage Provider Abstraction", () => {
       process.env.AWS_S3_BUCKET = "test-bucket";
       const provider = StorageProviderFactory.getInstance();
       expect(provider).toBeInstanceOf(S3StorageProvider);
+    });
+
+    test("respects STORAGE_PROVIDER environment variable for R2", () => {
+      StorageProviderFactory.reset();
+      process.env.STORAGE_PROVIDER = "r2";
+      process.env.R2_BUCKET = "test-bucket";
+      process.env.R2_ACCOUNT_ID = "test-account";
+      process.env.R2_ACCESS_KEY_ID = "test-key";
+      process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+      process.env.R2_ACCESS_SUBDOMAIN = "https://pub-test.r2.dev";
+      const provider = StorageProviderFactory.getInstance();
+      expect(provider).toBeInstanceOf(R2StorageProvider);
     });
 
     test("falls back to local provider for an unknown STORAGE_PROVIDER value", () => {
@@ -466,6 +479,130 @@ describe("Storage Provider Abstraction", () => {
 
     test("saveImage rejects invalid hashId format", async () => {
       const provider = new S3StorageProvider();
+      (provider as any).client.send = mockSend;
+      const file = createTestImage();
+
+      await expect(provider.saveImage("../evil", file)).rejects.toThrow(
+        "Invalid hashId format",
+      );
+    });
+  });
+
+  describe("R2StorageProvider", () => {
+    let mockSend: any;
+
+    beforeEach(() => {
+      process.env.R2_BUCKET = "test-bucket";
+      process.env.R2_ACCOUNT_ID = "test-account";
+      process.env.R2_ACCESS_KEY_ID = "test-key";
+      process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+      process.env.R2_ACCESS_SUBDOMAIN = "https://pub-test.r2.dev";
+
+      mockSend = mock(() => Promise.resolve({}));
+    });
+
+    afterEach(() => {
+      mockSend?.mockRestore?.();
+      delete process.env.R2_BUCKET;
+      delete process.env.R2_ACCOUNT_ID;
+      delete process.env.R2_ACCESS_KEY_ID;
+      delete process.env.R2_SECRET_ACCESS_KEY;
+      delete process.env.R2_ACCESS_SUBDOMAIN;
+    });
+
+    test("throws when R2_BUCKET is missing", () => {
+      delete process.env.R2_BUCKET;
+      expect(() => new R2StorageProvider()).toThrow("R2 bucket not configured");
+    });
+
+    test("throws when R2_ACCOUNT_ID is missing", () => {
+      delete process.env.R2_ACCOUNT_ID;
+      expect(() => new R2StorageProvider()).toThrow("R2 account not configured");
+    });
+
+    test("throws when R2 credentials are missing", () => {
+      delete process.env.R2_ACCESS_KEY_ID;
+      expect(() => new R2StorageProvider()).toThrow("R2 credentials not configured");
+    });
+
+    test("throws when R2_ACCESS_SUBDOMAIN is missing", () => {
+      delete process.env.R2_ACCESS_SUBDOMAIN;
+      expect(() => new R2StorageProvider()).toThrow("R2 public access not configured");
+    });
+
+    test("saveImage calls S3Client.send once", async () => {
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const file = createTestImage();
+
+      await provider.saveImage(TEST_HASH_ID, file);
+
+      expect(mockSend).toHaveBeenCalledTimes(1);
+    });
+
+    test("saveImage uses correct bucket and key", async () => {
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const file = createTestImage();
+
+      await provider.saveImage(TEST_HASH_ID, file);
+
+      const call = mockSend.mock.calls[0][0];
+      expect(call).toBeInstanceOf(PutObjectCommand);
+      expect(call.input.Bucket).toBe("test-bucket");
+      expect(call.input.Key).toBe(`uploads/${TEST_HASH_ID}.png`);
+    });
+
+    test("saveImage builds public URL from R2_ACCESS_SUBDOMAIN", async () => {
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const file = createTestImage();
+
+      const url = await provider.saveImage(TEST_HASH_ID, file);
+
+      expect(url).toBe(`https://pub-test.r2.dev/uploads/${TEST_HASH_ID}.png`);
+    });
+
+    test("saveImage validates file type", async () => {
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const invalidFile = createMockFile(1024, "application/pdf", "test.pdf");
+
+      await expect(
+        provider.saveImage(TEST_HASH_ID, invalidFile),
+      ).rejects.toThrow(SaveImageException);
+    });
+
+    test("saveImage validates file size", async () => {
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSend;
+      const tooLargeFile = createMockFile(
+        MAX_IMAGE_BYTES + 1,
+        "image/jpeg",
+        "large.jpg",
+      );
+
+      await expect(
+        provider.saveImage(TEST_HASH_ID, tooLargeFile),
+      ).rejects.toThrow(SaveImageException);
+    });
+
+    test("saveImage handles R2 errors gracefully", async () => {
+      const mockSendError = mock(() =>
+        Promise.reject(new Error("Network error")),
+      );
+      const provider = new R2StorageProvider();
+      (provider as any).client.send = mockSendError;
+
+      const file = createTestImage();
+
+      await expect(provider.saveImage(TEST_HASH_ID, file)).rejects.toThrow(
+        "R2 upload failed: Network error",
+      );
+    });
+
+    test("saveImage rejects invalid hashId format", async () => {
+      const provider = new R2StorageProvider();
       (provider as any).client.send = mockSend;
       const file = createTestImage();
 

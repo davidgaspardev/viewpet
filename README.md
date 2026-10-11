@@ -293,11 +293,11 @@ src/
 │   │   ├── interface.ts          # PetRepository / Seedable
 │   │   ├── local.ts              # LocalPetRepository (filesystem JSON)
 │   │   └── mongodb.ts            # MongoPetRepository (duas collections)
-│   ├── storage/                  # LocalStorageProvider / S3StorageProvider
+│   ├── storage/                  # LocalStorageProvider / S3StorageProvider / R2StorageProvider
 │   ├── utils/
 │   │   ├── age.ts                # cálculo dinâmico de idade
 │   │   └── ids.ts                # generateHashId, isHashId
-│   ├── blobs.ts                  # facade do storage (S3 ou local)
+│   ├── blobs.ts                  # facade do storage (local, S3 ou R2)
 │   ├── i18n.ts                   # dicionário PT-BR / EN-US (client-safe)
 │   └── i18n.server.ts            # resolveLocale (server-only)
 ├── data/
@@ -314,10 +314,12 @@ Camada de abstração em `src/lib/storage/`:
 | -------- | --------------- | ------------------------------------------------------------ |
 | `local`  | Desenvolvimento | `/uploads/abc123.jpg` (gravado em `public/uploads/`)         |
 | `s3`     | Produção        | `https://bucket.s3.region.amazonaws.com/uploads/abc123.jpg` |
+| `r2`     | Produção (zero egress) | `https://<seu-dominio-ou-pub-xyz.r2.dev>/uploads/abc123.jpg` |
 
 ```bash
 STORAGE_PROVIDER=local   # padrão
 STORAGE_PROVIDER=s3      # produção
+STORAGE_PROVIDER=r2      # produção, zero taxa de egress
 
 # Quando STORAGE_PROVIDER=s3
 AWS_REGION=us-east-1
@@ -325,4 +327,13 @@ AWS_S3_BUCKET=viewpet-images-prod
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
 AWS_CLOUDFRONT_DOMAIN=https://d123456789.cloudfront.net  # opcional
+
+# Quando STORAGE_PROVIDER=r2
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=viewpet-images-prod
+R2_ACCESS_SUBDOMAIN=https://img.viewpet.com
 ```
+
+Detalhes de setup: [`src/lib/storage/README.md`](src/lib/storage/README.md).

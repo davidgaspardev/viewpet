@@ -13,10 +13,10 @@ StorageProviderFactory (src/lib/storage/factory.ts)
         ↓ returns
 Interface (StorageProvider)
         ↓ implemented by
-┌───────────┬──────────────┐
-│  Local    │     S3       │
-│ Provider  │   Provider   │
-└───────────┴──────────────┘
+┌───────────┬──────────────┬──────────────┐
+│  Local    │     S3       │      R2      │
+│ Provider  │   Provider   │   Provider   │
+└───────────┴──────────────┴──────────────┘
 ```
 
 ## File Structure
@@ -27,7 +27,8 @@ src/lib/
 └── storage/
     ├── interface.ts          # StorageProvider interface + types
     ├── local.ts              # LocalStorageProvider (filesystem)
-    ├── s3.ts                 # S3StorageProvider (AWS S3)
+    ├── aws/s3.ts              # S3StorageProvider (AWS S3)
+    ├── cloudflare/r2.ts       # R2StorageProvider (Cloudflare R2)
     ├── factory.ts            # StorageProviderFactory — singleton, provider selection
     └── index.ts              # barrel puro
 ```
@@ -44,6 +45,7 @@ try {
   // Local:      /uploads/abc123.jpg
   // S3:         https://bucket.s3.us-east-1.amazonaws.com/uploads/abc123.jpg
   // CloudFront: https://d123456789.cloudfront.net/uploads/abc123.jpg
+  // R2:         https://pub-xyz.r2.dev/uploads/abc123.jpg
 } catch (err) {
   if (err instanceof SaveImageException) {
     // err.code: "empty" | "invalid_type" | "too_large"
@@ -66,7 +68,7 @@ const url = await provider.saveImage(hashId, file);
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `STORAGE_PROVIDER` | No | Auto-detect | `"local"` or `"s3"` |
+| `STORAGE_PROVIDER` | No | `"local"` | `"local"`, `"s3"`, or `"r2"` |
 | `AWS_REGION` | S3 | `us-east-1` | AWS region |
 | `AWS_S3_BUCKET` | S3 | — | S3 bucket name |
 | `AWS_ACCESS_KEY_ID` | S3 | — | AWS access key |
@@ -74,16 +76,18 @@ const url = await provider.saveImage(hashId, file);
 | `AWS_CLOUDFRONT_DOMAIN` | No | — | CloudFront base URL |
 | `AWS_S3_PUBLIC_URL` | No | — | Custom S3 public URL override |
 | `AWS_ENDPOINT` | No | — | LocalStack endpoint (e.g. `http://localhost:4566`) |
+| `R2_ACCOUNT_ID` | R2 | — | Cloudflare account id — builds the R2 endpoint |
+| `R2_ACCESS_KEY_ID` | R2 | — | R2 API token access key |
+| `R2_SECRET_ACCESS_KEY` | R2 | — | R2 API token secret |
+| `R2_BUCKET` | R2 | — | R2 bucket name |
+| `R2_ACCESS_SUBDOMAIN` | R2 | — | Public URL the bucket is served from — the `pub-<hash>.r2.dev` access subdomain, or a custom domain |
 
-### Provider Auto-Detection
+### Provider Selection
 
 ```
 STORAGE_PROVIDER env var
-  └─ explicit → use that provider
-  └─ not set → check NODE_ENV
-       └─ "production" + AWS_S3_BUCKET set → S3
-       └─ "production" + FIREBASE_STORAGE_BUCKET set → Firebase
-       └─ otherwise → Local
+  └─ "s3" or "r2" → use that provider
+  └─ not set, or an unrecognized value → Local (unknown values log a warning)
 ```
 
 ## Providers
@@ -99,6 +103,12 @@ STORAGE_PROVIDER env var
 - **Storage**: S3 bucket at key `uploads/<hashId>.<ext>`
 - **URLs**: Direct S3, CloudFront, or custom domain
 - **Best for**: production
+
+### R2StorageProvider
+
+- **Storage**: R2 bucket at key `uploads/<hashId>.<ext>` (same S3-compatible API as `S3StorageProvider`, pointed at the R2 endpoint)
+- **URLs**: `R2_ACCESS_SUBDOMAIN` + key — direct, same shape as S3. Requires public access enabled on the bucket in the Cloudflare dashboard (bucket → Settings → Public access).
+- **Best for**: production, public/immutable assets served at scale — R2 has zero egress fees, which dominates the cost of serving pet photos on every public profile view.
 
 ### FirebaseStorageProvider
 
@@ -175,6 +185,68 @@ bun run test-s3-upload.ts
 # ✅ Upload successful!
 ```
 
+## R2 Setup
+
+### 1. Create Bucket (Cloudflare Dashboard)
+
+1. Go to **R2** → **Create bucket**
+2. Note the bucket name and your account id (shown in the R2 overview sidebar — also the subdomain of `https://dash.cloudflare.com/<account-id>/r2`)
+
+### 2. Enable Public Access
+
+R2 buckets are private by default — there's no bucket-policy equivalent to S3's public-read JSON.
+
+- **Quick/dev**: bucket **Settings** → **Public access** → enable the `pub-<hash>.r2.dev` dev subdomain. Use that as `R2_ACCESS_SUBDOMAIN`.
+- **Production**: bucket **Settings** → **Custom Domains** → connect a domain you control (e.g. `img.viewpet.com`). Use that as `R2_ACCESS_SUBDOMAIN` — it's also what puts images behind Cloudflare's CDN at no extra cost.
+
+Verify the URL actually works (loads without credentials, in an incognito window) before relying on it.
+
+### 3. API Token (minimal permissions)
+
+**R2** → **Manage API Tokens** → **Create API Token** → scope to the bucket with **Object Read & Write** permission only. This gives you `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`.
+
+### 4. Environment Variables
+
+```bash
+# .env.local
+R2_ACCOUNT_ID=your-cloudflare-account-id
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=viewpet-images-prod
+R2_ACCESS_SUBDOMAIN=https://img.viewpet.com   # or https://pub-<hash>.r2.dev for dev
+STORAGE_PROVIDER=r2
+```
+
+### 5. CORS (for browser uploads)
+
+Same shape as S3 — **R2 bucket** → **Settings** → **CORS Policy**:
+
+```json
+[{
+  "AllowedOrigins": ["https://yourdomain.com", "http://localhost:3000"],
+  "AllowedMethods": ["GET", "PUT", "POST"],
+  "AllowedHeaders": ["*"],
+  "ExposeHeaders": ["ETag"]
+}]
+```
+
+### 6. Verify
+
+```bash
+bun run test:r2-upload
+# ✅ Upload successful!
+```
+
+### Migrating existing objects from S3
+
+R2's S3-compatible API makes `rclone` a drop-in migration tool:
+
+```bash
+rclone copy s3remote:your-s3-bucket r2remote:your-r2-bucket --progress
+```
+
+Keep the S3 bucket around (read-only) for a safety window after cutover, then delete it once R2 is confirmed serving traffic correctly. Existing `pictureUrl` values already stored in MongoDB point at the old S3 URLs — those need a one-time rewrite to the new `R2_ACCESS_SUBDOMAIN` as part of cutover. Outside the scope of this abstraction layer; see the ADR for the full rollout plan.
+
 ## Local Testing Options
 
 ### Option 1: Local Filesystem (default)
@@ -219,6 +291,22 @@ AWS_SECRET_ACCESS_KEY=test
 
 Verify: `docker exec viewpet-localstack awslocal s3 ls s3://view-pet-storage/uploads/`
 
+### Option 4: Real Cloudflare R2
+
+```bash
+STORAGE_PROVIDER=r2
+R2_ACCOUNT_ID=your-account-id
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=your-bucket
+R2_ACCESS_SUBDOMAIN=https://pub-xyz.r2.dev
+```
+
+```bash
+bun run test:r2-upload  # verify credentials first
+bun run dev
+```
+
 ## Interface
 
 ```typescript
@@ -259,26 +347,27 @@ try {
 2. Add a case to `StorageProviderFactory` (`factory.ts`)
 3. Add tests
 
-```typescript
-// Example: Cloudflare R2 (S3-compatible)
-export class R2StorageProvider implements StorageProvider {
-  async saveImage(hashId: string, file: File): Promise<string> {
-    // R2 uses the same S3Client with a custom endpoint
-    return `https://pub-xyz.r2.dev/uploads/${hashId}.jpg`;
-  }
-}
-```
+`r2.ts` is a real example of this: an S3-compatible provider that reuses `S3Client` pointed at a different endpoint — see it for the pattern.
 
-Possible providers: **Cloudflare R2** (zero egress), **Cloudinary** (image transforms), **DigitalOcean Spaces**, **Azure Blob Storage**.
+Possible further providers: **Cloudinary** (image transforms), **DigitalOcean Spaces**, **Azure Blob Storage**.
 
 ## Production Checklist
 
+**S3:**
 - [ ] S3 bucket created with public read policy
 - [ ] IAM user with minimal permissions (`s3:PutObject`, `s3:GetObject`)
 - [ ] Environment variables set in production
 - [ ] (Optional) CloudFront distribution created for CDN
 - [ ] Upload test: `bun run test-s3-upload.ts`
 - [ ] Images publicly accessible via URL
+
+**R2:**
+- [ ] R2 bucket created with public access enabled (dev subdomain or custom domain)
+- [ ] API token scoped to the bucket with Object Read & Write only
+- [ ] Environment variables set in production
+- [ ] Upload test: `bun run test:r2-upload`
+- [ ] Images publicly accessible via `R2_ACCESS_SUBDOMAIN` (confirm in an incognito window)
+- [ ] If migrating from S3: existing `pictureUrl` values rewritten to the new URL shape
 
 ## Troubleshooting
 
@@ -291,6 +380,10 @@ Possible providers: **Cloudflare R2** (zero egress), **Cloudinary** (image trans
 **Wrong URL format** → Verify `AWS_REGION` matches bucket region; check `AWS_CLOUDFRONT_DOMAIN` value
 
 **Local images not showing** → Ensure `public/uploads/` exists; restart dev server after first upload
+
+**"R2 public access not configured"** → Set `R2_ACCESS_SUBDOMAIN` to the bucket's dev subdomain or custom domain
+
+**R2 upload succeeds but the returned URL 404s/403s** → Public access isn't actually enabled on the bucket (R2 buckets are private by default) — enable it and confirm it works in an incognito window before trusting `R2_ACCESS_SUBDOMAIN`
 
 ## Known Gaps
 
