@@ -56,12 +56,12 @@ export class LocalPetRepository implements Seedable {
     this.write(data);
   }
 
-  async reservePetId(hashId: string): Promise<void> {
+  async reservePetId(hashId: string): Promise<boolean> {
     const data = this.read();
-    if (!(hashId in data)) {
-      data[hashId] = null;
-      this.write(data);
-    }
+    if (hashId in data) return false;
+    data[hashId] = null;
+    this.write(data);
+    return true;
   }
 
   async listPetIds(): Promise<string[]> {

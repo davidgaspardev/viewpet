@@ -374,10 +374,10 @@ export class MongoPetRepository implements Seedable {
 
   // ── ISeedable ─────────────────────────────────────────────────────────────
 
-  async reservePetId(hashId: string): Promise<void> {
+  async reservePetId(hashId: string): Promise<boolean> {
     const { pets } = await this.db();
     const now = new Date();
-    await pets.updateOne(
+    const result = await pets.updateOne(
       { _id: hashId },
       {
         $setOnInsert: {
@@ -389,6 +389,9 @@ export class MongoPetRepository implements Seedable {
       },
       { upsert: true },
     );
+    // $setOnInsert makes the upsert atomic: only the caller that actually
+    // inserted the document sees upsertedCount === 1.
+    return result.upsertedCount === 1;
   }
 
   async listPetIds(): Promise<string[]> {

@@ -13,6 +13,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // The admin page relies on cached Basic-auth credentials, so keep it
+        // out of other sites' iframes (clickjacking on the Generate button).
+        source: "/admin",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       // Pet picture uploads cap at 5 MB (see MAX_IMAGE_BYTES in src/lib/blobs.ts).

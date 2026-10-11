@@ -173,9 +173,16 @@ describe("Database Provider Abstraction", () => {
 
     describe("reservePetId", () => {
       test("reserves a non-existent ID", async () => {
-        await provider.reservePetId("reserved1");
+        expect(await provider.reservePetId("reserved1")).toBe(true);
         const entry = await provider.getPetEntry("reserved1");
         expect(entry.status).toBe("empty");
+      });
+
+      test("reports false when the ID is already taken", async () => {
+        expect(await provider.reservePetId("dup1")).toBe(true);
+        expect(await provider.reservePetId("dup1")).toBe(false);
+        await provider.setPet("dup2", makePet());
+        expect(await provider.reservePetId("dup2")).toBe(false);
       });
 
       test("does not overwrite existing data", async () => {

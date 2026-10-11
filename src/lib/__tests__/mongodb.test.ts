@@ -139,9 +139,17 @@ describe("MongoPetRepository", () => {
   describe("reservePetId", () => {
     test("reserves a new ID", async () => {
       const provider = new MongoPetRepository();
-      await provider.reservePetId("new1");
+      expect(await provider.reservePetId("new1")).toBe(true);
       const entry = await provider.getPetEntry("new1");
       expect(entry.status).toBe("empty");
+    });
+
+    test("reports false when the ID is already taken", async () => {
+      const provider = new MongoPetRepository();
+      expect(await provider.reservePetId("dup1")).toBe(true);
+      expect(await provider.reservePetId("dup1")).toBe(false);
+      await provider.setPet("dup2", makePet());
+      expect(await provider.reservePetId("dup2")).toBe(false);
     });
 
     test("does not overwrite an existing filled pet", async () => {

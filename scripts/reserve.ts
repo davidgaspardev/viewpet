@@ -14,6 +14,7 @@
  */
 import { generateHashId } from "../src/lib/utils/ids";
 import { PetRepositoryFactory } from "../src/lib/repository";
+import { reserveFreshId } from "../src/features/admin/reserve";
 
 function parseArgs(argv: string[]): { count: number } {
   const args = argv.slice(2);
@@ -49,8 +50,13 @@ async function main(): Promise<void> {
   const repository = PetRepositoryFactory.getInstance();
   const ids: string[] = [];
   for (let i = 0; i < count; i++) {
-    const id = generateHashId();
-    await repository.reservePetId(id);
+    const id = await reserveFreshId(repository, generateHashId);
+    if (!id) {
+      // Print what was reserved so far so those ids aren't lost.
+      for (const reserved of ids) console.log(reserved);
+      console.error(`\nCould not reserve a free id after ${ids.length}/${count}. Aborting.`);
+      process.exit(1);
+    }
     ids.push(id);
   }
   for (const id of ids) console.log(id);
