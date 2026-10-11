@@ -14,8 +14,8 @@ import { AlertCircleIcon, AlertTriangleIcon, InfoCircleIcon, XIcon } from "@/ui/
 
 import {
   addSnackbar,
-  DEFAULT_DURATION,
   removeSnackbar,
+  resolveDuration,
   type SnackbarItem,
   type SnackbarVariant,
 } from "./snackbar.state";
@@ -23,7 +23,10 @@ import {
 type ShowOptions = {
   /** Defaults to "info". */
   variant?: SnackbarVariant;
-  /** Auto-dismiss delay in ms; `null` keeps it until dismissed. Defaults per variant. */
+  /**
+   * Auto-dismiss delay in ms; `null` (or a non-finite number) keeps it until
+   * dismissed. Defaults per variant: info and warn time out, errors persist.
+   */
   duration?: number | null;
 };
 
@@ -47,10 +50,19 @@ const STYLES: Record<SnackbarVariant, { box: string; Icon: typeof InfoCircleIcon
   error: { box: "bg-red-600 text-white", Icon: AlertCircleIcon },
 };
 
+type Placement = "center" | "left";
+
+const PLACEMENT: Record<Placement, string> = {
+  center: "inset-x-4 mx-auto max-w-md",
+  left: "left-4 right-4 max-w-md sm:left-6",
+};
+
 type SnackbarProviderProps = {
   children: React.ReactNode;
-  /** Accessible name of the dismiss button (pass the localized word). */
-  closeLabel?: string;
+  /** Accessible name of the dismiss button — the localized word for "Close". */
+  closeLabel: string;
+  /** Bottom-centre by default; "left" keeps clear of a floating action at the right. */
+  placement?: Placement;
 };
 
 /**
@@ -58,7 +70,7 @@ type SnackbarProviderProps = {
  * of the viewport. Info and warn messages go to a polite live region, errors
  * to an assertive one, so screen readers announce each appropriately.
  */
-export function SnackbarProvider({ children, closeLabel = "Close" }: SnackbarProviderProps) {
+export function SnackbarProvider({ children, closeLabel, placement = "center" }: SnackbarProviderProps) {
   const [items, setItems] = useState<SnackbarItem[]>([]);
   const counter = useRef(0);
 
@@ -69,7 +81,7 @@ export function SnackbarProvider({ children, closeLabel = "Close" }: SnackbarPro
         id,
         message,
         variant,
-        duration: duration === undefined ? DEFAULT_DURATION[variant] : duration,
+        duration: resolveDuration(variant, duration),
       }),
     );
     return id;
@@ -87,11 +99,13 @@ export function SnackbarProvider({ children, closeLabel = "Close" }: SnackbarPro
   return (
     <SnackbarContext.Provider value={api}>
       {children}
-      <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] mx-auto flex max-w-md flex-col gap-2">
-        <div role="status" className="flex flex-col gap-2">
+      <div className={`pointer-events-none fixed bottom-4 z-[60] flex flex-col gap-2 ${PLACEMENT[placement]}`}>
+        {/* status/alert imply aria-atomic; turn it off so adding one snackbar
+            doesn't make assistive tech re-read the ones already there. */}
+        <div role="status" aria-atomic="false" aria-relevant="additions" className="flex flex-col gap-2">
           {renderItems(items.filter((i) => i.variant !== "error"))}
         </div>
-        <div role="alert" className="flex flex-col gap-2">
+        <div role="alert" aria-atomic="false" aria-relevant="additions" className="flex flex-col gap-2">
           {renderItems(items.filter((i) => i.variant === "error"))}
         </div>
       </div>

@@ -31,7 +31,7 @@ export default async function AdminPage() {
           </p>
         </header>
         <div className="mt-6">
-          <SnackbarProvider closeLabel="Close">
+          <SnackbarProvider closeLabel="Close" placement="left">
             <QrGenerator />
           </SnackbarProvider>
         </div>

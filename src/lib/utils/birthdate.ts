@@ -15,12 +15,59 @@ export type BirthdateResult = { ok: true; iso: string } | { ok: false; error: Bi
 
 const pad = (n: number, width = 2) => String(n).padStart(width, "0");
 
-/** Progressive `DD/MM/YYYY` mask: keeps digits only, inserts the slashes as you type. */
+const GROUP_LENGTHS = [2, 2, 4] as const;
+const isDigit = (ch: string) => ch >= "0" && ch <= "9";
+
+/**
+ * Progressive `DD/MM/YYYY` mask for typing and pasting.
+ *
+ * - Digits fill day, month, year in order; slashes are inserted for you and
+ *   extra digits are dropped.
+ * - A separator (any non-digit: `/`, `-`, `.`, space) typed after a lone
+ *   non-zero digit pads it, so `5/4/2018` becomes `05/04/2018`.
+ * - A complete ISO date (`2018-04-21`, e.g. pasted) is reordered to `21/04/2018`.
+ *
+ * Idempotent: re-masking its own output returns it unchanged.
+ */
 export function applyDateMask(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  const iso = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(value);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+
+  const groups = [""];
+  for (const ch of value) {
+    let i = groups.length - 1;
+    if (isDigit(ch)) {
+      if (groups[i].length === GROUP_LENGTHS[i]) {
+        if (i === GROUP_LENGTHS.length - 1) continue; // year is full: drop extra digits
+        groups.push("");
+        i++;
+      }
+      groups[i] += ch;
+    } else if (i < GROUP_LENGTHS.length - 1 && groups[i] !== "" && groups[i] !== "0") {
+      // Separator: close this group, zero-padding a lone digit ("5/" -> "05").
+      groups[i] = groups[i].padStart(GROUP_LENGTHS[i], "0");
+      groups.push("");
+    }
+  }
+  return groups.filter(Boolean).join("/");
+}
+
+/**
+ * Where to put the caret after `raw` (with the caret at `caret`) was re-masked
+ * into `masked`: just after the same number of digits as before, so editing in
+ * the middle of the field doesn't throw the caret to the end.
+ */
+export function caretAfterMask(raw: string, caret: number, masked: string): number {
+  if (caret >= raw.length) return masked.length;
+
+  const digitsBefore = [...raw.slice(0, caret)].filter(isDigit).length;
+  if (digitsBefore === 0) return 0;
+
+  let seen = 0;
+  for (let i = 0; i < masked.length; i++) {
+    if (isDigit(masked[i]) && ++seen === digitsBefore) return i + 1;
+  }
+  return masked.length;
 }
 
 /** Today in the *local* timezone as `YYYY-MM-DD` (what the user means by "today"). */
@@ -79,4 +126,11 @@ export function validateBirthdateIso(iso: string, latest: string): BirthdateResu
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!match) return { ok: false, error: "invalid" };
   return validateBirthdate(Number(match[3]), Number(match[2]), Number(match[1]), latest);
+}
+
+/** `YYYY-MM-DD` in words for `locale` ("21 de abril de 2018" / "April 21, 2018"). */
+export function formatBirthdateLong(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(
+    new Date(`${iso}T00:00:00Z`),
+  );
 }

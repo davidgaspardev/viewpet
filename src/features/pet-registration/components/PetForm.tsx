@@ -233,7 +233,7 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
               </div>
             </div>
             <ImageUpload name="picture" required locale={locale} />
-            <BirthdateField dict={dict} />
+            <BirthdateField locale={locale} />
           </Card>
 
           <GuardianList dict={dict} />

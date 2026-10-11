@@ -4,6 +4,7 @@ import {
   DEFAULT_DURATION,
   MAX_VISIBLE,
   removeSnackbar,
+  resolveDuration,
   type SnackbarItem,
 } from "../snackbar.state";
 
@@ -40,6 +41,23 @@ describe("addSnackbar", () => {
     expect(list.at(-1)!.id).toBe(`m${MAX_VISIBLE + 2}`);
   });
 
+  test("evicts the oldest non-error first, so unread errors survive a flurry of toasts", () => {
+    let list: SnackbarItem[] = [item("e1", "boom", "error")];
+    for (const id of ["i1", "i2", "i3", "i4"]) list = addSnackbar(list, item(id));
+    expect(list.map((i) => i.id)).toEqual(["e1", "i3", "i4"]);
+  });
+
+  test("evicts the oldest error only when everything is an error", () => {
+    let list: SnackbarItem[] = [];
+    for (const n of [1, 2, 3, 4]) list = addSnackbar(list, item(`e${n}`, `err ${n}`, "error"));
+    expect(list.map((i) => i.id)).toEqual(["e2", "e3", "e4"]);
+  });
+
+  test("never evicts the snackbar being added", () => {
+    const list = [item("e1", "a", "error"), item("e2", "b", "error"), item("e3", "c", "error")];
+    expect(addSnackbar(list, item("i1")).map((i) => i.id)).toEqual(["e2", "e3", "i1"]);
+  });
+
   test("does not mutate its input", () => {
     const original = [item("a")];
     addSnackbar(original, item("b"));
@@ -56,8 +74,28 @@ describe("removeSnackbar", () => {
 });
 
 describe("DEFAULT_DURATION", () => {
-  test("errors stay longest, info shortest", () => {
-    expect(DEFAULT_DURATION.error).toBeGreaterThan(DEFAULT_DURATION.warn);
-    expect(DEFAULT_DURATION.warn).toBeGreaterThan(DEFAULT_DURATION.info);
+  test("info and warn time out, errors persist", () => {
+    expect(DEFAULT_DURATION.info).toBeGreaterThan(0);
+    expect(DEFAULT_DURATION.warn).toBeGreaterThan(DEFAULT_DURATION.info!);
+    expect(DEFAULT_DURATION.error).toBeNull();
+  });
+});
+
+describe("resolveDuration", () => {
+  test("undefined falls back to the variant's default", () => {
+    expect(resolveDuration("info", undefined)).toBe(DEFAULT_DURATION.info);
+    expect(resolveDuration("error", undefined)).toBeNull();
+  });
+
+  test("null and non-finite values mean sticky", () => {
+    expect(resolveDuration("info", null)).toBeNull();
+    expect(resolveDuration("info", Infinity)).toBeNull();
+    expect(resolveDuration("info", NaN)).toBeNull();
+  });
+
+  test("clamps to what setTimeout supports", () => {
+    expect(resolveDuration("info", 1500)).toBe(1500);
+    expect(resolveDuration("info", -5)).toBe(0);
+    expect(resolveDuration("info", 3e9)).toBe(2_147_483_647);
   });
 });
