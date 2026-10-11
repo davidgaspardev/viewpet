@@ -41,6 +41,6 @@ export async function generateQr(): Promise<GenerateQrResult> {
   if (!id) return { status: "error", message: "generation_failed" };
 
   const url = `${origin}/view/${id}`;
-  const svg = renderQrSvg(url, { logoHref: LOGO_DATA_URI });
+  const svg = renderQrSvg(url, { logoHref: LOGO_DATA_URI, label: id });
   return { status: "success", qr: { id, url, svg } };
 }

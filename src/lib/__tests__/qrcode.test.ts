@@ -71,6 +71,28 @@ describe("renderQrSvg", () => {
   });
 });
 
+describe("renderQrSvg label", () => {
+  test("adds the label as text in an extra band below the quiet zone", () => {
+    const plain = renderQrSvg(url);
+    const labelled = renderQrSvg(url, { label: "ay7vkdat8gdf" });
+    expect(plain).not.toContain("<text");
+    expect(labelled).toContain(">ay7vkdat8gdf</text>");
+
+    const [, size, height] = /viewBox="0 0 (\d+) (\d+)"/.exec(labelled)!.map(Number);
+    expect(height).toBeGreaterThan(size);
+    // The text sits below the code's quiet zone, inside the extended canvas.
+    const y = Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(labelled)![1]);
+    expect(y).toBeGreaterThan(size);
+    expect(y).toBeLessThan(height);
+    // The code itself is unchanged by the label.
+    expect(dotCells(labelled)).toEqual(dotCells(plain));
+  });
+
+  test("escapes the label text", () => {
+    expect(renderQrSvg(url, { label: "<b>&" })).toContain("&lt;b&gt;&amp;");
+  });
+});
+
 describe("renderQrSvg escaping", () => {
   test("escapes attribute values", () => {
     const svg = renderQrSvg("x", { logoHref: 'a"><script>', color: '"red', background: "<b" });

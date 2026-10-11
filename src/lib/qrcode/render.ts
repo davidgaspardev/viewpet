@@ -7,6 +7,8 @@ export type QrSvgOptions = {
   color?: string;
   /** Background colour; also used for the logo's backing disc. */
   background?: string;
+  /** Text printed centred under the code (e.g. the pet id), outside the quiet zone. */
+  label?: string;
 };
 
 /** Quiet zone around the code, in modules (the QR spec asks for 4). */
@@ -14,6 +16,9 @@ const MARGIN = 4;
 
 /** Logo backing disc diameter as a fraction of the code's width. */
 const LOGO_RATIO = 0.22;
+
+/** Height, in modules, of the band under the quiet zone that holds the label. */
+const LABEL_BAND = 4;
 
 /** Fraction of a module's cell covered by its dot. */
 const DOT_RATIO = 0.84;
@@ -25,7 +30,7 @@ const DOT_RATIO = 0.84;
  * so the logo punched out of the centre doesn't hurt scannability.
  */
 export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
-  const { logoHref, color = "#111b25", background = "#ffffff" } = options;
+  const { logoHref, label, color = "#111b25", background = "#ffffff" } = options;
   const hasLogo = Boolean(logoHref);
 
   const { modules } = QRCode.create(text, { errorCorrectionLevel: "H" });
@@ -33,6 +38,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
   const bg = escapeAttr(background);
   const count = modules.size;
   const size = count + MARGIN * 2;
+  const height = label ? size + LABEL_BAND : size;
   const centre = size / 2;
   const logoRadius = (count * LOGO_RATIO) / 2;
 
@@ -65,11 +71,17 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       `width="${logoRadius * 1.7}" height="${logoRadius * 1.7}"/>`
     : "";
 
+  const labelSvg = label
+    ? `<text x="${centre}" y="${size + LABEL_BAND * 0.62}" text-anchor="middle" ` +
+      `font-family="ui-monospace, Menlo, Consolas, monospace" font-size="2.2" letter-spacing="0.2" ` +
+      `fill="${fg}">${escapeText(label)}</text>`
+    : "";
+
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}" ` +
-    `width="${size * 10}" height="${size * 10}" role="img" aria-label="QR code">` +
-    `<rect width="${size}" height="${size}" fill="${bg}"/>` +
-    `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}</svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${height}" ` +
+    `width="${size * 10}" height="${height * 10}" role="img" aria-label="QR code">` +
+    `<rect width="${size}" height="${height}" fill="${bg}"/>` +
+    `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}${labelSvg}</svg>`
   );
 }
 
@@ -79,6 +91,10 @@ function escapeAttr(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function escapeText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /** A 7×7-module finder pattern drawn as three concentric circles. */
