@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { isAdminAuthorized } from "../../features/admin/auth";
+import { isAdminAuthorized } from "../auth";
 
 const basic = (user: string, pass: string) => `Basic ${btoa(`${user}:${pass}`)}`;
 
@@ -36,5 +36,9 @@ describe("isAdminAuthorized", () => {
     expect(await isAdminAuthorized(basic("admin", ""))).toBe(false);
     process.env.ADMIN_PASSWORD = "";
     expect(await isAdminAuthorized(basic("admin", ""))).toBe(false);
+  });
+
+  test("tolerates repeated spaces after the scheme and a case-insensitive scheme", async () => {
+    expect(await isAdminAuthorized(`basic   ${btoa("u:s3cret")}`)).toBe(true);
   });
 });

@@ -11,6 +11,7 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "reserve": "bun run scripts/reserve.ts",
+    "qr-logo": "bun run scripts/build-qr-logo.ts",
     "seed": "bun run scripts/seed.ts",
     "test:s3": "bun run scripts/test-s3.ts",
     "test:s3-upload": "bun run scripts/test-s3-upload.ts",

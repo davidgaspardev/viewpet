@@ -61,12 +61,12 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
 
   const logoSvg = logoHref
     ? `<circle cx="${centre}" cy="${centre}" r="${logoRadius}" fill="${bg}"/>` +
-      `<image href="${escapeAttr(logoHref)}" x="${centre - logoRadius * 0.85}" y="${centre - logoRadius * 0.85}" ` +
+      `<image xlink:href="${escapeAttr(logoHref)}" x="${centre - logoRadius * 0.85}" y="${centre - logoRadius * 0.85}" ` +
       `width="${logoRadius * 1.7}" height="${logoRadius * 1.7}"/>`
     : "";
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" ` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}" ` +
     `width="${size * 10}" height="${size * 10}" role="img" aria-label="QR code">` +
     `<rect width="${size}" height="${size}" fill="${bg}"/>` +
     `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}</svg>`

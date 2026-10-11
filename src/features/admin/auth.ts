@@ -33,8 +33,8 @@ export async function isAdminAuthorized(authorization: string | null): Promise<b
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected || !authorization) return false;
 
-  const [scheme, encoded] = authorization.split(" ");
-  if (scheme?.toLowerCase() !== "basic" || !encoded) return false;
+  const encoded = /^Basic +(\S+)$/i.exec(authorization)?.[1];
+  if (!encoded) return false;
 
   let decoded: string;
   try {

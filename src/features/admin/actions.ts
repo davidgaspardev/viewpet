@@ -8,6 +8,7 @@ import { renderQrSvg } from "@/lib/qrcode/render";
 import { generateHashId } from "@/lib/utils/ids";
 
 import { isAdminAuthorized } from "./auth";
+import { resolveOrigin } from "./origin";
 import { reserveFreshId } from "./reserve";
 
 export type GeneratedQr = {
@@ -18,18 +19,7 @@ export type GeneratedQr = {
 
 export type GenerateQrResult =
   | { status: "success"; qr: GeneratedQr }
-  | { status: "error"; message: "unauthorized" | "generation_failed" };
-
-/** Public origin used inside the QR: `SITE_URL` when set, else the request's own origin. */
-async function resolveOrigin(): Promise<string> {
-  const configured = process.env.SITE_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
-
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
+  | { status: "error"; message: "unauthorized" | "invalid_site_url" | "generation_failed" };
 
 /**
  * Reserve a fresh pet id and return its QR code. The id is stored as an
@@ -42,10 +32,15 @@ export async function generateQr(): Promise<GenerateQrResult> {
     return { status: "error", message: "unauthorized" };
   }
 
+  // Resolve (and validate) the origin before touching the database so a bad
+  // SITE_URL can't leave reserved ids behind with no QR.
+  const origin = resolveOrigin(process.env.SITE_URL, await headers());
+  if (!origin) return { status: "error", message: "invalid_site_url" };
+
   const id = await reserveFreshId(PetRepositoryFactory.getInstance(), generateHashId);
   if (!id) return { status: "error", message: "generation_failed" };
 
-  const url = `${await resolveOrigin()}/view/${id}`;
+  const url = `${origin}/view/${id}`;
   const svg = renderQrSvg(url, { logoHref: LOGO_DATA_URI });
   return { status: "success", qr: { id, url, svg } };
 }

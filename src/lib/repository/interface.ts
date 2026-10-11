@@ -15,7 +15,8 @@ export interface PetRepository {
 
 /** Extends PetRepository with operations only needed by seed scripts and admin tooling. */
 export interface Seedable extends PetRepository {
-  reservePetId(hashId: string): Promise<void>;
+  /** Reserves an empty slot. Resolves `true` when newly reserved, `false` if the id already existed (left untouched). */
+  reservePetId(hashId: string): Promise<boolean>;
   listPetIds(): Promise<string[]>;
 }
 

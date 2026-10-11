@@ -2,10 +2,13 @@
 
 import { useState, useTransition } from "react";
 
-import { generateQr, type GeneratedQr } from "../actions";
+import { generateQr, type GeneratedQr, type GenerateQrResult } from "../actions";
 
-const ERRORS: Record<string, string> = {
+type ErrorCode = Extract<GenerateQrResult, { status: "error" }>["message"];
+
+const ERRORS: Record<ErrorCode, string> = {
   unauthorized: "Not authorized.",
+  invalid_site_url: "SITE_URL is not a valid http(s) URL. Fix the server configuration.",
   generation_failed: "Could not reserve a free id. Try again.",
 };
 
@@ -14,8 +17,12 @@ function downloadSvg({ id, svg }: GeneratedQr) {
   const link = document.createElement("a");
   link.href = href;
   link.download = `viewpet-${id}.svg`;
+  // Attached while clicking (Firefox), and revoked late: Safari starts the
+  // download asynchronously, so an immediate revoke can cancel it.
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(href);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 10_000);
 }
 
 export function QrGenerator() {
@@ -33,7 +40,7 @@ export function QrGenerator() {
         if (result.status === "success") {
           setHistory((prev) => [result.qr, ...prev]);
         } else {
-          setError(ERRORS[result.message] ?? "Something went wrong.");
+          setError(ERRORS[result.message]);
         }
       } catch {
         setError("Something went wrong.");

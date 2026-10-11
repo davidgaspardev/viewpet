@@ -76,21 +76,21 @@ O QR Code é impresso **antes** do tutor cadastrar o pet.
 3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
 4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
 
-### Página de admin (`/admin`)
-
-Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
-
-- **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
-- **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG.
-- **URL do QR:** `SITE_URL` quando definida, senão a origem da requisição. Em produção, defina `SITE_URL` para não imprimir etiquetas com o host errado.
-- **Segurança:** Basic auth trafega a senha em texto claro, então sirva só via HTTPS. Não há rate limit na aplicação: use uma senha longa e limite tentativas no proxy/CDN.
-
 Pipeline típico:
 
 ```bash
 bun run reserve --count 100 > qr-batch.txt
 # qr-batch.txt → 100 hashIds, um por linha, prontos pra virar QR Codes
 ```
+
+### Página de admin (`/admin`)
+
+Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
+
+- **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
+- **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
+- **URL do QR:** `SITE_URL` quando definida (precisa ser uma URL http(s) absoluta, senão a geração falha antes de reservar qualquer ID), senão a origem da requisição. Em produção, defina `SITE_URL` para não imprimir etiquetas com o host errado.
+- **Segurança:** Basic auth trafega a senha em texto claro, então sirva só via HTTPS. Não há rate limit na aplicação: use uma senha longa e limite tentativas no proxy/CDN.
 
 ## Estados do banco
 

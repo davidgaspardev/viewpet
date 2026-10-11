@@ -33,7 +33,7 @@ repository.setPet(hashId, pet): Promise<void>
 repository.listPetEntries(): Promise<Array<{ id, status, name? }>>
 
 // scripts/admin only (Seedable):
-repository.reservePetId(hashId): Promise<void>
+repository.reservePetId(hashId): Promise<boolean>   // true = reservou agora, false = id já existia
 repository.listPetIds(): Promise<string[]>
 
 PetRepositoryFactory.reset(): void  // usado por testes entre casos

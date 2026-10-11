@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 
+import { isAdminAuthorized } from "@/features/admin/auth";
 import { QrGenerator } from "@/features/admin/index.client";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +12,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  // Middleware is the primary gate (it also sends the Basic-auth challenge).
+  // Re-check here so the page never renders without credentials even if the
+  // middleware is skipped (e.g. x-middleware-subrequest bypass on old Next).
+  if (!(await isAdminAuthorized((await headers()).get("authorization")))) notFound();
+
   return (
     <main className="mx-auto max-w-xl space-y-6 p-6">
       <header>

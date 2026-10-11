@@ -1,15 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import type { PetEntry } from "@/types/pet";
-import { reserveFreshId } from "../../features/admin/reserve";
+import { reserveFreshId } from "../reserve";
 
+/** In-memory stand-in with the same contract as Seedable.reservePetId. */
 function fakeRepo(taken: string[]) {
-  const reserved: string[] = [];
+  const ids = new Set(taken);
+  const calls: string[] = [];
   return {
-    reserved,
-    getPetEntry: async (id: string): Promise<PetEntry> =>
-      taken.includes(id) || reserved.includes(id) ? { status: "empty" } : { status: "missing" },
+    calls,
+    ids,
     reservePetId: async (id: string) => {
-      reserved.push(id);
+      calls.push(id);
+      if (ids.has(id)) return false;
+      ids.add(id);
+      return true;
     },
   };
 }
@@ -23,18 +26,18 @@ describe("reserveFreshId", () => {
   test("reserves and returns an unused id", async () => {
     const repo = fakeRepo([]);
     expect(await reserveFreshId(repo, sequence("aaa"))).toBe("aaa");
-    expect(repo.reserved).toEqual(["aaa"]);
+    expect(repo.ids.has("aaa")).toBe(true);
   });
 
-  test("skips ids already in use", async () => {
+  test("draws again when the id is already taken", async () => {
     const repo = fakeRepo(["aaa", "bbb"]);
     expect(await reserveFreshId(repo, sequence("aaa", "bbb", "ccc"))).toBe("ccc");
-    expect(repo.reserved).toEqual(["ccc"]);
+    expect(repo.calls).toEqual(["aaa", "bbb", "ccc"]);
   });
 
-  test("gives up with null (reserving nothing) when every attempt collides", async () => {
+  test("gives up with null after repeated collisions", async () => {
     const repo = fakeRepo(["aaa"]);
     expect(await reserveFreshId(repo, sequence("aaa"))).toBeNull();
-    expect(repo.reserved).toEqual([]);
+    expect(repo.calls).toHaveLength(5);
   });
 });
