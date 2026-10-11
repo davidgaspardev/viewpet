@@ -76,6 +76,14 @@ O QR Code é impresso **antes** do tutor cadastrar o pet.
 3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
 4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
 
+### Página de admin (`/admin`)
+
+Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
+
+- **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
+- **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG.
+- **URL do QR:** `SITE_URL` quando definida, senão a origem da requisição.
+
 Pipeline típico:
 
 ```bash

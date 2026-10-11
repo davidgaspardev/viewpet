@@ -23,6 +23,7 @@
     "mongodb": "^7.2.0",
     "nanoid": "5.1.9",
     "next": "15.1.12",
+    "qrcode": "^1.5.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "three": "^0.184.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "22.10.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "@types/three": "^0.184.1",
