@@ -56,11 +56,14 @@ describe("resolveQrBase", () => {
     });
   });
 
-  test("a valid QR_BASE_URL makes an invalid SITE_URL irrelevant", () => {
-    expect(resolveQrBase({ QR_BASE_URL: "https://qr.viewpet.info", SITE_URL: "oops" }, headers({}))).toEqual({
-      ok: true,
-      base: "https://qr.viewpet.info",
-    });
+  test("QR_BASE_URL also needs a valid SITE_URL: the redirect can't exist without a destination", () => {
+    const qr = "https://qr.viewpet.info";
+    for (const site of [undefined, "", "oops", "ftp://viewpet.info"]) {
+      expect(resolveQrBase({ QR_BASE_URL: qr, SITE_URL: site }, headers({ host: "viewpet.info" }))).toEqual({
+        ok: false,
+        error: "invalid_site_url",
+      });
+    }
   });
 
   test("a set-but-invalid value is an error, never silently ignored", () => {

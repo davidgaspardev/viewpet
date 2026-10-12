@@ -47,6 +47,10 @@ export type QrBaseResult =
  * when set; otherwise the QR points straight at the page, `<origin>/tag`, so
  * local dev works without the extra host. A set-but-invalid value is an error,
  * never silently ignored: printed tags can't be fixed afterwards.
+ *
+ * The short host only works if it redirects somewhere, and that redirect
+ * (see `buildQrRedirects`) needs a valid `SITE_URL`. So with `QR_BASE_URL` set,
+ * `SITE_URL` is required too — otherwise we'd print QR codes that can't resolve.
  */
 export function resolveQrBase(
   env: Record<string, string | undefined>, // process.env-shaped: reads SITE_URL and QR_BASE_URL
@@ -54,7 +58,10 @@ export function resolveQrBase(
 ): QrBaseResult {
   const qrBase = parseBaseUrl(env.QR_BASE_URL);
   if (qrBase === null) return { ok: false, error: "invalid_qr_base_url" };
-  if (qrBase) return { ok: true, base: qrBase };
+  if (qrBase) {
+    if (!parseBaseUrl(env.SITE_URL)) return { ok: false, error: "invalid_site_url" };
+    return { ok: true, base: qrBase };
+  }
 
   const origin = resolveOrigin(env.SITE_URL, headers);
   if (!origin) return { ok: false, error: "invalid_site_url" };

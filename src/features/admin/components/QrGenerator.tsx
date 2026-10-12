@@ -11,7 +11,7 @@ type ErrorCode = Extract<GenerateQrResult, { status: "error" }>["message"];
 
 const ERRORS: Record<ErrorCode, string> = {
   unauthorized: "Not authorized.",
-  invalid_site_url: "SITE_URL is not a valid http(s) URL. Fix the server configuration.",
+  invalid_site_url: "SITE_URL is missing or not a valid http(s) URL. Fix the server configuration.",
   invalid_qr_base_url: "QR_BASE_URL is not a valid http(s) URL. Fix the server configuration.",
   generation_failed: "Could not reserve a free id. Try again.",
 };

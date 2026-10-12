@@ -105,7 +105,7 @@ https://qr.viewpet.info/<hashId>  ──307──▶  https://<SITE_URL>/tag/<ha
 | `QR_BASE_URL` | `https://qr.viewpet.info` | Host/prefixo codificado nos QR Codes gerados e origem do redirect |
 | `SITE_URL` | `https://viewpet.info` | Destino do redirect (site principal) |
 
-- **Variáveis de build:** o redirect é montado no `next.config.ts`, então `QR_BASE_URL` e `SITE_URL` precisam estar definidas **no build**, não só em runtime. Sem as duas (ex.: dev local) não existe redirect e o QR aponta direto pra `/tag/<id>`.
+- **Variáveis de build:** o redirect é montado no `next.config.ts`, então `QR_BASE_URL` e `SITE_URL` precisam estar definidas **no build**, não só em runtime. Sem as duas (ex.: dev local) não existe redirect e o QR aponta direto pra `/tag/<id>`. Se só `QR_BASE_URL` estiver definida, o build avisa que nenhum redirect foi registrado e a página de admin se recusa a gerar QR Codes (`SITE_URL` é obrigatória junto com `QR_BASE_URL`).
 - **DNS/hospedagem:** adicione `qr.viewpet.info` aos domínios do projeto e aponte o DNS pra mesma hospedagem do site.
 - **307, não 308:** o redirect é temporário de propósito, pra o destino poder mudar sem navegadores ou CDNs lembrarem do antigo.
 - **Só ids válidos:** o redirect só casa com `hashId`s bem formados (veja abaixo); qualquer outra coisa cai no 404 normal. O casamento de rota do Next não diferencia maiúsculas, então um id em maiúsculas é redirecionado e depois dá 404 na página.

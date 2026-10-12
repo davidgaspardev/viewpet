@@ -18,7 +18,13 @@ const nextConfig: NextConfig = {
   // Short QR host (QR_BASE_URL) → the pet page. Evaluated at build time, so
   // QR_BASE_URL and SITE_URL must be set when building; a no-op when they aren't.
   async redirects() {
-    return buildQrRedirects(process.env);
+    const redirects = buildQrRedirects(process.env);
+    if (process.env.QR_BASE_URL?.trim() && redirects.length === 0) {
+      console.warn(
+        "[qr-host] QR_BASE_URL is set but SITE_URL (or QR_BASE_URL itself) is missing or invalid; no redirect was registered.",
+      );
+    }
+    return redirects;
   },
   async headers() {
     return [
