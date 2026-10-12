@@ -109,7 +109,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     backHome: "Voltar ao início",
     landingTitle: "View Pet",
     landingBody:
-      "Acesse /view/<hashId> para visualizar a página pública de um pet.",
+      "Acesse /tag/<hashId> para visualizar a página pública de um pet.",
     tryExamples: "Exemplos para testar:",
     formTitle: "Cadastrar pet",
     formIntro: (id) =>
@@ -179,7 +179,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       "We couldn't find a pet with that identifier. Please check the link and try again.",
     backHome: "Back to home",
     landingTitle: "View Pet",
-    landingBody: "Visit /view/<hashId> to see a pet's public profile.",
+    landingBody: "Visit /tag/<hashId> to see a pet's public profile.",
     tryExamples: "Try these examples:",
     formTitle: "Set up this pet",
     formIntro: (id) =>

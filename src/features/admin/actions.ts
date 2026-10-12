@@ -8,7 +8,7 @@ import { renderQrSvg } from "@/lib/qrcode/render";
 import { generateHashId } from "@/lib/utils/ids";
 
 import { isAdminAuthorized } from "./auth";
-import { resolveOrigin } from "./origin";
+import { resolveQrBase } from "./origin";
 import { reserveFreshId } from "./reserve";
 
 export type GeneratedQr = {
@@ -19,7 +19,10 @@ export type GeneratedQr = {
 
 export type GenerateQrResult =
   | { status: "success"; qr: GeneratedQr }
-  | { status: "error"; message: "unauthorized" | "invalid_site_url" | "generation_failed" };
+  | {
+      status: "error";
+      message: "unauthorized" | "invalid_site_url" | "invalid_qr_base_url" | "generation_failed";
+    };
 
 /**
  * Reserve a fresh pet id and return its QR code. The id is stored as an
@@ -33,15 +36,15 @@ export async function generateQr(): Promise<GenerateQrResult> {
     return { status: "error", message: "unauthorized" };
   }
 
-  // Resolve (and validate) the origin before touching the database so a bad
-  // SITE_URL can't leave reserved ids behind with no QR.
-  const origin = resolveOrigin(process.env.SITE_URL, requestHeaders);
-  if (!origin) return { status: "error", message: "invalid_site_url" };
+  // Resolve (and validate) the QR base before touching the database so a bad
+  // SITE_URL / QR_BASE_URL can't leave reserved ids behind with no QR.
+  const target = resolveQrBase(process.env, requestHeaders);
+  if (!target.ok) return { status: "error", message: target.error };
 
   const id = await reserveFreshId(PetRepositoryFactory.getInstance(), generateHashId);
   if (!id) return { status: "error", message: "generation_failed" };
 
-  const url = `${origin}/view/${id}`;
+  const url = `${target.base}/${id}`;
   const svg = renderQrSvg(url, { logoHref: LOGO_DATA_URI, label: id });
   return { status: "success", qr: { id, url, svg } };
 }

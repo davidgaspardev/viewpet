@@ -3,7 +3,7 @@
 MVP de uma página web pública que renderiza as informações de um pet a partir de um `hashId` na URL:
 
 ```
-https://<domain>/view/<hashId>
+https://<domain>/tag/<hashId>
 ```
 
 O `hashId` é a chave usada pra buscar o registro do pet no banco de dados. A página é o destino do QR Code impresso na plaquinha do pet — sem login, leitura pública, otimizada pra ser aberta por um estranho que encontrou o animal.
@@ -72,7 +72,7 @@ Implementação em `src/lib/utils/ids.ts` (`generateHashId()`, `isHashId()`).
 O QR Code é impresso **antes** do tutor cadastrar o pet.
 
 1. **Reserva** um lote: `bun run reserve --count N`. Cada ID entra no banco com status `reserved`.
-2. **Imprime** o QR apontando pra `https://<domain>/view/<hashId>`, um ID por plaquinha.
+2. **Imprime** o QR, um ID por plaquinha. Em produção ele aponta pro host curto (`https://qr.viewpet.info/<hashId>`, veja abaixo); sem host curto, direto pra `https://<domain>/tag/<hashId>`.
 3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
 4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
 
@@ -89,8 +89,27 @@ Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
 
 - **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
 - **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
-- **URL do QR:** `SITE_URL` quando definida (precisa ser uma URL http(s) absoluta, senão a geração falha antes de reservar qualquer ID), senão a origem da requisição. Em produção, defina `SITE_URL` para não imprimir etiquetas com o host errado.
+- **URL do QR:** `${QR_BASE_URL}/<id>` quando `QR_BASE_URL` está definida; senão `<SITE_URL>/tag/<id>`; senão a origem da requisição. As duas variáveis precisam ser URLs http(s) absolutas, senão a geração falha antes de reservar qualquer ID. Em produção, defina `QR_BASE_URL` e `SITE_URL` para não imprimir etiquetas com o host errado.
 - **Segurança:** Basic auth trafega a senha em texto claro, então sirva só via HTTPS. Não há rate limit na aplicação: use uma senha longa e limite tentativas no proxy/CDN.
+
+### Host curto do QR (`qr.viewpet.info`)
+
+O QR impresso não muda nunca, então ele aponta pra um host estável que só redireciona. Dá pra mover ou renomear a página real sem reimprimir nenhuma plaquinha.
+
+```
+https://qr.viewpet.info/<hashId>  ──307──▶  https://<SITE_URL>/tag/<hashId>
+```
+
+| Variável | Exemplo | Efeito |
+|----------|---------|--------|
+| `QR_BASE_URL` | `https://qr.viewpet.info` | Host/prefixo codificado nos QR Codes gerados e origem do redirect |
+| `SITE_URL` | `https://viewpet.info` | Destino do redirect (site principal) |
+
+- **Variáveis de build:** o redirect é montado no `next.config.ts`, então `QR_BASE_URL` e `SITE_URL` precisam estar definidas **no build**, não só em runtime. Sem as duas (ex.: dev local) não existe redirect e o QR aponta direto pra `/tag/<id>`.
+- **DNS/hospedagem:** adicione `qr.viewpet.info` aos domínios do projeto e aponte o DNS pra mesma hospedagem do site.
+- **307, não 308:** o redirect é temporário de propósito, pra o destino poder mudar sem navegadores ou CDNs lembrarem do antigo.
+- **Só ids válidos:** o redirect só casa com `hashId`s bem formados (veja abaixo); qualquer outra coisa cai no 404 normal. O casamento de rota do Next não diferencia maiúsculas, então um id em maiúsculas é redirecionado e depois dá 404 na página.
+- **Onde o caminho `/tag` mora:** `src/lib/utils/routes.ts`. Quem monta ou revalida essa URL usa `tagPath(id)`.
 
 ## Estados do banco
 
@@ -258,8 +277,8 @@ O seed (`src/data/pets.json`) inclui pets ativos e slots vazios:
 
 Exemplos:
 
-- <http://localhost:3000/view/nuxw4d83wraa> (perfil completo)
-- <http://localhost:3000/view/aaaaaaaaaaaa> (404)
+- <http://localhost:3000/tag/nuxw4d83wraa> (perfil completo)
+- <http://localhost:3000/tag/aaaaaaaaaaaa> (404)
 
 ## Idioma
 
@@ -269,7 +288,7 @@ Resolução em três níveis:
 2. Header `Accept-Language` do navegador
 3. Fallback pra `pt-BR`
 
-Exemplo: <http://localhost:3000/view/nuxw4d83wraa?lang=en>
+Exemplo: <http://localhost:3000/tag/nuxw4d83wraa?lang=en>
 
 `src/lib/i18n.ts` carrega o dicionário (seguro em Client Components); `src/lib/i18n.server.ts` resolve o locale via `next/headers` (server-only).
 
@@ -286,7 +305,7 @@ src/
 │   ├── page.tsx                  # landing
 │   ├── globals.css               # tailwind base/components/utilities
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
-│   └── view/[id]/
+│   └── tag/[id]/
 │       ├── page.tsx              # branch missing/empty/filled
 │       ├── actions.ts            # Server Action do submit
 │       ├── ImageUpload.tsx       # input de foto (com câmera)

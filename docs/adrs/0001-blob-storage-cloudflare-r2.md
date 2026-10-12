@@ -8,7 +8,7 @@
 
 Pet images are uploaded via `savePetImage()` (`src/lib/blobs.ts`), which delegates to a provider selected by `StorageProviderFactory` (`src/lib/storage/factory.ts`). Two providers existed before this ADR: `LocalStorageProvider` (dev, `public/uploads/`) and `S3StorageProvider` (production, AWS S3).
 
-Pet images are served publicly — every QR scan on `/view/<id>` fetches the photo straight from the bucket. That read path is where cost lives: S3 charges roughly **$0.09/GB** for egress to the public internet, and that's the dominant cost driver at any meaningful scale (storage itself is a rounding error — $0.023/GB on S3 vs $0.015/GB on R2). Projected at 100k pets with 50 views/pet/month, egress alone is ~$225/month on S3. R2 charges **$0** for egress.
+Pet images are served publicly — every QR scan on `/tag/<id>` fetches the photo straight from the bucket. That read path is where cost lives: S3 charges roughly **$0.09/GB** for egress to the public internet, and that's the dominant cost driver at any meaningful scale (storage itself is a rounding error — $0.023/GB on S3 vs $0.015/GB on R2). Projected at 100k pets with 50 views/pet/month, egress alone is ~$225/month on S3. R2 charges **$0** for egress.
 
 ## Decision
 

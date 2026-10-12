@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { buildQrRedirects } from "./src/lib/utils/qr-redirects";
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -12,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+  },
+  // Short QR host (QR_BASE_URL) → the pet page. Evaluated at build time, so
+  // QR_BASE_URL and SITE_URL must be set when building; a no-op when they aren't.
+  async redirects() {
+    return buildQrRedirects(process.env);
   },
   async headers() {
     return [

@@ -77,7 +77,7 @@ db.pets.createIndex({ status: 1 });
 db.lostEvents.createIndex({ petId: 1, endedAt: 1 });
 ```
 
-Leitura de `/view/<hashId>` é uma agregação com dois `$lookup` — uma round-trip pro banco:
+Leitura de `/tag/<hashId>` é uma agregação com dois `$lookup` — uma round-trip pro banco:
 
 ```js
 db.pets.aggregate([

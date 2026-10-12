@@ -10,6 +10,9 @@ const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 /** ID length in characters. 12 × 5 bits = 60 bits of entropy (~10^18 IDs). */
 export const HASH_ID_LENGTH = 12;
 
+/** Regex source matching exactly one hashId, for route patterns (kept in sync with the alphabet/length above). */
+export const HASH_ID_PATTERN = `[${ALPHABET}]{${HASH_ID_LENGTH}}`;
+
 const generator = customAlphabet(ALPHABET, HASH_ID_LENGTH);
 
 /** Generate a fresh opaque hashId for a pet record. */

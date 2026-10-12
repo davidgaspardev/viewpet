@@ -24,7 +24,7 @@ Três coisas, nessa ordem de importância:
 ```
 ┌─────────────────────────────┐         ┌─────────────────────────────┐
 │  Página pública (Next.js)   │         │  App nativo (iOS / Android) │
-│  /view/<hashId>             │         │  Tutor logado               │
+│  /tag/<hashId>             │         │  Tutor logado               │
 │                             │         │                             │
 │  - SSR, sem login           │         │  - Login (email + OTP)      │
 │  - 3 estados: missing /     │ ◄─────► │  - Lista de pets do tutor   │
