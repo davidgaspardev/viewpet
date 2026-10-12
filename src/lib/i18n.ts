@@ -55,6 +55,8 @@ type Dictionary = {
   petPictureRemove: string;
   petPictureHint: string;
   petBirthdate: string;
+  petBirthdatePlaceholder: string;
+  petBirthdateHint: string;
   guardianName: string;
   guardianPhone: string;
   guardianEmailOptional: string;
@@ -71,6 +73,9 @@ type Dictionary = {
   errorPictureType: string;
   errorPictureSize: string;
   errorBirthdate: string;
+  errorBirthdateIncomplete: string;
+  errorBirthdateFuture: string;
+  errorBirthdateTooOld: string;
   // Landing status
   statusEmpty: string;
   statusFilled: string;
@@ -124,6 +129,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petPictureRemove: "Remover",
     petPictureHint: "JPG, PNG, WEBP ou GIF — até 5 MB.",
     petBirthdate: "Data de nascimento",
+    petBirthdatePlaceholder: "DD/MM/AAAA",
+    petBirthdateHint: "Digite dia, mês e ano. Ex.: 21/04/2018",
     guardianName: "Nome do tutor",
     guardianPhone: "Celular",
     guardianEmailOptional: "E-mail (opcional)",
@@ -140,6 +147,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorPictureType: "Formato não suportado. Use JPG, PNG, WEBP ou GIF.",
     errorPictureSize: "A foto excede 5 MB. Escolha um arquivo menor.",
     errorBirthdate: "Data de nascimento inválida.",
+    errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
+    errorBirthdateFuture: "A data não pode estar no futuro.",
+    errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
     statusEmpty: "vazio — pronto para cadastro",
     statusFilled: "preenchido",
     lostBadge: "PERDIDO",
@@ -189,6 +199,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petPictureRemove: "Remove",
     petPictureHint: "JPG, PNG, WEBP or GIF — up to 5 MB.",
     petBirthdate: "Birthdate",
+    petBirthdatePlaceholder: "DD/MM/YYYY",
+    petBirthdateHint: "Type day, month and year. E.g. 21/04/2018",
     guardianName: "Guardian name",
     guardianPhone: "Phone",
     guardianEmailOptional: "Email (optional)",
@@ -205,6 +217,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorPictureType: "Unsupported format. Use JPG, PNG, WEBP or GIF.",
     errorPictureSize: "The photo is over 5 MB. Pick a smaller file.",
     errorBirthdate: "Invalid birthdate.",
+    errorBirthdateIncomplete: "Enter the full date (day/month/year).",
+    errorBirthdateFuture: "The date can't be in the future.",
+    errorBirthdateTooOld: "That date is too far in the past. Check the year.",
     statusEmpty: "empty — ready for setup",
     statusFilled: "filled",
     lostBadge: "LOST",

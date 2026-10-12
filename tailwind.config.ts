@@ -21,6 +21,15 @@ const config: Config = {
       boxShadow: {
         pill: "0 2px 10px rgba(0,0,0,0.08)",
       },
+      keyframes: {
+        "snackbar-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "snackbar-in": "snackbar-in 180ms ease-out",
+      },
     },
   },
   plugins: [],
