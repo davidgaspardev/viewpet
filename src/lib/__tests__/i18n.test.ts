@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { normalizeLocale, isLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "../i18n";
+import { normalizeLocale, isLocale, getDictionary, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "../i18n";
+import { tagPath } from "../utils/routes";
 
 describe("i18n locale handling", () => {
   describe("normalizeLocale", () => {
@@ -71,5 +72,13 @@ describe("i18n locale handling", () => {
       expect(SUPPORTED_LOCALES).toContain("en-US");
       expect(SUPPORTED_LOCALES).toHaveLength(2);
     });
+  });
+});
+
+describe("landing copy", () => {
+  test("shows the tag page path from the single route definition", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      expect(getDictionary(locale).landingBody).toContain(tagPath("<hashId>"));
+    }
   });
 });

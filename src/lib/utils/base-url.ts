@@ -23,8 +23,11 @@ export function parseBaseUrl(raw: string | undefined): string | null | undefined
  * Like `parseBaseUrl`, but the value must be a bare origin (`https://qr.viewpet.info`):
  * a path, query or hash makes it `null`. Used for `QR_BASE_URL`, whose redirect
  * matches `/<id>` at the host root, so a path prefix could never be honoured.
+ * Returns the hostname alongside the origin so callers need not parse it again.
  */
-export function parseOrigin(raw: string | undefined): string | null | undefined {
+export function parseOriginParts(
+  raw: string | undefined,
+): { origin: string; hostname: string } | null | undefined {
   const value = raw?.trim();
   if (!value) return undefined;
 
@@ -36,6 +39,11 @@ export function parseOrigin(raw: string | undefined): string | null | undefined 
   }
   const bare = url.pathname === "/" && !url.search && !url.hash;
   if ((url.protocol !== "http:" && url.protocol !== "https:") || !bare) return null;
-  return url.origin;
+  return { origin: url.origin, hostname: url.hostname };
 }
 
+/** `parseOriginParts`, origin only: a string, `null` if invalid, `undefined` if unset. */
+export function parseOrigin(raw: string | undefined): string | null | undefined {
+  const parts = parseOriginParts(raw);
+  return parts ? parts.origin : parts;
+}

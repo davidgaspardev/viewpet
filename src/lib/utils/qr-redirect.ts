@@ -1,4 +1,4 @@
-import { parseBaseUrl, parseOrigin } from "./base-url";
+import { parseBaseUrl, parseOriginParts } from "./base-url";
 import { isHashId } from "./id-format";
 import { tagPath } from "./routes";
 
@@ -29,11 +29,11 @@ export function resolveQrRedirect(
   request: { hostname: string; pathname: string; search: string },
   env: QrRedirectEnv,
 ): string | null {
-  const qrBase = parseOrigin(env.QR_BASE_URL);
+  const qr = parseOriginParts(env.QR_BASE_URL);
   const site = parseBaseUrl(env.SITE_URL);
-  if (!qrBase || !site) return null;
+  if (!qr || !site) return null;
 
-  if (request.hostname !== new URL(qrBase).hostname) return null;
+  if (request.hostname !== qr.hostname) return null;
 
   const id = request.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
   if (!isHashId(id)) return null;
