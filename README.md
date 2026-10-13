@@ -97,18 +97,20 @@ Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
 O QR impresso não muda nunca, então ele aponta pra um host estável que só redireciona. Dá pra mover ou renomear a página real sem reimprimir nenhuma plaquinha.
 
 ```
-https://qr.viewpet.info/<hashId>  ──307──▶  https://<SITE_URL>/tag/<hashId>
+https://qr.viewpet.info/<hashId>  ──307──▶  <SITE_URL>/tag/<hashId>
 ```
 
 | Variável | Exemplo | Efeito |
 |----------|---------|--------|
-| `QR_BASE_URL` | `https://qr.viewpet.info` | Host/prefixo codificado nos QR Codes gerados e origem do redirect |
-| `SITE_URL` | `https://viewpet.info` | Destino do redirect (site principal) |
+| `QR_BASE_URL` | `https://qr.viewpet.info` | Host codificado nos QR Codes gerados e host que redireciona. Só a origem: sem caminho (`/q`), query ou hash. |
+| `SITE_URL` | `https://viewpet.info` | Destino do redirect (site principal). Obrigatória quando `QR_BASE_URL` está definida. |
 
-- **Variáveis de build:** o redirect é montado no `next.config.ts`, então `QR_BASE_URL` e `SITE_URL` precisam estar definidas **no build**, não só em runtime. Sem as duas (ex.: dev local) não existe redirect e o QR aponta direto pra `/tag/<id>`. Se só `QR_BASE_URL` estiver definida, o build avisa que nenhum redirect foi registrado e a página de admin se recusa a gerar QR Codes (`SITE_URL` é obrigatória junto com `QR_BASE_URL`).
-- **DNS/hospedagem:** adicione `qr.viewpet.info` aos domínios do projeto e aponte o DNS pra mesma hospedagem do site.
+- **Em runtime, sem rebuild:** o redirect é feito pelo `src/middleware.ts`, que lê as duas variáveis a cada requisição. Trocar o destino é só mudar a variável e reiniciar/redeployar o ambiente; não precisa rebuildar. A página de admin lê as mesmas variáveis, então QR gerado e redirect nunca divergem.
+- **Sem as variáveis** (ex.: dev local) não existe redirect e o QR aponta direto pra `<origem>/tag/<id>`. Se só `QR_BASE_URL` estiver definida, o admin se recusa a gerar QR Codes (`SITE_URL` é obrigatória junto).
+- **DNS/hospedagem:** adicione `qr.viewpet.info` aos domínios do projeto e aponte o DNS pra mesma hospedagem do site. O DNS só faz o nome chegar até o app; quem redireciona é o middleware.
 - **307, não 308:** o redirect é temporário de propósito, pra o destino poder mudar sem navegadores ou CDNs lembrarem do antigo.
-- **Só ids válidos:** o redirect só casa com `hashId`s bem formados (veja abaixo); qualquer outra coisa cai no 404 normal. O casamento de rota do Next não diferencia maiúsculas, então um id em maiúsculas é redirecionado e depois dá 404 na página.
+- **Só ids válidos:** o middleware só roda pra caminhos de 12 caracteres alfanuméricos e só redireciona `hashId`s bem formados; qualquer outra coisa segue pro 404 normal. O id é convertido pra minúsculas, então digitar em maiúsculas também funciona.
+- **Barra final** (`/<id>/`): o Next primeiro normaliza pra `/<id>` (308) e depois vem o redirect, ou seja, uma volta a mais.
 - **Onde o caminho `/tag` mora:** `src/lib/utils/routes.ts`. Quem monta ou revalida essa URL usa `tagPath(id)`.
 
 ## Estados do banco

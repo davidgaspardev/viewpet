@@ -66,6 +66,12 @@ describe("resolveQrBase", () => {
     }
   });
 
+  test("QR_BASE_URL must be a bare origin: a path could never be redirected", () => {
+    expect(
+      resolveQrBase({ QR_BASE_URL: "https://viewpet.info/q", SITE_URL: "https://viewpet.info" }, headers({})),
+    ).toEqual({ ok: false, error: "invalid_qr_base_url" });
+  });
+
   test("a set-but-invalid value is an error, never silently ignored", () => {
     expect(resolveQrBase({ QR_BASE_URL: "qr.viewpet.info" }, headers({}))).toEqual({
       ok: false,

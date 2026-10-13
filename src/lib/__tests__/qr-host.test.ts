@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { parseBaseUrl } from "../utils/base-url";
-import { generateHashId, HASH_ID_PATTERN, isHashId } from "../utils/ids";
-import { buildQrRedirects } from "../utils/qr-redirects";
+import { config as middlewareConfig } from "../../middleware";
+import { parseBaseUrl, parseOrigin } from "../utils/base-url";
+import { generateHashId, HASH_ID_LENGTH, HASH_ID_PATTERN, isHashId } from "../utils/ids";
+import { hostnameOf, resolveQrRedirect } from "../utils/qr-redirect";
 import { tagPath } from "../utils/routes";
 
 describe("parseBaseUrl", () => {
@@ -48,45 +49,93 @@ describe("tagPath / HASH_ID_PATTERN", () => {
   });
 });
 
-describe("buildQrRedirects", () => {
+describe("parseOrigin", () => {
+  test("unset or blank is undefined", () => {
+    expect(parseOrigin(undefined)).toBeUndefined();
+    expect(parseOrigin("  ")).toBeUndefined();
+  });
+
+  test("accepts a bare http(s) origin, with or without a trailing slash", () => {
+    expect(parseOrigin("https://qr.viewpet.info")).toBe("https://qr.viewpet.info");
+    expect(parseOrigin(" https://qr.viewpet.info/ ")).toBe("https://qr.viewpet.info");
+    expect(parseOrigin("http://qr.localhost:3000")).toBe("http://qr.localhost:3000");
+  });
+
+  test("rejects anything that is not just an origin", () => {
+    for (const bad of ["qr.viewpet.info", "ftp://qr.viewpet.info", "https://viewpet.info/q", "https://viewpet.info/?a=1", "https://viewpet.info/#x", "https://"]) {
+      expect(parseOrigin(bad)).toBeNull();
+    }
+  });
+});
+
+describe("hostnameOf", () => {
+  test("strips the port, lowercases and takes the first of a list", () => {
+    expect(hostnameOf("QR.viewpet.info")).toBe("qr.viewpet.info");
+    expect(hostnameOf("qr.viewpet.info:443")).toBe("qr.viewpet.info");
+    expect(hostnameOf("qr.localhost:3000")).toBe("qr.localhost");
+    expect(hostnameOf("qr.viewpet.info, viewpet.info")).toBe("qr.viewpet.info");
+    expect(hostnameOf("[::1]:3000")).toBe("[::1]");
+  });
+
+  test("missing header is the empty string (never matches a host)", () => {
+    expect(hostnameOf(null)).toBe("");
+    expect(hostnameOf(undefined)).toBe("");
+  });
+});
+
+describe("resolveQrRedirect", () => {
   const env = { SITE_URL: "https://viewpet.info", QR_BASE_URL: "https://qr.viewpet.info" };
-
-  test("redirects <qr host>/<id> to <site>/tag/<id> with a temporary redirect", () => {
-    expect(buildQrRedirects(env)).toEqual([
-      {
-        source: `/:id(${HASH_ID_PATTERN})`,
-        has: [{ type: "host", value: "qr.viewpet.info" }],
-        destination: "https://viewpet.info/tag/:id",
-        permanent: false,
-      },
-    ]);
+  const id = "abcd2345efgh";
+  const req = (over: Partial<{ hostname: string; pathname: string; search: string }> = {}) => ({
+    hostname: "qr.viewpet.info",
+    pathname: `/${id}`,
+    search: "",
+    ...over,
   });
 
-  test("keeps a path prefix on the QR base and a base path on the site", () => {
-    const [redirect] = buildQrRedirects({ SITE_URL: "https://viewpet.info/app/", QR_BASE_URL: "https://viewpet.info/q/" });
-    expect(redirect.source).toBe(`/q/:id(${HASH_ID_PATTERN})`);
-    expect(redirect.destination).toBe("https://viewpet.info/app/tag/:id");
+  test("redirects <qr host>/<id> to <site>/tag/<id>", () => {
+    expect(resolveQrRedirect(req(), env)).toBe(`https://viewpet.info/tag/${id}`);
   });
 
-  test("matches only the host's port-less name", () => {
-    const [redirect] = buildQrRedirects({ SITE_URL: "http://localhost:3000", QR_BASE_URL: "http://qr.localhost:3000" });
-    expect(redirect.has[0].value).toBe("qr.localhost");
+  test("keeps the query string and a base path on the site", () => {
+    expect(resolveQrRedirect(req({ search: "?lang=en" }), env)).toBe(`https://viewpet.info/tag/${id}?lang=en`);
+    expect(resolveQrRedirect(req(), { ...env, SITE_URL: "https://viewpet.info/app/" })).toBe(
+      `https://viewpet.info/app/tag/${id}`,
+    );
   });
 
-  test("is a no-op unless both URLs are set and valid (local dev)", () => {
-    expect(buildQrRedirects({})).toEqual([]);
-    expect(buildQrRedirects({ SITE_URL: "https://viewpet.info" })).toEqual([]);
-    expect(buildQrRedirects({ QR_BASE_URL: "https://qr.viewpet.info" })).toEqual([]);
-    expect(buildQrRedirects({ SITE_URL: "viewpet.info", QR_BASE_URL: "https://qr.viewpet.info" })).toEqual([]);
-    expect(buildQrRedirects({ SITE_URL: "https://viewpet.info", QR_BASE_URL: "nope" })).toEqual([]);
+  test("lowercases the id and tolerates a trailing slash", () => {
+    expect(resolveQrRedirect(req({ pathname: `/${id.toUpperCase()}` }), env)).toBe(`https://viewpet.info/tag/${id}`);
+    expect(resolveQrRedirect(req({ pathname: `/${id}/` }), env)).toBe(`https://viewpet.info/tag/${id}`);
   });
 
-  test("the source pattern only matches well-formed ids", () => {
-    const [redirect] = buildQrRedirects(env);
-    const re = new RegExp(`^/(${HASH_ID_PATTERN})$`);
-    expect(re.test("/abcd2345efgh")).toBe(true);
-    expect(re.test("/tag")).toBe(false);
-    expect(re.test("/admin")).toBe(false);
-    expect(redirect.source.startsWith("/:id(")).toBe(true);
+  test("only the QR host redirects", () => {
+    expect(resolveQrRedirect(req({ hostname: "viewpet.info" }), env)).toBeNull();
+    expect(resolveQrRedirect(req({ hostname: "" }), env)).toBeNull();
+    expect(resolveQrRedirect(req({ hostname: "evil-qr.viewpet.info" }), env)).toBeNull();
+  });
+
+  test("only well-formed ids redirect", () => {
+    for (const pathname of ["/", "/admin", "/tag", `/${id}x`, "/abcd2345efg", "/abcd2345efg0", "/abcd2345efgl", `/tag/${id}`, `//${id}/x`]) {
+      expect(resolveQrRedirect(req({ pathname }), env)).toBeNull();
+    }
+  });
+
+  test("is a no-op unless both URLs are set and valid, and reads them on every call", () => {
+    expect(resolveQrRedirect(req(), {})).toBeNull();
+    expect(resolveQrRedirect(req(), { SITE_URL: env.SITE_URL })).toBeNull();
+    expect(resolveQrRedirect(req(), { QR_BASE_URL: env.QR_BASE_URL })).toBeNull();
+    expect(resolveQrRedirect(req(), { ...env, SITE_URL: "viewpet.info" })).toBeNull();
+    expect(resolveQrRedirect(req(), { ...env, QR_BASE_URL: "https://qr.viewpet.info/q" })).toBeNull();
+    // no module-level caching: a different env gives a different answer
+    expect(resolveQrRedirect(req({ hostname: "go.example.com" }), { ...env, QR_BASE_URL: "https://go.example.com" })).toBe(
+      `https://viewpet.info/tag/${id}`,
+    );
+  });
+});
+
+describe("middleware matcher", () => {
+  test("covers /admin and any single segment of exactly HASH_ID_LENGTH characters", () => {
+    expect(middlewareConfig.matcher).toEqual(["/admin/:path*", `/:id([A-Za-z0-9]{${HASH_ID_LENGTH}})`]);
   });
 });

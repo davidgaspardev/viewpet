@@ -3,7 +3,7 @@
  * "use server" modules may only export server actions.
  */
 
-import { parseBaseUrl } from "@/lib/utils/base-url";
+import { parseBaseUrl, parseOrigin } from "@/lib/utils/base-url";
 import { TAG_ROUTE } from "@/lib/utils/routes";
 
 type HeaderReader = { get(name: string): string | null };
@@ -49,14 +49,14 @@ export type QrBaseResult =
  * never silently ignored: printed tags can't be fixed afterwards.
  *
  * The short host only works if it redirects somewhere, and that redirect
- * (see `buildQrRedirects`) needs a valid `SITE_URL`. So with `QR_BASE_URL` set,
+ * (see `resolveQrRedirect`) needs a valid `SITE_URL`. So with `QR_BASE_URL` set,
  * `SITE_URL` is required too — otherwise we'd print QR codes that can't resolve.
  */
 export function resolveQrBase(
   env: Record<string, string | undefined>, // process.env-shaped: reads SITE_URL and QR_BASE_URL
   headers: HeaderReader,
 ): QrBaseResult {
-  const qrBase = parseBaseUrl(env.QR_BASE_URL);
+  const qrBase = parseOrigin(env.QR_BASE_URL);
   if (qrBase === null) return { ok: false, error: "invalid_qr_base_url" };
   if (qrBase) {
     if (!parseBaseUrl(env.SITE_URL)) return { ok: false, error: "invalid_site_url" };
