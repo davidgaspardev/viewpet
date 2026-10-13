@@ -8,6 +8,22 @@ https://<domain>/tag/<hashId>
 
 O `hashId` é a chave usada pra buscar o registro do pet no banco de dados. A página é o destino do QR Code impresso na plaquinha do pet — sem login, leitura pública, otimizada pra ser aberta por um estranho que encontrou o animal.
 
+## Glossário
+
+Os mesmos termos valem no código, nos tickets e na conversa.
+
+| Termo | O que é | Onde aparece |
+|-------|---------|--------------|
+| **Tag** (plaquinha) | O objeto físico: a placa/pingente pendurado na coleira do pet, com o QR Code. É o que a pessoa que acha o animal escaneia. | Rota `/tag/<hashId>`, `src/app/tag/` |
+| **QR Code** | O código impresso na tag. Codifica `<QR_BASE_URL>/<hashId>` (o host curto) ou, sem ele, `<SITE_URL>/tag/<hashId>`. Gerado no `/admin` ou pelo CLI de reserva. | `src/lib/qrcode/`, `src/features/admin/` |
+| **`hashId`** | O identificador opaco de 12 caracteres da tag. É também a chave do registro do pet no banco: um `hashId` ↔ uma tag ↔ um pet. | `src/lib/utils/id-format.ts`, `ids.ts` |
+| **Reserva** | Gerar um `hashId` e guardá-lo no banco vazio, antes de existir pet. Acontece antes da impressão. | `bun run reserve`, página `/admin` |
+| **Estados da entrada** | `missing` (id desconhecido, 404), `empty` (reservado, mostra o formulário de cadastro), `filled` (perfil publicado). No Mongo o status é `reserved`, `active` ou `lost`. | `PetEntry`, `getPetEntry()` |
+| **Tutor** (guardian) | Quem cuida do pet e é contatado por quem o encontra. Um pet tem até 2. | `Guardian`, `src/types/pet.ts` |
+| **Host curto** (`qr.`) | `qr.viewpet.info`: o endereço estável que vai no QR e só redireciona pra página real, pra poder mudar a página sem reimprimir nada. | `src/middleware.ts`, seção "Host curto do QR" |
+| **Pendant** | O modelo 3D da tag (o pingente), em Rust/Bevy. Ainda não está nesta branch: está sendo desenvolvido à parte. | `native/pendant/` (outro branch) |
+| **`pet-tag`** | A feature web que mostra o carrossel 3D de modelos de tag (Three.js). Fala do **desenho** da tag, não da rota `/tag`. | `src/features/pet-tag/` |
+
 ## Stack
 
 - [Next.js 15](https://nextjs.org/) (App Router, React 19)
