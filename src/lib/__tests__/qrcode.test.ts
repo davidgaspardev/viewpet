@@ -6,7 +6,7 @@ import { LOGO_DATA_URI } from "../qrcode/logo";
 import { renderQrSvg } from "../qrcode/render";
 
 const MARGIN = 4;
-const url = "https://viewpet.example/view/abcd2345efgh";
+const url = "https://viewpet.example/tag/abcd2345efgh";
 
 /** (row,col) of every data dot (r="0.42") in the rendered SVG. */
 function dotCells(svg: string): Set<string> {

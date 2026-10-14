@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { PetRepositoryFactory } from "@/lib/repository";
 import { formatAge } from "@/lib/utils/age";
+import { QR_SCAN_COOKIE, scanSourceFrom } from "@/lib/utils/qr-scan";
 import { resolveLocale } from "@/lib/i18n.server";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
@@ -67,8 +69,14 @@ export default async function ViewPetPage(props: PageProps) {
 
   const pet = entry.pet;
   const ageLabel = formatAge(pet.birthdate, locale);
+
+  // "qr" when this visit just came through the short QR host (see the
+  // `qr_scan` cookie set by its redirect), "direct" otherwise. Exposed as a
+  // data attribute for now; the lost-pet location report will build on it.
+  const scanSource = scanSourceFrom((await cookies()).get(QR_SCAN_COOKIE)?.value);
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
+    <main data-scan-source={scanSource} className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
       <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} gender={pet.gender ?? undefined} />

@@ -29,11 +29,11 @@ const PAGE_SIZE = 24;
 type QrGeneratorProps = {
   /** Every id in the database, newest first. */
   initialEntries: PetEntrySummary;
-  /** Public origin printed in the QR codes (already validated by the page). */
-  origin: string;
+  /** URL prefix printed in the QR codes (already validated by the page). */
+  qrBase: string;
 };
 
-export function QrGenerator({ initialEntries, origin }: QrGeneratorProps) {
+export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
   const [entries, setEntries] = useState(initialEntries);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -95,7 +95,7 @@ export function QrGenerator({ initialEntries, origin }: QrGeneratorProps) {
         <ul className="mt-6 flex flex-wrap gap-4">
           {filtered.slice(0, visible).map((entry) => (
             <li key={entry.id} className="w-72">
-              <PetQrCard entry={entry} origin={origin} />
+              <PetQrCard entry={entry} qrBase={qrBase} />
             </li>
           ))}
         </ul>

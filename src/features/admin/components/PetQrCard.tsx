@@ -8,7 +8,7 @@ import type { PetEntrySummaryItem } from "@/lib/repository";
 import type { PetStatus } from "@/types/pet";
 import { Card } from "@/ui/Card";
 
-import { petUrl } from "../entries";
+import { qrUrl } from "../entries";
 
 const BADGES: Record<PetStatus, { label: string; className: string }> = {
   reserved: { label: "Reserved", className: "bg-amber-100 text-amber-800" },
@@ -31,15 +31,16 @@ function downloadSvg(id: string, svg: string) {
 
 type PetQrCardProps = {
   entry: PetEntrySummaryItem;
-  origin: string;
+  /** URL prefix the QR encodes; the id is appended. */
+  qrBase: string;
 };
 
 /**
  * One pet id with its status and QR code. The QR is a pure function of the
  * public URL, so it is rendered here from the id instead of being stored.
  */
-export const PetQrCard = memo(function PetQrCard({ entry, origin }: PetQrCardProps) {
-  const url = petUrl(origin, entry.id);
+export const PetQrCard = memo(function PetQrCard({ entry, qrBase }: PetQrCardProps) {
+  const url = qrUrl(qrBase, entry.id);
   const svg = useMemo(() => renderQrSvg(url, { logoHref: LOGO_DATA_URI, label: entry.id }), [url, entry.id]);
   // An <img> keeps each card at one DOM node (the inline SVG has ~600) and
   // means the markup is never injected into the page.

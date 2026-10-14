@@ -16,7 +16,7 @@ export function filterByStatus(entries: PetEntrySummary, filter: StatusFilter): 
   return filter === "all" ? entries : entries.filter((entry) => entry.status === filter);
 }
 
-/** Public URL a tag's QR code points at. */
-export function petUrl(origin: string, id: string): string {
-  return `${origin}/view/${id}`;
+/** URL a tag's QR code encodes: the QR base (see `resolveQrBase`) plus the id. */
+export function qrUrl(base: string, id: string): string {
+  return `${base}/${id}`;
 }

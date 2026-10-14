@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { isAdminAuthorized } from "@/features/admin/auth";
-import { resolveOrigin } from "@/features/admin/origin";
+import { resolveQrBase } from "@/features/admin/origin";
 import { QrGenerator } from "@/features/admin/index.client";
 import { PetRepositoryFactory } from "@/lib/repository";
 import { SnackbarProvider } from "@/ui/Snackbar";
@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const CONFIG_ERRORS = {
+  invalid_site_url: "SITE_URL is missing or not a valid http(s) URL. Fix the server configuration.",
+  invalid_qr_base_url: "QR_BASE_URL is not a valid http(s) URL. Fix the server configuration.",
+} as const;
+
 export default async function AdminPage() {
   // Middleware is the primary gate (it also sends the Basic-auth challenge).
   // Re-check here so the page never renders without credentials even if the
@@ -23,11 +28,11 @@ export default async function AdminPage() {
   const requestHeaders = await headers();
   if (!(await isAdminAuthorized(requestHeaders.get("authorization")))) notFound();
 
-  // The QR codes are rendered in the browser, so the origin is resolved (and
-  // validated) here once. A bad SITE_URL blocks the list instead of printing
-  // tags that can never resolve.
-  const origin = resolveOrigin(process.env.SITE_URL, requestHeaders);
-  const entries = origin ? await PetRepositoryFactory.getInstance().listPetEntries() : [];
+  // The QR codes are rendered in the browser, so the QR base is resolved (and
+  // validated) here once. A bad SITE_URL / QR_BASE_URL blocks the list instead
+  // of printing tags that can never resolve.
+  const target = resolveQrBase(process.env, requestHeaders);
+  const entries = target.ok ? await PetRepositoryFactory.getInstance().listPetEntries() : [];
 
   return (
     <>
@@ -41,14 +46,12 @@ export default async function AdminPage() {
           </p>
         </header>
         <div className="mt-6">
-          {origin ? (
+          {target.ok ? (
             <SnackbarProvider closeLabel="Close" placement="left">
-              <QrGenerator initialEntries={entries} origin={origin} />
+              <QrGenerator initialEntries={entries} qrBase={target.base} />
             </SnackbarProvider>
           ) : (
-            <p className="text-sm text-red-700">
-              SITE_URL is not a valid http(s) URL. Fix the server configuration.
-            </p>
+            <p className="text-sm text-red-700">{CONFIG_ERRORS[target.error]}</p>
           )}
         </div>
       </main>

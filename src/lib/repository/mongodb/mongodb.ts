@@ -30,7 +30,7 @@
  *       createdAt, updatedAt,
  *     }
  *
- * Reads of `/view/<hashId>` use $lookup to assemble the full Pet in a single
+ * Reads of `/tag/<hashId>` use $lookup to assemble the full Pet in a single
  * round-trip. Guardians are dedup'd by email on write so a couple with two pets
  * shares one Guardian document — phone-number updates propagate across all
  * their pets without fan-out writes. The current open lost event (if any) is

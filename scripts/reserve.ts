@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     ids.push(id);
   }
   for (const id of ids) console.log(id);
-  console.error(`\nReserved ${count} ID(s). Open /view/<id> to fill them in.`);
+  console.error(`\nReserved ${count} ID(s). Open /tag/<id> to fill them in.`);
 }
 
 main().catch((err) => {

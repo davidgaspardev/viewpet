@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { PetEntrySummary } from "@/lib/repository";
 
-import { countByStatus, filterByStatus, petUrl } from "../entries";
+import { countByStatus, filterByStatus, qrUrl } from "../entries";
 
 const entries: PetEntrySummary = [
   { id: "a", status: "reserved" },
@@ -36,8 +36,9 @@ describe("filterByStatus", () => {
   });
 });
 
-describe("petUrl", () => {
-  test("joins origin and id under /view", () => {
-    expect(petUrl("https://viewpet.info", "abc123")).toBe("https://viewpet.info/view/abc123");
+describe("qrUrl", () => {
+  test("joins the QR base and the id", () => {
+    expect(qrUrl("https://qr.viewpet.info", "abc123")).toBe("https://qr.viewpet.info/abc123");
+    expect(qrUrl("https://viewpet.info/tag", "abc123")).toBe("https://viewpet.info/tag/abc123");
   });
 });
