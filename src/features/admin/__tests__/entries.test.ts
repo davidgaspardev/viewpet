@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { PetEntrySummary } from "@/lib/repository";
 
-import { countByStatus, filterByStatus, qrUrl } from "../entries";
+import { countByStatus, filterAfterReserve, filterByStatus, FILTER_LABELS, STATUS_FILTERS } from "../entries";
 
 const entries: PetEntrySummary = [
   { id: "a", status: "reserved" },
@@ -36,9 +36,21 @@ describe("filterByStatus", () => {
   });
 });
 
-describe("qrUrl", () => {
-  test("joins the QR base and the id", () => {
-    expect(qrUrl("https://qr.viewpet.info", "abc123")).toBe("https://qr.viewpet.info/abc123");
-    expect(qrUrl("https://viewpet.info/tag", "abc123")).toBe("https://viewpet.info/tag/abc123");
+describe("filterAfterReserve", () => {
+  test("keeps the reserved filter", () => {
+    expect(filterAfterReserve("reserved")).toBe("reserved");
+  });
+
+  test("falls back to all, so the new reserved entry is not hidden", () => {
+    for (const filter of ["all", "active", "lost"] as const) {
+      expect(filterAfterReserve(filter)).toBe("all");
+    }
+  });
+});
+
+describe("filters", () => {
+  test("offer `all` plus every status, each with a label", () => {
+    expect([...STATUS_FILTERS]).toEqual(["all", "reserved", "active", "lost"]);
+    for (const filter of STATUS_FILTERS) expect(FILTER_LABELS[filter].length).toBeGreaterThan(0);
   });
 });

@@ -6,7 +6,15 @@ import type { PetEntrySummary } from "@/lib/repository";
 import { useSnackbar } from "@/ui/Snackbar";
 
 import { reserveId, type ReserveIdResult } from "../actions";
-import { countByStatus, filterByStatus, STATUS_FILTERS, type StatusFilter } from "../entries";
+import {
+  countByStatus,
+  FILTER_LABELS,
+  filterAfterReserve,
+  filterByStatus,
+  STATUS_FILTERS,
+  type StatusFilter,
+} from "../entries";
+import { outlineButton } from "../styles";
 import { PetQrCard } from "./PetQrCard";
 
 type ErrorCode = Extract<ReserveIdResult, { status: "error" }>["message"];
@@ -14,13 +22,6 @@ type ErrorCode = Extract<ReserveIdResult, { status: "error" }>["message"];
 const ERRORS: Record<ErrorCode, string> = {
   unauthorized: "Not authorized.",
   generation_failed: "Could not reserve a free id. Try again.",
-};
-
-const FILTER_LABELS: Record<StatusFilter, string> = {
-  all: "All",
-  reserved: "Reserved",
-  active: "Active",
-  lost: "Lost",
 };
 
 /** QR codes rendered per page; each one is computed when its card mounts. */
@@ -54,11 +55,13 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
         const result = await reserveId();
         if (result.status === "success") {
           setEntries((prev) => [result.entry, ...prev]);
+          setFilter(filterAfterReserve);
           show(`Reserved ${result.entry.id}`, { variant: "info" });
         } else {
           show(ERRORS[result.message], { variant: "error" });
         }
-      } catch {
+      } catch (error) {
+        console.error("[admin] reserveId failed", error);
         show("Something went wrong.", { variant: "error" });
       }
     });
@@ -105,7 +108,7 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
         <button
           type="button"
           onClick={() => setVisible((prev) => prev + PAGE_SIZE)}
-          className="mt-6 rounded-lg border border-black/20 px-4 py-2 text-sm font-semibold text-ink hover:bg-black/5"
+          className={`mt-6 rounded-lg px-4 py-2 text-sm ${outlineButton}`}
         >
           Load more ({filtered.length - visible} left)
         </button>

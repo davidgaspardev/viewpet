@@ -39,7 +39,7 @@ type Dictionary = {
   landingTitle: string;
   landingBody: string;
   tryExamples: string;
-  // Form (empty entry → cadastro)
+  // Form (reserved entry → cadastro)
   formTitle: string;
   formIntro: (id: string) => string;
   petSection: string;

@@ -44,7 +44,7 @@
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
 import type { Seedable, Pet, PetEntry, PetEntrySummary } from "../interface";
-import type { Guardian, LostEvent } from "@/types/pet";
+import { isPetStatus, isRegisteredStatus, type Guardian, type LostEvent } from "@/types/pet";
 import { PetDoc, GuardianDoc, LostEventDoc } from "./dto";
 
 type Collections = {
@@ -281,6 +281,9 @@ export class MongoPetRepository implements Seedable {
     const doc = docs[0];
     if (!doc) return { status: "missing" };
     if (doc.status === "reserved") return { status: "reserved" };
+    // The collection is untyped at runtime: never publish a doc whose status
+    // we don't recognise (hand-edited, or written by a newer version).
+    if (!isRegisteredStatus(doc.status)) return { status: "missing" };
 
     // Preserve the original order encoded in guardianIds (lookup result is unordered)
     const byId = new Map(
@@ -402,19 +405,21 @@ export class MongoPetRepository implements Seedable {
   async listPetEntries(): Promise<PetEntrySummary> {
     const { pets } = await this.db();
     const docs = await pets
-      .find(
-        {},
-        { projection: { _id: 1, status: 1, name: 1, createdAt: 1, updatedAt: 1 } },
-      )
-      .sort({ createdAt: -1 })
+      .find({}, { projection: { _id: 1, status: 1, name: 1 } })
+      // Millisecond timestamps collide when a batch is reserved in a burst;
+      // the id tie-break keeps the order stable between requests.
+      .sort({ createdAt: -1, _id: -1 })
       .toArray();
-    return docs.map((doc) => ({
-      id: doc._id,
-      status: doc.status,
-      ...(doc.name ? { name: doc.name } : {}),
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt.toISOString(),
-    }));
+
+    const entries: PetEntrySummary = [];
+    for (const doc of docs) {
+      if (isPetStatus(doc.status)) {
+        entries.push({ id: doc._id, status: doc.status, ...(doc.name ? { name: doc.name } : {}) });
+      } else {
+        console.warn(`[Repository] Skipping "${doc._id}": unrecognised status ${JSON.stringify(doc.status)}`);
+      }
+    }
+    return entries;
   }
 }
 

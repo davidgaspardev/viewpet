@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveOrigin, resolveQrBase } from "../origin";
+import { qrUrl, resolveOrigin, resolveQrBase } from "../origin";
 
 const headers = (h: Record<string, string>) => ({
   get: (name: string) => h[name.toLowerCase()] ?? null,
@@ -81,5 +81,12 @@ describe("resolveQrBase", () => {
       ok: false,
       error: "invalid_site_url",
     });
+  });
+});
+
+describe("qrUrl", () => {
+  test("joins the QR base and the id", () => {
+    expect(qrUrl("https://qr.viewpet.info", "abc123")).toBe("https://qr.viewpet.info/abc123");
+    expect(qrUrl("https://viewpet.info/tag", "abc123")).toBe("https://viewpet.info/tag/abc123");
   });
 });

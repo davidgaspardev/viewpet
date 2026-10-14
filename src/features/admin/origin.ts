@@ -67,3 +67,8 @@ export function resolveQrBase(
   if (!origin) return { ok: false, error: "invalid_site_url" };
   return { ok: true, base: `${origin}${TAG_ROUTE}` };
 }
+
+/** The URL a tag's QR code encodes: the base from `resolveQrBase` plus the id. */
+export function qrUrl(base: string, id: string): string {
+  return `${base}/${id}`;
+}

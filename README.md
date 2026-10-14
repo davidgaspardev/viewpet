@@ -90,8 +90,8 @@ O QR Code é impresso **antes** do tutor cadastrar o pet.
 
 1. **Reserva** um lote: `bun run reserve --count N`. Cada ID entra no banco com status `reserved`.
 2. **Imprime** o QR, um ID por plaquinha. Em produção ele aponta pro host curto (`https://qr.viewpet.info/<hashId>`, veja abaixo); sem host curto, direto pra `https://<domain>/tag/<hashId>`.
-3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
-4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
+3. **Tutor acessa a URL**, a página detecta `reserved` e renderiza o `PetForm`.
+4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `active`.
 
 Pipeline típico:
 
@@ -220,8 +220,8 @@ Arquivo: `data/local.db.json`. Formato flat — mesma estrutura do mock `src/dat
 }
 ```
 
-- `null` → slot reservado (estado `empty`)
-- Objeto → `PetPublicProfile` completo (estado `filled`)
+- `null` → slot reservado (estado `reserved`)
+- Objeto → `Pet` completo (estado `active` ou `lost`, conforme o `status` do objeto)
 
 Sem separação por collection — o local é só pra dev e teste, então deixa o JSON legível e o seed simétrico ao banco. A separação tutor/pet é problema do Mongo (ver abaixo).
 
@@ -289,15 +289,17 @@ MONGODB_URI=mongodb://localhost:27017/viewpet
 
 ## URLs de exemplo
 
-O seed (`src/data/pets.json`) inclui pets ativos e slots vazios:
+O seed (`src/data/pets.json`) inclui pets ativos e um perdido:
 
-| HashId         | Estado   | Pet   |
-| -------------- | -------- | ----- |
-| `nuxw4d83wraa` | `filled` | Lupe  |
-| `n7k8w3zwe49w` | `filled` | Mel   |
-| `egqr8k6at59j` | `filled` | Thor  |
-| `vcjv2sx3s5bd` | `filled` | Scooby |
-| `6pb46abtj58e` | `filled` | Mel   |
+| HashId         | Estado   | Pet    |
+| -------------- | -------- | ------ |
+| `nuxw4d83wraa` | `active` | Lupe |
+| `n7k8w3zwe49w` | `active` | Mel |
+| `egqr8k6at59j` | `lost` | Thor |
+| `ujvb9gd7afsx` | `active` | Bob |
+| `8p6qt38gj7be` | `active` | Luna |
+| `vcjv2sx3s5bd` | `active` | Scooby |
+| `6pb46abtj58e` | `active` | Mel |
 
 Exemplos:
 
@@ -330,10 +332,10 @@ src/
 │   ├── globals.css               # tailwind base/components/utilities
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
 │   └── tag/[id]/
-│       ├── page.tsx              # branch missing/empty/filled
+│       ├── page.tsx              # branch missing/reserved/active/lost
 │       ├── actions.ts            # Server Action do submit
 │       ├── ImageUpload.tsx       # input de foto (com câmera)
-│       ├── PetForm.tsx           # formulário pra estado empty
+│       ├── PetForm.tsx           # formulário pra estado reserved
 │       └── not-found.tsx         # fallback 404
 ├── features/
 │   ├── pet-profile/components/   # PetHero, GuardianContact, SocialLinks, ActionButton, ImageUpload, PetForm

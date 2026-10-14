@@ -24,9 +24,13 @@ export async function reserveId(): Promise<ReserveIdResult> {
     return { status: "error", message: "unauthorized" };
   }
 
+  // No SITE_URL / QR_BASE_URL check here (the old action needed one so a bad
+  // config couldn't reserve ids it had no QR for). The client renders the QR
+  // from the id, so a reserved id is never orphaned: it stays in the admin
+  // list and its QR can be viewed again whenever the config is fixed. The
+  // page validates the base before it shows the generator at all.
   const id = await reserveFreshId(PetRepositoryFactory.getInstance(), generateHashId);
   if (!id) return { status: "error", message: "generation_failed" };
 
-  const now = new Date().toISOString();
-  return { status: "success", entry: { id, status: "reserved", createdAt: now, updatedAt: now } };
+  return { status: "success", entry: { id, status: "reserved" } };
 }

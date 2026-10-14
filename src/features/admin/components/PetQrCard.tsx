@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useState } from "react";
 
 import { LOGO_DATA_URI } from "@/lib/qrcode/logo";
 import { renderQrSvg } from "@/lib/qrcode/render";
@@ -8,13 +8,17 @@ import type { PetEntrySummaryItem } from "@/lib/repository";
 import type { PetStatus } from "@/types/pet";
 import { Card } from "@/ui/Card";
 
-import { qrUrl } from "../entries";
+import { STATUS_LABELS } from "../entries";
+import { qrUrl } from "../origin";
+import { outlineButton } from "../styles";
 
-const BADGES: Record<PetStatus, { label: string; className: string }> = {
-  reserved: { label: "Reserved", className: "bg-amber-100 text-amber-800" },
-  active: { label: "Active", className: "bg-emerald-100 text-emerald-800" },
-  lost: { label: "Lost", className: "bg-red-100 text-red-800" },
+const BADGE_COLORS: Record<PetStatus, string> = {
+  reserved: "bg-amber-100 text-amber-800",
+  active: "bg-emerald-100 text-emerald-800",
+  lost: "bg-red-100 text-red-800",
 };
+
+const tagQrSvg = (url: string, id: string) => renderQrSvg(url, { logoHref: LOGO_DATA_URI, label: id });
 
 function downloadSvg(id: string, svg: string) {
   const href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
@@ -41,11 +45,15 @@ type PetQrCardProps = {
  */
 export const PetQrCard = memo(function PetQrCard({ entry, qrBase }: PetQrCardProps) {
   const url = qrUrl(qrBase, entry.id);
-  const svg = useMemo(() => renderQrSvg(url, { logoHref: LOGO_DATA_URI, label: entry.id }), [url, entry.id]);
-  // An <img> keeps each card at one DOM node (the inline SVG has ~600) and
-  // means the markup is never injected into the page.
-  const src = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, [svg]);
-  const badge = BADGES[entry.status];
+
+  // Computed after mount, not during render: each QR is ~50 KB of markup, so
+  // doing it in render would put it in the server HTML and then again on
+  // hydration. An <img> keeps the card at one DOM node (the inline SVG has
+  // ~600) and means the markup is never injected into the page.
+  const [src, setSrc] = useState<string>();
+  useEffect(() => {
+    setSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(tagQrSvg(url, entry.id))}`);
+  }, [url, entry.id]);
 
   return (
     <Card
@@ -53,8 +61,9 @@ export const PetQrCard = memo(function PetQrCard({ entry, qrBase }: PetQrCardPro
       headerAction={
         <button
           type="button"
-          onClick={() => downloadSvg(entry.id, svg)}
-          className="mr-2 rounded-lg border border-black/20 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-black/5"
+          // Rendered on demand so the card doesn't keep the SVG around as well.
+          onClick={() => downloadSvg(entry.id, tagQrSvg(url, entry.id))}
+          className={`mr-2 rounded-lg px-3 py-1.5 text-xs ${outlineButton}`}
         >
           Download SVG
         </button>
@@ -62,14 +71,18 @@ export const PetQrCard = memo(function PetQrCard({ entry, qrBase }: PetQrCardPro
     >
       <div className="flex items-center justify-between gap-2">
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badge.className}`}
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${BADGE_COLORS[entry.status]}`}
         >
-          {badge.label}
+          {STATUS_LABELS[entry.status]}
         </span>
         {entry.name ? <span className="truncate text-xs text-muted">{entry.name}</span> : null}
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element -- data: URI, nothing for next/image to optimise */}
-      <img src={src} alt={`QR code ${entry.id}`} className="h-auto w-full rounded-lg bg-white p-2" />
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- data: URI, nothing for next/image to optimise
+        <img src={src} alt={`QR code ${entry.id}`} className="h-auto w-full rounded-lg bg-white p-2" />
+      ) : (
+        <div aria-hidden className="aspect-[15/16] w-full rounded-lg bg-white" />
+      )}
       <a href={url} className="block break-all text-xs text-muted underline" target="_blank" rel="noreferrer">
         {url}
       </a>

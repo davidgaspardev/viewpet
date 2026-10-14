@@ -1,9 +1,18 @@
 import type { PetEntrySummary, PetEntrySummaryItem } from "@/lib/repository";
-import type { PetStatus } from "@/types/pet";
+import { PET_STATUSES, type PetStatus } from "@/types/pet";
 
 export type StatusFilter = PetStatus | "all";
 
-export const STATUS_FILTERS: readonly StatusFilter[] = ["all", "reserved", "active", "lost"];
+export const STATUS_FILTERS: readonly StatusFilter[] = ["all", ...PET_STATUSES];
+
+/** Admin-facing names of each status; shared by the filter chips and the card badges. */
+export const STATUS_LABELS: Record<PetStatus, string> = {
+  reserved: "Reserved",
+  active: "Active",
+  lost: "Lost",
+};
+
+export const FILTER_LABELS: Record<StatusFilter, string> = { all: "All", ...STATUS_LABELS };
 
 /** Number of entries per status, plus the `all` total. */
 export function countByStatus(entries: PetEntrySummary): Record<StatusFilter, number> {
@@ -16,7 +25,10 @@ export function filterByStatus(entries: PetEntrySummary, filter: StatusFilter): 
   return filter === "all" ? entries : entries.filter((entry) => entry.status === filter);
 }
 
-/** URL a tag's QR code encodes: the QR base (see `resolveQrBase`) plus the id. */
-export function qrUrl(base: string, id: string): string {
-  return `${base}/${id}`;
+/**
+ * Filter to show once a new id was reserved. The new entry is `reserved`, so
+ * any other filter would hide the card the admin just asked for.
+ */
+export function filterAfterReserve(filter: StatusFilter): StatusFilter {
+  return filter === "reserved" ? filter : "all";
 }

@@ -27,9 +27,9 @@ Três coisas, nessa ordem de importância:
 │  /tag/<hashId>             │         │  Tutor logado               │
 │                             │         │                             │
 │  - SSR, sem login           │         │  - Login (email + OTP)      │
-│  - 3 estados: missing /     │ ◄─────► │  - Lista de pets do tutor   │
-│    empty / filled           │         │  - Edita perfil             │
-│  - 4º estado: lost          │         │  - Toggle "marcar perdido"  │
+│  - 4 estados: missing /     │ ◄─────► │  - Lista de pets do tutor   │
+│    reserved / active / lost │         │  - Edita perfil             │
+│                             │         │  - Toggle "marcar perdido"  │
 │                             │         │  - Recebe push de scans     │
 └─────────────┬───────────────┘         └─────────────┬───────────────┘
               │                                       │
@@ -90,7 +90,7 @@ Mockup visual está no arquivo irmão `lost-mode-mockup.html` (abra no navegador
 
 ### Hero
 
-- Mesma estrutura visual do estado `filled`: foto + chip do logo + pílula do nome.
+- Mesma estrutura visual do estado `active`: foto + chip do logo + pílula do nome.
 - **Diferenças no modo perdido:**
   - Pílula do canto superior direito vira vermelha: `Perdido` + ícone de alerta. Substitui a pílula de idade.
   - Barra vermelha de 3px na borda inferior da foto, marcando que algo é diferente.
@@ -224,7 +224,7 @@ Recomendo email + push do app já no MVP do modo perdido. SMS é caro e a maiori
 
 ## TL;DR
 
-- Mantém a página pública SSR, sem login, com 4 estados agora: `missing` / `empty` / `filled` / `lost`.
+- Mantém a página pública SSR, sem login, com 4 estados: `missing` / `reserved` / `active` / `lost`.
 - Adiciona dois campos opcionais no `Pet` (`status`, `lostInfo`).
 - No modo perdido: hero com badge vermelho, botão gigante de ligar, botão de compartilhar localização anônima. Sem cadastro pra ninguém.
 - Tutor gerencia no app nativo. App recebe email + push a cada scan.

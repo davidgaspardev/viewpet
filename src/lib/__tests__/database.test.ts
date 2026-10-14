@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
-import { rmSync, existsSync } from "node:fs";
+import { rmSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PetRepositoryFactory } from "../repository";
 import { LocalPetRepository } from "../repository/local";
@@ -244,6 +244,16 @@ describe("Database Provider Abstraction", () => {
         const lost = entries.find((e) => e.id === "lost1");
         expect(lost?.status).toBe("lost");
         expect(lost?.name).toBe("Rex");
+      });
+
+      test("treats a stored pet with an unknown status as missing and leaves it out of the list", async () => {
+        mkdirSync(join(process.cwd(), "data"), { recursive: true });
+        writeFileSync(
+          TEST_DB_PATH,
+          JSON.stringify({ odd1: { ...makePet(), status: "archived" }, fine1: makePet({ name: "Fine" }), res1: null }),
+        );
+        expect(await provider.getPetEntry("odd1")).toEqual({ status: "missing" });
+        expect((await provider.listPetEntries()).map((e) => e.id).sort()).toEqual(["fine1", "res1"]);
       });
 
       test("lists the newest entries first", async () => {

@@ -38,6 +38,15 @@ function makePet(overrides: Partial<Pet> = {}): Pet {
   };
 }
 
+/** Writes a pets document straight to the collection, bypassing the repository (and its types). */
+async function insertRawPet(doc: Record<string, unknown>): Promise<void> {
+  const now = new Date();
+  await cleanupClient
+    .db("viewpet")
+    .collection("pets")
+    .insertOne({ createdAt: now, updatedAt: now, ...doc } as never);
+}
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   process.env.MONGODB_URI = mongod.getUri() + "viewpet";
@@ -68,14 +77,14 @@ describe("MongoPetRepository", () => {
       expect(entry.status).toBe("missing");
     });
 
-    test("returns empty for reserved hashId", async () => {
+    test("returns reserved for a reserved hashId", async () => {
       const provider = new MongoPetRepository();
       await provider.reservePetId("reserved1");
       const entry = await provider.getPetEntry("reserved1");
       expect(entry.status).toBe("reserved");
     });
 
-    test("returns filled with pet data for set pet", async () => {
+    test("returns the pet status with pet data for a set pet", async () => {
       const provider = new MongoPetRepository();
       const pet = makePet({ name: "Lupe" });
       await provider.setPet("abc123", pet);
@@ -107,7 +116,7 @@ describe("MongoPetRepository", () => {
       if ("pet" in entry) expect(entry.pet.name).toBe("New");
     });
 
-    test("upgrades a reserved slot to filled", async () => {
+    test("upgrades a reserved slot to a registered pet", async () => {
       const provider = new MongoPetRepository();
       await provider.reservePetId("slot1");
       await provider.setPet("slot1", makePet({ name: "Upgraded" }));
@@ -152,7 +161,7 @@ describe("MongoPetRepository", () => {
       expect(await provider.reservePetId("dup2")).toBe(false);
     });
 
-    test("does not overwrite an existing filled pet", async () => {
+    test("does not overwrite an existing registered pet", async () => {
       const provider = new MongoPetRepository();
       await provider.setPet("existing1", makePet({ name: "Keep me" }));
       await provider.reservePetId("existing1");
@@ -184,6 +193,34 @@ describe("MongoPetRepository", () => {
       expect(ids).toHaveLength(2);
       expect(ids).toContain("id1");
       expect(ids).toContain("id2");
+    });
+  });
+
+  describe("unrecognised stored status", () => {
+    const registered = {
+      name: "Odd",
+      pictureUrl: "https://example.com/odd.jpg",
+      birthdate: "2020-01-01T00:00:00.000Z",
+      guardianIds: [],
+    };
+
+    test("getPetEntry reports a doc with an unknown status as missing instead of publishing it", async () => {
+      await insertRawPet({ _id: "odd1", status: "archived", ...registered });
+      const provider = new MongoPetRepository();
+      expect(await provider.getPetEntry("odd1")).toEqual({ status: "missing" });
+    });
+
+    test("getPetEntry reports a doc without a status as missing", async () => {
+      await insertRawPet({ _id: "odd2", ...registered });
+      const provider = new MongoPetRepository();
+      expect(await provider.getPetEntry("odd2")).toEqual({ status: "missing" });
+    });
+
+    test("listPetEntries skips docs with an unknown status and keeps the rest", async () => {
+      await insertRawPet({ _id: "odd3", status: "archived", ...registered });
+      const provider = new MongoPetRepository();
+      await provider.reservePetId("fine1");
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["fine1"]);
     });
   });
 
@@ -222,18 +259,28 @@ describe("MongoPetRepository", () => {
       expect(lost?.name).toBe("Rex");
     });
 
-    test("includes ISO timestamps and lists the newest entries first", async () => {
+    test("lists the newest entries first", async () => {
       const provider = new MongoPetRepository();
       await provider.reservePetId("older");
       await new Promise((resolve) => setTimeout(resolve, 5));
       await provider.reservePetId("newer");
 
-      const entries = await provider.listPetEntries();
-      expect(entries.map((e) => e.id)).toEqual(["newer", "older"]);
-      for (const entry of entries) {
-        expect(new Date(entry.createdAt ?? "").toISOString()).toBe(entry.createdAt as string);
-        expect(new Date(entry.updatedAt ?? "").toISOString()).toBe(entry.updatedAt as string);
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["newer", "older"]);
+    });
+
+    test("orders entries created in the same millisecond deterministically (by id, descending)", async () => {
+      const at = new Date("2026-01-01T00:00:00.000Z");
+      for (const id of ["b", "c", "a"]) {
+        await insertRawPet({ _id: id, status: "reserved", createdAt: at, updatedAt: at });
       }
+      const provider = new MongoPetRepository();
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["c", "b", "a"]);
+    });
+
+    test("does not break on docs that have no timestamps", async () => {
+      await cleanupClient.db("viewpet").collection("pets").insertOne({ _id: "legacy", status: "reserved" } as never);
+      const provider = new MongoPetRepository();
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["legacy"]);
     });
   });
 

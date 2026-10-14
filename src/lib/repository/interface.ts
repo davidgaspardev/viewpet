@@ -5,9 +5,6 @@ type PetEntrySummaryItem = {
   status: PetStatus;
   /** Only present once a pet has been registered. */
   name?: string;
-  /** ISO-8601. Absent in providers that don't track timestamps (local JSON). */
-  createdAt?: string;
-  updatedAt?: string;
 };
 
 type PetEntrySummary = PetEntrySummaryItem[];
@@ -16,6 +13,7 @@ type PetEntrySummary = PetEntrySummaryItem[];
 export interface PetRepository {
   getPetEntry(hashId: string): Promise<PetEntry>;
   setPet(hashId: string, pet: Pet): Promise<void>;
+  /** Every id with its status, newest first. Ids stored with an unrecognised status are left out. */
   listPetEntries(): Promise<PetEntrySummary>;
 }
 
