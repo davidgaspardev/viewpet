@@ -4,37 +4,8 @@
  */
 
 import { parseBaseUrl, parseOrigin } from "@/lib/utils/base-url";
+import { resolveOrigin, type HeaderReader } from "@/lib/utils/origin";
 import { TAG_ROUTE } from "@/lib/utils/routes";
-
-type HeaderReader = { get(name: string): string | null };
-
-/** First entry of a possibly comma-separated forwarded header ("a.com, b.com"). */
-function first(value: string | null): string | undefined {
-  return value?.split(",")[0]?.trim() || undefined;
-}
-
-/**
- * Resolve the base URL (no trailing slash) printed on the tags.
- *
- * `siteUrl` (the `SITE_URL` env) wins when set, and must be an absolute
- * http(s) URL — a typo'd value returns `null` instead of silently producing
- * tags that can never resolve. Otherwise the origin is rebuilt from the
- * request's forwarded/host headers.
- */
-export function resolveOrigin(siteUrl: string | undefined, headers: HeaderReader): string | null {
-  const configured = parseBaseUrl(siteUrl);
-  if (configured !== undefined) return configured;
-
-  const host = first(headers.get("x-forwarded-host")) ?? first(headers.get("host")) ?? "localhost:3000";
-  const forwardedProto = first(headers.get("x-forwarded-proto"));
-  const proto =
-    forwardedProto === "http" || forwardedProto === "https"
-      ? forwardedProto
-      : host.startsWith("localhost")
-        ? "http"
-        : "https";
-  return `${proto}://${host}`;
-}
 
 export type QrBaseResult =
   | { ok: true; base: string }
