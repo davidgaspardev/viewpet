@@ -1,9 +1,13 @@
-import type { Pet, PetEntry } from "@/types/pet";
+import type { Pet, PetEntry, PetStatus } from "@/types/pet";
 
 type PetEntrySummary = Array<{
   id: string;
-  status: PetEntry["status"];
+  status: PetStatus;
+  /** Only present once a pet has been registered. */
   name?: string;
+  /** ISO-8601. Absent in providers that don't track timestamps (local JSON). */
+  createdAt?: string;
+  updatedAt?: string;
 }>;
 
 /** Production interface — the three operations the request path actually needs. */

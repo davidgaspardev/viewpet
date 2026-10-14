@@ -28,9 +28,9 @@ DATABASE_PROVIDER=mongodb  # produção — exige MONGODB_URI
 ```ts
 const repository = PetRepositoryFactory.getInstance();  // sempre Seedable
 
-repository.getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | empty | filled
+repository.getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | reserved | active | lost
 repository.setPet(hashId, pet): Promise<void>
-repository.listPetEntries(): Promise<Array<{ id, status, name? }>>
+repository.listPetEntries(): Promise<Array<{ id, status, name?, createdAt?, updatedAt? }>>  // mais recentes primeiro
 
 // scripts/admin only (Seedable):
 repository.reservePetId(hashId): Promise<boolean>   // true = reservou agora, false = id já existia
@@ -39,13 +39,14 @@ repository.listPetIds(): Promise<string[]>
 PetRepositoryFactory.reset(): void  // usado por testes entre casos
 ```
 
-Os três estados:
+Os estados são os do domínio (`PetStatus` em `src/types/pet.ts`), os mesmos que o provider grava — não há tradução entre camadas:
 
-| Estado    | Quando                                            |
-| --------- | ------------------------------------------------- |
-| `missing` | Nenhum registro pro hashId                        |
-| `empty`   | Registro reservado sem dados de pet               |
-| `filled`  | Registro com `Pet` completo          |
+| Estado     | Quando                                                       |
+| ---------- | ------------------------------------------------------------ |
+| `missing`  | Nenhum registro pro hashId (nunca foi emitido)               |
+| `reserved` | Id emitido (QR gerado), ainda sem dados de pet               |
+| `active`   | Pet cadastrado                                               |
+| `lost`     | Pet cadastrado e marcado como perdido (`lostEvent` aberto)   |
 
 ## Modelo de dados
 

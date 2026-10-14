@@ -17,7 +17,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Seedable, Pet, PetEntry } from "./interface";
+import type { Seedable, Pet, PetEntry, PetEntrySummary } from "./interface";
 import type { PetStore } from "@/types/pet";
 
 const DEFAULT_PATH = join(process.cwd(), "data", "local.db.json");
@@ -46,8 +46,8 @@ export class LocalPetRepository implements Seedable {
     const data = this.read();
     if (!(hashId in data)) return { status: "missing" };
     const value = data[hashId];
-    if (value === null) return { status: "empty" };
-    return { status: "filled", pet: value };
+    if (value === null) return { status: "reserved" };
+    return { status: value.status, pet: value };
   }
 
   async setPet(hashId: string, pet: Pet): Promise<void> {
@@ -68,14 +68,16 @@ export class LocalPetRepository implements Seedable {
     return Object.keys(this.read());
   }
 
-  async listPetEntries(): Promise<
-    Array<{ id: string; status: PetEntry["status"]; name?: string }>
-  > {
-    return Object.entries(this.read()).map(([id, value]) =>
-      value === null
-        ? { id, status: "empty" }
-        : { id, status: "filled", name: value.name },
-    );
+  async listPetEntries(): Promise<PetEntrySummary> {
+    // The JSON store keeps no timestamps; object order is insertion order, so
+    // reversing it gives the same "newest first" the Mongo provider returns.
+    return Object.entries(this.read())
+      .map(([id, value]) =>
+        value === null
+          ? { id, status: "reserved" as const }
+          : { id, status: value.status, name: value.name },
+      )
+      .reverse();
   }
 
   clear(): void {

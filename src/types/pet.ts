@@ -1,6 +1,14 @@
 export type SocialPlatform = "instagram" | "facebook" | "x" | "tiktok";
 export type PhoneChannel = "call" | "whatsapp" | "sms";
-export type PetStatus = "active" | "lost";
+/**
+ * Lifecycle of a pet id, shared by the domain and every storage provider:
+ *  - `reserved` — id handed out (QR printed) but nobody registered a pet yet
+ *  - `active`   — registered and safe
+ *  - `lost`     — registered and currently missing
+ */
+export type PetStatus = "reserved" | "active" | "lost";
+/** Statuses of an id that already has a pet behind it. */
+export type RegisteredPetStatus = Exclude<PetStatus, "reserved">;
 export type PetGender = "male" | "female";
 
 export interface Phone {
@@ -61,7 +69,7 @@ export interface Pet {
   pictureUrl: string;
   /** ISO-8601 */
   birthdate: string;
-  status: PetStatus;
+  status: RegisteredPetStatus;
   gender?: PetGender;
   /** only populated when status === "lost" */
   lostEvent?: LostEvent;
@@ -78,8 +86,12 @@ export interface Pet {
  */
 export type PetStore = Record<string, Pet | null>;
 
-/** Discriminated union returned by the KVS lookup so callers can branch UX. */
+/**
+ * Discriminated union returned by the KVS lookup so callers can branch UX.
+ * `missing` means the id was never issued; every other status is the pet's
+ * own `PetStatus`.
+ */
 export type PetEntry =
   | { status: "missing" }
-  | { status: "empty" }
-  | { status: "filled"; pet: Pet };
+  | { status: "reserved" }
+  | { status: RegisteredPetStatus; pet: Pet };

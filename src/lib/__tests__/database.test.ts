@@ -110,21 +110,21 @@ describe("Database Provider Abstraction", () => {
         expect(entry.status).toBe("missing");
       });
 
-      test("returns empty status for reserved keys", async () => {
+      test("returns reserved status for reserved keys", async () => {
         await provider.reservePetId("reserved");
         const entry = await provider.getPetEntry("reserved");
-        expect(entry.status).toBe("empty");
+        expect(entry.status).toBe("reserved");
       });
 
-      test("returns filled status with pet data", async () => {
+      test("returns the pet status with pet data", async () => {
         const pet = makePet({
           name: "Max",
           guardians: [makeGuardian({ name: "John Doe", email: "john@example.com" })],
         });
         await provider.setPet("max123", pet);
         const entry = await provider.getPetEntry("max123");
-        expect(entry.status).toBe("filled");
-        if (entry.status === "filled") {
+        expect(entry.status).toBe("active");
+        if ("pet" in entry) {
           expect(entry.pet).toEqual(pet);
         }
       });
@@ -138,8 +138,8 @@ describe("Database Provider Abstraction", () => {
         });
         await provider.setPet("luna456", pet);
         const entry = await provider.getPetEntry("luna456");
-        expect(entry.status).toBe("filled");
-        if (entry.status === "filled") {
+        expect(entry.status).toBe("active");
+        if ("pet" in entry) {
           expect(entry.pet.name).toBe("Luna");
           expect(entry.pet.guardians[0]?.name).toBe("Jane Smith");
         }
@@ -149,7 +149,7 @@ describe("Database Provider Abstraction", () => {
         await provider.setPet("test123", makePet({ name: "Old Name" }));
         await provider.setPet("test123", makePet({ name: "New Name" }));
         const entry = await provider.getPetEntry("test123");
-        if (entry.status === "filled") {
+        if ("pet" in entry) {
           expect(entry.pet.name).toBe("New Name");
         }
       });
@@ -163,7 +163,7 @@ describe("Database Provider Abstraction", () => {
         });
         await provider.setPet("multi", pet);
         const entry = await provider.getPetEntry("multi");
-        if (entry.status === "filled") {
+        if ("pet" in entry) {
           expect(entry.pet.guardians).toHaveLength(2);
           expect(entry.pet.guardians[0]?.name).toBe("Primary");
           expect(entry.pet.guardians[1]?.name).toBe("Secondary");
@@ -175,7 +175,7 @@ describe("Database Provider Abstraction", () => {
       test("reserves a non-existent ID", async () => {
         expect(await provider.reservePetId("reserved1")).toBe(true);
         const entry = await provider.getPetEntry("reserved1");
-        expect(entry.status).toBe("empty");
+        expect(entry.status).toBe("reserved");
       });
 
       test("reports false when the ID is already taken", async () => {
@@ -189,8 +189,8 @@ describe("Database Provider Abstraction", () => {
         await provider.setPet("existing123", makePet({ name: "Existing" }));
         await provider.reservePetId("existing123");
         const entry = await provider.getPetEntry("existing123");
-        expect(entry.status).toBe("filled");
-        if (entry.status === "filled") {
+        expect(entry.status).toBe("active");
+        if ("pet" in entry) {
           expect(entry.pet.name).toBe("Existing");
         }
       });
@@ -219,19 +219,39 @@ describe("Database Provider Abstraction", () => {
       });
 
       test("returns entries with correct status and names", async () => {
-        await provider.reservePetId("empty1");
-        await provider.setPet("filled1", makePet({ name: "Buddy" }));
+        await provider.reservePetId("reserved1");
+        await provider.setPet("active1", makePet({ name: "Buddy" }));
+        await provider.setPet(
+          "lost1",
+          makePet({
+            name: "Rex",
+            status: "lost",
+            lostEvent: { startedAt: "2026-01-01T00:00:00.000Z", endedAt: null },
+          }),
+        );
 
         const entries = await provider.listPetEntries();
-        expect(entries).toHaveLength(2);
+        expect(entries).toHaveLength(3);
 
-        const emptyEntry = entries.find((e) => e.id === "empty1");
-        expect(emptyEntry?.status).toBe("empty");
-        expect(emptyEntry?.name).toBeUndefined();
+        const reserved = entries.find((e) => e.id === "reserved1");
+        expect(reserved?.status).toBe("reserved");
+        expect(reserved?.name).toBeUndefined();
 
-        const filledEntry = entries.find((e) => e.id === "filled1");
-        expect(filledEntry?.status).toBe("filled");
-        expect(filledEntry?.name).toBe("Buddy");
+        const active = entries.find((e) => e.id === "active1");
+        expect(active?.status).toBe("active");
+        expect(active?.name).toBe("Buddy");
+
+        const lost = entries.find((e) => e.id === "lost1");
+        expect(lost?.status).toBe("lost");
+        expect(lost?.name).toBe("Rex");
+      });
+
+      test("lists the newest entries first", async () => {
+        await provider.reservePetId("older");
+        await provider.reservePetId("newer");
+
+        const entries = await provider.listPetEntries();
+        expect(entries.map((e) => e.id)).toEqual(["newer", "older"]);
       });
     });
 
@@ -253,7 +273,7 @@ describe("Database Provider Abstraction", () => {
         await provider.setPet("persist1", makePet({ name: "Persistent" }));
         const provider2 = new LocalPetRepository(TEST_DB_PATH);
         const entry = await provider2.getPetEntry("persist1");
-        expect(entry.status).toBe("filled");
+        expect(entry.status).toBe("active");
       });
     });
   });
@@ -279,11 +299,11 @@ describe("Database Provider Abstraction", () => {
       expect(missingEntry.status).toBe("missing");
 
       await facadeProvider.reservePetId("reserved");
-      expect((await facadeProvider.getPetEntry("reserved")).status).toBe("empty");
+      expect((await facadeProvider.getPetEntry("reserved")).status).toBe("reserved");
 
       const pet = makePet({ name: "Facade Test" });
       await facadeProvider.setPet("facade123", pet);
-      expect((await facadeProvider.getPetEntry("facade123")).status).toBe("filled");
+      expect((await facadeProvider.getPetEntry("facade123")).status).toBe("active");
 
       const ids = await facadeProvider.listPetIds();
       expect(ids).toContain("reserved");

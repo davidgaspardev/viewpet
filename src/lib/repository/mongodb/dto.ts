@@ -1,8 +1,6 @@
-import { Guardian, PetGender } from "@/types/pet";
+import { Guardian, PetGender, PetStatus } from "@/types/pet";
 import { ObjectId } from "mongodb";
 
-
-export type PetStatus = "reserved" | "active" | "lost";
 
 export type PetDoc = {
   _id: string;
