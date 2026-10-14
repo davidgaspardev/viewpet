@@ -1,38 +1,17 @@
-import { NextResponse, type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
-import { ADMIN_REALM, isAdminAuthorized } from "@/features/admin/auth";
-import { hostnameOf, resolveQrRedirect } from "@/lib/utils/qr-redirect";
+import { guardAdmin } from "@/features/admin/guard";
+import { handleQrRedirect } from "@/features/qr-redirect/handler";
 
-/** The /admin gate: HTTP Basic auth against `ADMIN_PASSWORD`. */
-async function guardAdmin(request: NextRequest) {
-  if (await isAdminAuthorized(request.headers.get("authorization"))) {
-    return NextResponse.next();
-  }
-
-  const configured = Boolean(process.env.ADMIN_PASSWORD);
-  return new NextResponse(
-    configured ? "Authentication required" : "Admin is disabled: ADMIN_PASSWORD is not set",
-    {
-      status: configured ? 401 : 503,
-      headers: {
-        "Cache-Control": "no-store",
-        ...(configured && {
-          "WWW-Authenticate": `Basic realm="${ADMIN_REALM}", charset="UTF-8"`,
-        }),
-      },
-    },
-  );
-}
-
+/**
+ * Next allows one middleware file, so this only dispatches; each concern lives
+ * in its own module and they never run for the same request.
+ */
 export async function middleware(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return guardAdmin(request);
-
-  // Short QR host: <QR_BASE_URL>/<id> -> <SITE_URL>/tag/<id>, configured at runtime.
-  const hostname = hostnameOf(request.headers.get("x-forwarded-host") ?? request.headers.get("host"));
-  const destination = resolveQrRedirect({ hostname, pathname, search }, process.env);
-  return destination ? NextResponse.redirect(destination, 307) : NextResponse.next();
+  return handleQrRedirect(request);
 }
 
 export const config = {

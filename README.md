@@ -21,6 +21,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 | **Estados da entrada** | `missing` (id desconhecido, 404), `empty` (reservado, mostra o formulário de cadastro), `filled` (perfil publicado). No Mongo o status é `reserved`, `active` ou `lost`. | `PetEntry`, `getPetEntry()` |
 | **Tutor** (guardian) | Quem cuida do pet e é contatado por quem o encontra. Um pet tem até 2. | `Guardian`, `src/types/pet.ts` |
 | **Host curto** (`qr.`) | `qr.viewpet.info`: o endereço estável que vai no QR e só redireciona pra página real, pra poder mudar a página sem reimprimir nada. | `src/middleware.ts`, seção "Host curto do QR" |
+| **Scan** | Uma visita que chegou pelo QR (pelo host curto), em vez de por um link direto. O redirect marca com o cookie `qr_scan`; a página lê. | `src/features/qr-redirect/`, `src/lib/utils/qr-scan.ts` |
 | **Pendant** | O modelo 3D da tag (o pingente), em Rust/Bevy. Ainda não está nesta branch: está sendo desenvolvido à parte. | `native/pendant/` (outro branch) |
 | **`pet-tag`** | A feature web que mostra o carrossel 3D de modelos de tag (Three.js). Fala do **desenho** da tag, não da rota `/tag`. | `src/features/pet-tag/` |
 
@@ -127,6 +128,10 @@ https://qr.viewpet.info/<hashId>  ──307──▶  <SITE_URL>/tag/<hashId>
 - **307, não 308:** o redirect é temporário de propósito, pra o destino poder mudar sem navegadores ou CDNs lembrarem do antigo.
 - **Só ids válidos:** o middleware só roda pra caminhos de 12 caracteres alfanuméricos e só redireciona `hashId`s bem formados; qualquer outra coisa segue pro 404 normal. O id é convertido pra minúsculas, então digitar em maiúsculas também funciona.
 - **Barra final** (`/<id>/`): o Next primeiro normaliza pra `/<id>` (308) e depois vem o redirect, ou seja, uma volta a mais.
+- **Sinal de scan (`qr_scan`):** um redirect não leva nada que a página consiga ler (o `Referer` é de onde o scan começou, nunca o host `qr.`). Por isso o redirect também seta o cookie `qr_scan=1`: 60 segundos, `HttpOnly`, `SameSite=Lax`, `Secure` quando o site é https, com `Path` restrito à própria tag (`/tag/<id>`). A página `/tag/<id>` lê o cookie no servidor e expõe `data-scan-source="qr"` (ou `"direct"`) no `<main>`. Isso é a base do futuro "receber a localização de quem escaneou um pet perdido"; a coleta em si (com consentimento) ainda não existe.
+  - **Domínio em comum:** o cookie é gravado pelo host `qr.` e lido pelo site, então precisa de `Domain` no pai comum (`qr.viewpet.info` + `viewpet.info` → `viewpet.info`). Se os dois hosts não compartilham um domínio pai, o redirect funciona mas **sem** o cookie.
+  - **Limites:** recarregar a página em até 60s ainda conta como scan, e o cookie não é assinado (qualquer um pode forjá-lo no próprio navegador). Serve como sinal, não como prova; deduplicar e validar fica pra feature de localização.
+- **Isolamento no middleware:** o Next só permite um `middleware.ts`, então ele apenas despacha. O guard do `/admin` (`src/features/admin/guard.ts`) e o redirect do QR (`src/features/qr-redirect/handler.ts`) são módulos separados que nunca rodam na mesma requisição. O redirect nunca lança: se algo falhar, loga e deixa a requisição seguir normalmente; o guard falha fechado (500, nunca a página).
 - **Onde o caminho `/tag` mora:** `src/lib/utils/routes.ts`. Quem monta ou revalida essa URL usa `tagPath(id)`.
 
 ## Estados do banco
