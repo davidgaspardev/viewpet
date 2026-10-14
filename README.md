@@ -18,7 +18,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 | **QR Code** | O código impresso na tag. Codifica `<QR_BASE_URL>/<hashId>` (o host curto) ou, sem ele, `<SITE_URL>/tag/<hashId>`. Gerado no `/admin` ou pelo CLI de reserva. | `src/lib/qrcode/`, `src/features/admin/` |
 | **`hashId`** | O identificador opaco de 12 caracteres da tag. É também a chave do registro do pet no banco: um `hashId` ↔ uma tag ↔ um pet. | `src/lib/utils/id-format.ts`, `ids.ts` |
 | **Reserva** | Gerar um `hashId` e guardá-lo no banco vazio, antes de existir pet. Acontece antes da impressão. | `bun run reserve`, página `/admin` |
-| **Estados da entrada** | `missing` (id desconhecido, 404), `empty` (reservado, mostra o formulário de cadastro), `filled` (perfil publicado). No Mongo o status é `reserved`, `active` ou `lost`. | `PetEntry`, `getPetEntry()` |
+| **Estados da entrada** | `missing` (id desconhecido, 404), `reserved` (reservado, mostra o formulário de cadastro), `active` (perfil publicado) ou `lost` (perfil publicado, pet perdido). Domínio e banco usam o mesmo `PetStatus`. | `PetEntry`, `getPetEntry()` |
 | **Tutor** (guardian) | Quem cuida do pet e é contatado por quem o encontra. Um pet tem até 2. | `Guardian`, `src/types/pet.ts` |
 | **Host curto** (`qr.`) | `qr.viewpet.info`: o endereço estável que vai no QR e só redireciona pra página real, pra poder mudar a página sem reimprimir nada. | `src/middleware.ts`, seção "Host curto do QR" |
 | **Scan** | Uma visita que chegou pelo QR (pelo host curto), em vez de por um link direto. O redirect marca com o cookie `qr_scan`; a página lê. | `src/features/qr-redirect/`, `src/lib/utils/qr-scan.ts` |
@@ -90,8 +90,8 @@ O QR Code é impresso **antes** do tutor cadastrar o pet.
 
 1. **Reserva** um lote: `bun run reserve --count N`. Cada ID entra no banco com status `reserved`.
 2. **Imprime** o QR, um ID por plaquinha. Em produção ele aponta pro host curto (`https://qr.viewpet.info/<hashId>`, veja abaixo); sem host curto, direto pra `https://<domain>/tag/<hashId>`.
-3. **Tutor acessa a URL**, a página detecta `empty` e renderiza o `PetForm`.
-4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `filled`.
+3. **Tutor acessa a URL**, a página detecta `reserved` e renderiza o `PetForm`.
+4. **Submit** dispara a Server Action que grava o perfil e chama `revalidatePath`. A página recarrega no estado `active`.
 
 Pipeline típico:
 
@@ -102,11 +102,11 @@ bun run reserve --count 100 > qr-batch.txt
 
 ### Página de admin (`/admin`)
 
-Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
+Alternativa visual ao CLI: lista todos os IDs do banco com o status de cada um (`reserved` / `active` / `lost`), com filtro por status, e gera um novo ID (já reservado no banco) por vez.
 
 - **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
-- **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
-- **URL do QR:** `${QR_BASE_URL}/<id>` quando `QR_BASE_URL` está definida; senão `<SITE_URL>/tag/<id>`; senão a origem da requisição. As duas variáveis precisam ser URLs http(s) absolutas, senão a geração falha antes de reservar qualquer ID. Em produção, defina `QR_BASE_URL` e `SITE_URL` para não imprimir etiquetas com o host errado.
+- **QR Code:** renderizado no browser a partir do ID (não é guardado em lugar nenhum), então qualquer ID existente pode ter o QR visto e baixado de novo. Pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
+- **URL do QR:** `${QR_BASE_URL}/<id>` quando `QR_BASE_URL` está definida; senão `<SITE_URL>/tag/<id>`; senão a origem da requisição. As duas variáveis precisam ser URLs http(s) absolutas, senão a página mostra o erro em vez da lista (nenhum ID é reservado). Em produção, defina `QR_BASE_URL` e `SITE_URL` para não imprimir etiquetas com o host errado.
 - **Segurança:** Basic auth trafega a senha em texto claro, então sirva só via HTTPS. Não há rate limit na aplicação: use uma senha longa e limite tentativas no proxy/CDN.
 
 ### Host curto do QR (`qr.viewpet.info`)
@@ -138,11 +138,12 @@ https://qr.viewpet.info/<hashId>  ──307──▶  <SITE_URL>/tag/<hashId>
 
 `src/lib/repository/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
 
-| Estado    | Quando                                            | Comportamento da página         |
-| --------- | ------------------------------------------------- | ------------------------------- |
-| `missing` | Nenhum registro para o hashId                     | `notFound()` → `not-found.tsx`  |
-| `empty`   | Registro reservado, sem dados                     | Renderiza `PetForm`             |
-| `filled`  | Registro com `PetPublicProfile` completo          | Renderiza o perfil público      |
+| Estado     | Quando                                            | Comportamento da página                |
+| ---------- | ------------------------------------------------- | -------------------------------------- |
+| `missing`  | Nenhum registro para o hashId                     | `notFound()` → `not-found.tsx`         |
+| `reserved` | Registro reservado, sem dados                     | Renderiza `PetForm`                    |
+| `active`   | Pet cadastrado                                    | Renderiza o perfil público             |
+| `lost`     | Pet cadastrado e marcado como perdido             | Perfil público com o banner de perdido |
 
 ## Schema de dados
 
@@ -150,7 +151,7 @@ https://qr.viewpet.info/<hashId>  ──307──▶  <SITE_URL>/tag/<hashId>
 
 ```ts
 type PhoneChannel = "call" | "whatsapp" | "sms";
-type PetStatus    = "active" | "lost";
+type PetStatus    = "reserved" | "active" | "lost";  // Pet.status só usa active | lost
 
 interface Phone {
   e164:     string;         // digits-only E.164, sem "+" (ex.: "5548985596882")
@@ -219,8 +220,8 @@ Arquivo: `data/local.db.json`. Formato flat — mesma estrutura do mock `src/dat
 }
 ```
 
-- `null` → slot reservado (estado `empty`)
-- Objeto → `PetPublicProfile` completo (estado `filled`)
+- `null` → slot reservado (estado `reserved`)
+- Objeto → `Pet` completo (estado `active` ou `lost`, conforme o `status` do objeto)
 
 Sem separação por collection — o local é só pra dev e teste, então deixa o JSON legível e o seed simétrico ao banco. A separação tutor/pet é problema do Mongo (ver abaixo).
 
@@ -235,7 +236,7 @@ Duas collections, referência por `ObjectId`. O Pet aponta pros guardiões via `
 | Campo         | Tipo                              | Notas                                                            |
 | ------------- | --------------------------------- | ---------------------------------------------------------------- |
 | `_id`         | `string`                          | O próprio `hashId` (12 chars). Chave primária natural.           |
-| `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. `reserved` mapeia pra estado `empty` no facade.   |
+| `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. Mesmo `PetStatus` do domínio, sem tradução.       |
 | `name`        | `string`                          | Ausente quando `status === "reserved"`.                          |
 | `pictureUrl`  | `string`                          | Ausente quando `status === "reserved"`.                          |
 | `birthdate`   | `string` (ISO-8601)               | Ausente quando `status === "reserved"`.                          |
@@ -288,15 +289,17 @@ MONGODB_URI=mongodb://localhost:27017/viewpet
 
 ## URLs de exemplo
 
-O seed (`src/data/pets.json`) inclui pets ativos e slots vazios:
+O seed (`src/data/pets.json`) inclui pets ativos e um perdido:
 
-| HashId         | Estado   | Pet   |
-| -------------- | -------- | ----- |
-| `nuxw4d83wraa` | `filled` | Lupe  |
-| `n7k8w3zwe49w` | `filled` | Mel   |
-| `egqr8k6at59j` | `filled` | Thor  |
-| `vcjv2sx3s5bd` | `filled` | Scooby |
-| `6pb46abtj58e` | `filled` | Mel   |
+| HashId         | Estado   | Pet    |
+| -------------- | -------- | ------ |
+| `nuxw4d83wraa` | `active` | Lupe |
+| `n7k8w3zwe49w` | `active` | Mel |
+| `egqr8k6at59j` | `lost` | Thor |
+| `ujvb9gd7afsx` | `active` | Bob |
+| `8p6qt38gj7be` | `active` | Luna |
+| `vcjv2sx3s5bd` | `active` | Scooby |
+| `6pb46abtj58e` | `active` | Mel |
 
 Exemplos:
 
@@ -329,10 +332,10 @@ src/
 │   ├── globals.css               # tailwind base/components/utilities
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
 │   └── tag/[id]/
-│       ├── page.tsx              # branch missing/empty/filled
+│       ├── page.tsx              # branch missing/reserved/active/lost
 │       ├── actions.ts            # Server Action do submit
 │       ├── ImageUpload.tsx       # input de foto (com câmera)
-│       ├── PetForm.tsx           # formulário pra estado empty
+│       ├── PetForm.tsx           # formulário pra estado reserved
 │       └── not-found.tsx         # fallback 404
 ├── features/
 │   ├── pet-profile/components/   # PetHero, GuardianContact, SocialLinks, ActionButton, ImageUpload, PetForm

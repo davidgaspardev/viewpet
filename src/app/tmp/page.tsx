@@ -18,6 +18,11 @@ export default async function HomePage() {
     resolveLocale(),
   ]);
   const dict = getDictionary(locale);
+  const badges = {
+    reserved: { label: dict.statusReserved, className: "bg-amber-100 text-amber-800" },
+    active: { label: dict.statusActive, className: "bg-ink/10 text-ink" },
+    lost: { label: dict.statusLost, className: "bg-red-100 text-red-800" },
+  } as const;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-8 px-6 py-16 text-center">
@@ -32,7 +37,7 @@ export default async function HomePage() {
         <h2 className="text-sm font-semibold text-muted">{dict.tryExamples}</h2>
         <ul className="mt-3 space-y-2">
           {entries.map((entry) => {
-            const isFilled = entry.status === "filled";
+            const badge = badges[entry.status];
             return (
               <li
                 key={entry.id}
@@ -43,7 +48,7 @@ export default async function HomePage() {
                   className="font-mono text-sm text-ink hover:underline"
                 >
                   {tagPath(entry.id)}
-                  {isFilled && entry.name ? (
+                  {entry.name ? (
                     <span className="ml-2 font-sans text-xs text-muted">
                       ({entry.name})
                     </span>
@@ -52,12 +57,10 @@ export default async function HomePage() {
                 <span
                   className={
                     "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider " +
-                    (isFilled
-                      ? "bg-ink/10 text-ink"
-                      : "bg-amber-100 text-amber-800")
+                    badge.className
                   }
                 >
-                  {isFilled ? dict.statusFilled : dict.statusEmpty}
+                  {badge.label}
                 </span>
               </li>
             );

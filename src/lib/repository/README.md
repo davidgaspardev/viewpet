@@ -28,9 +28,9 @@ DATABASE_PROVIDER=mongodb  # produção — exige MONGODB_URI
 ```ts
 const repository = PetRepositoryFactory.getInstance();  // sempre Seedable
 
-repository.getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | empty | filled
+repository.getPetEntry(hashId): Promise<PetEntry>     // PetEntry = missing | reserved | active | lost
 repository.setPet(hashId, pet): Promise<void>
-repository.listPetEntries(): Promise<Array<{ id, status, name? }>>
+repository.listPetEntries(): Promise<Array<{ id, status, name? }>>  // mais recentes primeiro
 
 // scripts/admin only (Seedable):
 repository.reservePetId(hashId): Promise<boolean>   // true = reservou agora, false = id já existia
@@ -39,13 +39,16 @@ repository.listPetIds(): Promise<string[]>
 PetRepositoryFactory.reset(): void  // usado por testes entre casos
 ```
 
-Os três estados:
+Os estados são os do domínio (`PetStatus` em `src/types/pet.ts`), os mesmos que o provider grava — não há tradução entre camadas:
 
-| Estado    | Quando                                            |
-| --------- | ------------------------------------------------- |
-| `missing` | Nenhum registro pro hashId                        |
-| `empty`   | Registro reservado sem dados de pet               |
-| `filled`  | Registro com `Pet` completo          |
+| Estado     | Quando                                                       |
+| ---------- | ------------------------------------------------------------ |
+| `missing`  | Nenhum registro pro hashId (nunca foi emitido)               |
+| `reserved` | Id emitido (QR gerado), ainda sem dados de pet               |
+| `active`   | Pet cadastrado                                               |
+| `lost`     | Pet cadastrado e marcado como perdido (`lostEvent` aberto)   |
+
+**Status desconhecido:** o banco não é tipado em runtime. Um registro com `status` fora de `reserved \| active \| lost` (editado à mão, escrito por outra versão) nunca é publicado: `getPetEntry` responde `missing` (404) e `listPetEntries` o omite, com um `console.warn` com o id. Os providers usam `isPetStatus` / `isRegisteredStatus` (`src/types/pet.ts`) nessa fronteira.
 
 ## Modelo de dados
 

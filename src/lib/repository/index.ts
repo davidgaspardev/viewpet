@@ -6,4 +6,4 @@
 export { PetRepositoryFactory } from "./factory";
 export type { DatabaseProviderType } from "./factory";
 
-export type { PetRepository, Seedable, Pet, PetEntry, PetEntrySummary } from "./interface";
+export type { PetRepository, Seedable, Pet, PetEntry, PetEntrySummary, PetEntrySummaryItem } from "./interface";

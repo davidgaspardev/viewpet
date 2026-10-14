@@ -33,11 +33,11 @@ export async function generateMetadata({
   // Keep public pet profiles out of search engines. The page is meant to be
   // reached via the QR on the tag, not surfaced by a generic Google query —
   // and the guardian's phone/email shouldn't be discoverable that way.
-  // Applies to every state (missing/empty/filled) so the form view and 404
+  // Applies to every state (missing/reserved/active/lost) so the form view and 404
   // page are also out of the index.
   const robots = { index: false, follow: false } as const;
 
-  if (entry.status !== "filled") {
+  if (entry.status === "missing" || entry.status === "reserved") {
     return { title: "View Pet", robots };
   }
   return {
@@ -63,7 +63,7 @@ export default async function ViewPetPage(props: PageProps) {
 
   const locale = await resolveLocale(lang);
 
-  if (entry.status === "empty") {
+  if (entry.status === "reserved") {
     return <PetForm hashId={id} locale={locale} />;
   }
 

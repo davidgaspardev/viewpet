@@ -43,8 +43,8 @@
  */
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
-import type { Seedable, Pet, PetEntry } from "../interface";
-import type { Guardian, LostEvent } from "@/types/pet";
+import type { Seedable, Pet, PetEntry, PetEntrySummary } from "../interface";
+import { isPetStatus, isRegisteredStatus, type Guardian, type LostEvent } from "@/types/pet";
 import { PetDoc, GuardianDoc, LostEventDoc } from "./dto";
 
 type Collections = {
@@ -280,8 +280,10 @@ export class MongoPetRepository implements Seedable {
 
     const doc = docs[0];
     if (!doc) return { status: "missing" };
-    if (doc.status === "reserved") return { status: "empty" };
-    if (doc.status !== "active" && doc.status !== "lost") return { status: "missing" };
+    if (doc.status === "reserved") return { status: "reserved" };
+    // The collection is untyped at runtime: never publish a doc whose status
+    // we don't recognise (hand-edited, or written by a newer version).
+    if (!isRegisteredStatus(doc.status)) return { status: "missing" };
 
     // Preserve the original order encoded in guardianIds (lookup result is unordered)
     const byId = new Map(
@@ -308,7 +310,7 @@ export class MongoPetRepository implements Seedable {
       ...(openEvent ? { lostEvent: lostEventDocToEntity(openEvent) } : {}),
       guardians,
     };
-    return { status: "filled", pet };
+    return { status: pet.status, pet };
   }
 
   async setPet(hashId: string, pet: Pet): Promise<void> {
@@ -400,18 +402,24 @@ export class MongoPetRepository implements Seedable {
     return docs.map((d) => d._id);
   }
 
-  async listPetEntries(): Promise<
-    Array<{ id: string; status: PetEntry["status"]; name?: string }>
-  > {
+  async listPetEntries(): Promise<PetEntrySummary> {
     const { pets } = await this.db();
     const docs = await pets
       .find({}, { projection: { _id: 1, status: 1, name: 1 } })
+      // Millisecond timestamps collide when a batch is reserved in a burst;
+      // the id tie-break keeps the order stable between requests.
+      .sort({ createdAt: -1, _id: -1 })
       .toArray();
-    return docs.map((doc) =>
-      doc.status === "reserved"
-        ? { id: doc._id, status: "empty" as const }
-        : { id: doc._id, status: "filled" as const, ...(doc.name ? { name: doc.name } : {}) },
-    );
+
+    const entries: PetEntrySummary = [];
+    for (const doc of docs) {
+      if (isPetStatus(doc.status)) {
+        entries.push({ id: doc._id, status: doc.status, ...(doc.name ? { name: doc.name } : {}) });
+      } else {
+        console.warn(`[Repository] Skipping "${doc._id}": unrecognised status ${JSON.stringify(doc.status)}`);
+      }
+    }
+    return entries;
   }
 }
 

@@ -1,6 +1,29 @@
 export type SocialPlatform = "instagram" | "facebook" | "x" | "tiktok";
 export type PhoneChannel = "call" | "whatsapp" | "sms";
-export type PetStatus = "active" | "lost";
+/**
+ * Lifecycle of a pet id, shared by the domain and every storage provider:
+ *  - `reserved` — id handed out (QR printed) but nobody registered a pet yet
+ *  - `active`   — registered and safe
+ *  - `lost`     — registered and currently missing
+ */
+export const PET_STATUSES = ["reserved", "active", "lost"] as const;
+export type PetStatus = (typeof PET_STATUSES)[number];
+/** Statuses of an id that already has a pet behind it. */
+export type RegisteredPetStatus = Exclude<PetStatus, "reserved">;
+
+/**
+ * Runtime check for a status read from storage. The compile-time union can't
+ * vouch for what is actually persisted (hand-edited docs, a status added by a
+ * newer deploy), and an unrecognised value must never be treated as a pet that
+ * is safe to publish: providers answer `missing` instead.
+ */
+export function isPetStatus(value: unknown): value is PetStatus {
+  return typeof value === "string" && (PET_STATUSES as readonly string[]).includes(value);
+}
+
+export function isRegisteredStatus(value: unknown): value is RegisteredPetStatus {
+  return isPetStatus(value) && value !== "reserved";
+}
 export type PetGender = "male" | "female";
 
 export interface Phone {
@@ -61,7 +84,7 @@ export interface Pet {
   pictureUrl: string;
   /** ISO-8601 */
   birthdate: string;
-  status: PetStatus;
+  status: RegisteredPetStatus;
   gender?: PetGender;
   /** only populated when status === "lost" */
   lostEvent?: LostEvent;
@@ -74,12 +97,16 @@ export interface Pet {
  *
  *  - hashId not present   → key never registered (→ 404)
  *  - hashId present, null → key reserved but no data yet (→ render form)
- *  - hashId present, Pet  → fully filled record
+ *  - hashId present, Pet  → registered pet (`active` or `lost`)
  */
 export type PetStore = Record<string, Pet | null>;
 
-/** Discriminated union returned by the KVS lookup so callers can branch UX. */
+/**
+ * Discriminated union returned by the KVS lookup so callers can branch UX.
+ * `missing` means the id was never issued; every other status is the pet's
+ * own `PetStatus`.
+ */
 export type PetEntry =
   | { status: "missing" }
-  | { status: "empty" }
-  | { status: "filled"; pet: Pet };
+  | { status: "reserved" }
+  | { status: RegisteredPetStatus; pet: Pet };

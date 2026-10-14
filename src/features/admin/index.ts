@@ -1,1 +1,1 @@
-export { generateQr, type GeneratedQr, type GenerateQrResult } from "./actions";
+export { reserveId, type ReserveIdResult } from "./actions";

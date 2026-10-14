@@ -38,6 +38,15 @@ function makePet(overrides: Partial<Pet> = {}): Pet {
   };
 }
 
+/** Writes a pets document straight to the collection, bypassing the repository (and its types). */
+async function insertRawPet(doc: Record<string, unknown>): Promise<void> {
+  const now = new Date();
+  await cleanupClient
+    .db("viewpet")
+    .collection("pets")
+    .insertOne({ createdAt: now, updatedAt: now, ...doc } as never);
+}
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   process.env.MONGODB_URI = mongod.getUri() + "viewpet";
@@ -68,20 +77,20 @@ describe("MongoPetRepository", () => {
       expect(entry.status).toBe("missing");
     });
 
-    test("returns empty for reserved hashId", async () => {
+    test("returns reserved for a reserved hashId", async () => {
       const provider = new MongoPetRepository();
       await provider.reservePetId("reserved1");
       const entry = await provider.getPetEntry("reserved1");
-      expect(entry.status).toBe("empty");
+      expect(entry.status).toBe("reserved");
     });
 
-    test("returns filled with pet data for set pet", async () => {
+    test("returns the pet status with pet data for a set pet", async () => {
       const provider = new MongoPetRepository();
       const pet = makePet({ name: "Lupe" });
       await provider.setPet("abc123", pet);
       const entry = await provider.getPetEntry("abc123");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") {
+      expect(entry.status).toBe("active");
+      if ("pet" in entry) {
         expect(entry.pet.name).toBe("Lupe");
         expect(entry.pet.status).toBe("active");
         expect(entry.pet.guardians[0]?.name).toBe("Test Guardian");
@@ -95,8 +104,8 @@ describe("MongoPetRepository", () => {
       const pet = makePet({ name: "Mel" });
       await provider.setPet("mel123", pet);
       const entry = await provider.getPetEntry("mel123");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") expect(entry.pet).toEqual(pet);
+      expect(entry.status).toBe("active");
+      if ("pet" in entry) expect(entry.pet).toEqual(pet);
     });
 
     test("overwrites existing pet data", async () => {
@@ -104,15 +113,15 @@ describe("MongoPetRepository", () => {
       await provider.setPet("dup1", makePet({ name: "Old" }));
       await provider.setPet("dup1", makePet({ name: "New" }));
       const entry = await provider.getPetEntry("dup1");
-      if (entry.status === "filled") expect(entry.pet.name).toBe("New");
+      if ("pet" in entry) expect(entry.pet.name).toBe("New");
     });
 
-    test("upgrades a reserved slot to filled", async () => {
+    test("upgrades a reserved slot to a registered pet", async () => {
       const provider = new MongoPetRepository();
       await provider.reservePetId("slot1");
       await provider.setPet("slot1", makePet({ name: "Upgraded" }));
       const entry = await provider.getPetEntry("slot1");
-      expect(entry.status).toBe("filled");
+      expect(entry.status).toBe("active");
     });
 
     test("stores 'reserved' status as document field, not as pet status", async () => {
@@ -141,7 +150,7 @@ describe("MongoPetRepository", () => {
       const provider = new MongoPetRepository();
       expect(await provider.reservePetId("new1")).toBe(true);
       const entry = await provider.getPetEntry("new1");
-      expect(entry.status).toBe("empty");
+      expect(entry.status).toBe("reserved");
     });
 
     test("reports false when the ID is already taken", async () => {
@@ -152,13 +161,13 @@ describe("MongoPetRepository", () => {
       expect(await provider.reservePetId("dup2")).toBe(false);
     });
 
-    test("does not overwrite an existing filled pet", async () => {
+    test("does not overwrite an existing registered pet", async () => {
       const provider = new MongoPetRepository();
       await provider.setPet("existing1", makePet({ name: "Keep me" }));
       await provider.reservePetId("existing1");
       const entry = await provider.getPetEntry("existing1");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") expect(entry.pet.name).toBe("Keep me");
+      expect(entry.status).toBe("active");
+      if ("pet" in entry) expect(entry.pet.name).toBe("Keep me");
     });
 
     test("does not overwrite an existing reserved slot", async () => {
@@ -187,6 +196,34 @@ describe("MongoPetRepository", () => {
     });
   });
 
+  describe("unrecognised stored status", () => {
+    const registered = {
+      name: "Odd",
+      pictureUrl: "https://example.com/odd.jpg",
+      birthdate: "2020-01-01T00:00:00.000Z",
+      guardianIds: [],
+    };
+
+    test("getPetEntry reports a doc with an unknown status as missing instead of publishing it", async () => {
+      await insertRawPet({ _id: "odd1", status: "archived", ...registered });
+      const provider = new MongoPetRepository();
+      expect(await provider.getPetEntry("odd1")).toEqual({ status: "missing" });
+    });
+
+    test("getPetEntry reports a doc without a status as missing", async () => {
+      await insertRawPet({ _id: "odd2", ...registered });
+      const provider = new MongoPetRepository();
+      expect(await provider.getPetEntry("odd2")).toEqual({ status: "missing" });
+    });
+
+    test("listPetEntries skips docs with an unknown status and keeps the rest", async () => {
+      await insertRawPet({ _id: "odd3", status: "archived", ...registered });
+      const provider = new MongoPetRepository();
+      await provider.reservePetId("fine1");
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["fine1"]);
+    });
+  });
+
   describe("listPetEntries", () => {
     test("returns empty array when collection is empty", async () => {
       const provider = new MongoPetRepository();
@@ -195,19 +232,55 @@ describe("MongoPetRepository", () => {
 
     test("returns correct status and name for each entry", async () => {
       const provider = new MongoPetRepository();
-      await provider.reservePetId("empty1");
-      await provider.setPet("filled1", makePet({ name: "Buddy" }));
+      await provider.reservePetId("reserved1");
+      await provider.setPet("active1", makePet({ name: "Buddy" }));
+      await provider.setPet(
+        "lost1",
+        makePet({
+          name: "Rex",
+          status: "lost",
+          lostEvent: { startedAt: "2026-01-01T00:00:00.000Z", endedAt: null },
+        }),
+      );
 
       const entries = await provider.listPetEntries();
-      expect(entries).toHaveLength(2);
+      expect(entries).toHaveLength(3);
 
-      const empty = entries.find((e) => e.id === "empty1");
-      expect(empty?.status).toBe("empty");
-      expect(empty?.name).toBeUndefined();
+      const reserved = entries.find((e) => e.id === "reserved1");
+      expect(reserved?.status).toBe("reserved");
+      expect(reserved?.name).toBeUndefined();
 
-      const filled = entries.find((e) => e.id === "filled1");
-      expect(filled?.status).toBe("filled");
-      expect(filled?.name).toBe("Buddy");
+      const active = entries.find((e) => e.id === "active1");
+      expect(active?.status).toBe("active");
+      expect(active?.name).toBe("Buddy");
+
+      const lost = entries.find((e) => e.id === "lost1");
+      expect(lost?.status).toBe("lost");
+      expect(lost?.name).toBe("Rex");
+    });
+
+    test("lists the newest entries first", async () => {
+      const provider = new MongoPetRepository();
+      await provider.reservePetId("older");
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      await provider.reservePetId("newer");
+
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["newer", "older"]);
+    });
+
+    test("orders entries created in the same millisecond deterministically (by id, descending)", async () => {
+      const at = new Date("2026-01-01T00:00:00.000Z");
+      for (const id of ["b", "c", "a"]) {
+        await insertRawPet({ _id: id, status: "reserved", createdAt: at, updatedAt: at });
+      }
+      const provider = new MongoPetRepository();
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["c", "b", "a"]);
+    });
+
+    test("does not break on docs that have no timestamps", async () => {
+      await cleanupClient.db("viewpet").collection("pets").insertOne({ _id: "legacy", status: "reserved" } as never);
+      const provider = new MongoPetRepository();
+      expect((await provider.listPetEntries()).map((e) => e.id)).toEqual(["legacy"]);
     });
   });
 
@@ -222,8 +295,8 @@ describe("MongoPetRepository", () => {
       });
       await provider.setPet("ordered1", pet);
       const entry = await provider.getPetEntry("ordered1");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") {
+      expect(entry.status).toBe("active");
+      if ("pet" in entry) {
         expect(entry.pet.guardians[0]?.name).toBe("Primary");
         expect(entry.pet.guardians[1]?.name).toBe("Secondary");
       }
@@ -272,8 +345,8 @@ describe("MongoPetRepository", () => {
       );
 
       const entry = await provider.getPetEntry("lost1");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") {
+      expect(entry.status).toBe("lost");
+      if ("pet" in entry) {
         expect(entry.pet.status).toBe("lost");
         expect(entry.pet.lostEvent?.startedAt).toBe(startedAt);
         expect(entry.pet.lostEvent?.endedAt).toBeNull();
@@ -296,8 +369,8 @@ describe("MongoPetRepository", () => {
 
       // pet.lostEvent is gone because there's no longer an OPEN event...
       const entry = await provider.getPetEntry("lost2");
-      expect(entry.status).toBe("filled");
-      if (entry.status === "filled") {
+      expect(entry.status).toBe("active");
+      if ("pet" in entry) {
         expect(entry.pet.status).toBe("active");
         expect(entry.pet.lostEvent).toBeUndefined();
       }
@@ -338,7 +411,7 @@ describe("MongoPetRepository", () => {
       );
 
       const entry = await provider.getPetEntry("lost3");
-      if (entry.status === "filled") {
+      if ("pet" in entry) {
         // startedAt of an open event is never overwritten
         expect(entry.pet.lostEvent?.startedAt).toBe(originalStart);
         expect(entry.pet.lostEvent?.lastSeenLocation).toBe("B");

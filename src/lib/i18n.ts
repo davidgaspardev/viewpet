@@ -39,7 +39,7 @@ type Dictionary = {
   landingTitle: string;
   landingBody: string;
   tryExamples: string;
-  // Form (empty entry → cadastro)
+  // Form (reserved entry → cadastro)
   formTitle: string;
   formIntro: (id: string) => string;
   petSection: string;
@@ -79,8 +79,9 @@ type Dictionary = {
   errorBirthdateFuture: string;
   errorBirthdateTooOld: string;
   // Landing status
-  statusEmpty: string;
-  statusFilled: string;
+  statusReserved: string;
+  statusActive: string;
+  statusLost: string;
   // Lost-pet banner
   lostBadge: string;
   lostHeadline: (petName: string) => string;
@@ -151,8 +152,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
-    statusEmpty: "vazio — pronto para cadastro",
-    statusFilled: "preenchido",
+    statusReserved: "reservado — pronto para cadastro",
+    statusActive: "ativo",
+    statusLost: "perdido",
     lostBadge: "PERDIDO",
     lostHeadline: (petName) => `${petName} está perdido`,
     lostBody:
@@ -221,8 +223,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
-    statusEmpty: "empty — ready for setup",
-    statusFilled: "filled",
+    statusReserved: "reserved — ready for setup",
+    statusActive: "active",
+    statusLost: "lost",
     lostBadge: "LOST",
     lostHeadline: (petName) => `${petName} is missing`,
     lostBody:
