@@ -37,3 +37,19 @@ describe("resolveOrigin", () => {
     expect(resolveOrigin(undefined, headers({ host: "example.com" }))).toBe("https://example.com");
   });
 });
+
+describe("resolveOrigin with malformed or hostile headers", () => {
+  test("returns null instead of an unparsable origin", () => {
+    for (const host of ["bad host", "evil.com/path", "user@evil.com", "a b.com:80"]) {
+      expect(resolveOrigin(undefined, headers({ "x-forwarded-host": host }))).toBeNull();
+      expect(resolveOrigin(undefined, headers({ host }))).toBeNull();
+    }
+  });
+
+  test("a clean host (with or without port) still resolves", () => {
+    expect(resolveOrigin(undefined, headers({ host: "viewpet.info:8443", "x-forwarded-proto": "https" }))).toBe(
+      "https://viewpet.info:8443",
+    );
+  });
+});
+

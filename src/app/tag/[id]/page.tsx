@@ -2,12 +2,11 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { PetRepositoryFactory } from "@/lib/repository";
 import { formatAge } from "@/lib/utils/age";
-import { resolveOrigin } from "@/lib/utils/origin";
 import { QR_SCAN_COOKIE, scanSourceFrom } from "@/lib/utils/qr-scan";
 import { resolveLocale } from "@/lib/i18n.server";
-import { petMetadata } from "@/features/pet-profile/metadata";
+import { getPetEntry } from "@/features/pet-profile/get-entry";
+import { metadataBaseFor, petMetadata } from "@/features/pet-profile/metadata";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
@@ -33,18 +32,15 @@ export async function generateMetadata({
   const { id } = await params;
   const { lang } = await searchParams;
   const [entry, locale, requestHeaders] = await Promise.all([
-    PetRepositoryFactory.getInstance().getPetEntry(id),
+    getPetEntry(id),
     resolveLocale(lang),
     headers(),
   ]);
 
   // The preview image is a relative path; link previews need it absolute.
-  const origin = resolveOrigin(process.env.SITE_URL, requestHeaders);
+  const metadataBase = metadataBaseFor(process.env.SITE_URL, requestHeaders);
 
-  return {
-    ...petMetadata(entry, locale),
-    ...(origin && { metadataBase: new URL(origin) }),
-  };
+  return { ...petMetadata(entry, locale), ...(metadataBase && { metadataBase }) };
 }
 
 /**
@@ -58,7 +54,7 @@ export default async function ViewPetPage(props: PageProps) {
   const { id } = await params;
   const { lang } = await searchParams;
 
-  const entry = await PetRepositoryFactory.getInstance().getPetEntry(id);
+  const entry = await getPetEntry(id);
   if (entry.status === "missing") notFound();
 
   const locale = await resolveLocale(lang);

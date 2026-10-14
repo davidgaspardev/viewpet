@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Pet, PetEntry } from "@/types/pet";
-import { OG_IMAGE_QUALITY, OG_IMAGE_WIDTH, ogImagePath, petMetadata } from "../metadata";
+import { metadataBaseFor, OG_IMAGE_QUALITY, OG_IMAGE_WIDTH, ogImagePath, petMetadata } from "../metadata";
 
 const pet = (over: Partial<Pet> = {}): Pet => ({
   name: "Lupe",
@@ -71,13 +71,32 @@ describe("petMetadata", () => {
   });
 
   test("unknown and reserved tags get a generic preview with no pet data and no image", () => {
+    const description = "Veja as informações do seu pet e do dono em uma página pública.";
     for (const entry of [{ status: "missing" } as PetEntry, { status: "reserved" } as PetEntry]) {
       const m = petMetadata(entry, "pt-BR");
       expect(m.title).toBe("View Pet");
-      expect(m.description).toBeUndefined();
-      expect(m.twitter).toBeUndefined();
-      expect(m.openGraph).toEqual({ type: "website", siteName: "View Pet", locale: "pt_BR", title: "View Pet" });
+      expect(m.description).toBe(description);
+      expect(m.twitter).toEqual({ card: "summary", title: "View Pet", description });
+      expect(m.openGraph).toEqual({ type: "website", siteName: "View Pet", locale: "pt_BR", title: "View Pet", description });
     }
+  });
+
+  test("the generic preview follows the language too (no Portuguese under en_US)", () => {
+    const m = petMetadata({ status: "reserved" } as PetEntry, "en-US");
+    expect(m.description).toBe("See your pet's and guardian's information on a public page.");
+    expect(m.openGraph).toMatchObject({ locale: "en_US", description: m.description });
+    expect(m.twitter).toMatchObject({ description: m.description });
+  });
+
+  test("a pet with no photo gets a plain summary card and no image tags", () => {
+    const m = petMetadata(filled(pet({ pictureUrl: "" })), "pt-BR");
+    expect(m.twitter).toEqual({
+      card: "summary",
+      title: "Lupe · View Pet",
+      description: "Perfil de Lupe. Contate o tutor pelo link.",
+    });
+    expect(m.openGraph).not.toHaveProperty("images");
+    expect(m.openGraph).toMatchObject({ title: "Lupe · View Pet" });
   });
 
   test("nothing about the guardian leaks into the tags", () => {
@@ -85,5 +104,31 @@ describe("petMetadata", () => {
     for (const secret of ["Ana Silva", "ana@example.com", "5548999999999"]) {
       expect(dump).not.toContain(secret);
     }
+  });
+});
+
+describe("metadataBaseFor", () => {
+  const headers = (h: Record<string, string>) => ({ get: (name: string) => h[name.toLowerCase()] ?? null });
+
+  test("SITE_URL wins", () => {
+    expect(metadataBaseFor("https://viewpet.info", headers({ host: "other.example" }))?.href).toBe("https://viewpet.info/");
+  });
+
+  test("without SITE_URL it uses the request's own origin", () => {
+    expect(metadataBaseFor(undefined, headers({ host: "viewpet.info", "x-forwarded-proto": "https" }))?.origin).toBe("https://viewpet.info");
+    expect(metadataBaseFor("", headers({ host: "localhost:3000" }))?.origin).toBe("http://localhost:3000");
+  });
+
+  test("a set-but-invalid SITE_URL falls back to the request origin instead of Next's localhost default", () => {
+    expect(metadataBaseFor("viewpet.info", headers({ host: "viewpet.info" }))?.origin).toBe("https://viewpet.info");
+    expect(metadataBaseFor("ftp://viewpet.info", headers({ host: "viewpet.info" }))?.origin).toBe("https://viewpet.info");
+  });
+
+  test("never throws on hostile or malformed host headers", () => {
+    for (const host of ["bad host", "a b", "evil.com/path", "user@evil.com", "", "[", "ex ample.com:80"]) {
+      expect(() => metadataBaseFor(undefined, headers({ "x-forwarded-host": host, host }))).not.toThrow();
+      expect(() => metadataBaseFor("oops", headers({ "x-forwarded-host": host }))).not.toThrow();
+    }
+    expect(metadataBaseFor(undefined, headers({ "x-forwarded-host": "bad host", host: "bad host" }))).toBeUndefined();
   });
 });
