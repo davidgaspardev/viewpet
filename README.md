@@ -85,22 +85,23 @@ bun run reserve --count 100 > qr-batch.txt
 
 ### Página de admin (`/admin`)
 
-Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
+Alternativa visual ao CLI: lista todos os IDs do banco com o status de cada um (`reserved` / `active` / `lost`), com filtro por status, e gera um novo ID (já reservado no banco) por vez.
 
 - **Acesso:** HTTP Basic auth com a senha de `ADMIN_PASSWORD` (qualquer usuário). Sem login próprio; se a variável não estiver definida, `/admin` responde `503`.
-- **QR Code:** pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
-- **URL do QR:** `SITE_URL` quando definida (precisa ser uma URL http(s) absoluta, senão a geração falha antes de reservar qualquer ID), senão a origem da requisição. Em produção, defina `SITE_URL` para não imprimir etiquetas com o host errado.
+- **QR Code:** renderizado no browser a partir do ID (não é guardado em lugar nenhum), então qualquer ID existente pode ter o QR visto e baixado de novo. Pontos circulares, finders em anéis concêntricos, logo ViewPet no centro (correção de erro nível H). Download em SVG. O logo vem de `src/lib/qrcode/logo.ts`, gerado a partir de `public/logo.svg`: rode `bun run qr-logo` se a marca mudar.
+- **URL do QR:** `SITE_URL` quando definida (precisa ser uma URL http(s) absoluta, senão a página mostra o erro em vez da lista), senão a origem da requisição. Em produção, defina `SITE_URL` para não imprimir etiquetas com o host errado.
 - **Segurança:** Basic auth trafega a senha em texto claro, então sirva só via HTTPS. Não há rate limit na aplicação: use uma senha longa e limite tentativas no proxy/CDN.
 
 ## Estados do banco
 
 `src/lib/repository/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
 
-| Estado    | Quando                                            | Comportamento da página         |
-| --------- | ------------------------------------------------- | ------------------------------- |
-| `missing` | Nenhum registro para o hashId                     | `notFound()` → `not-found.tsx`  |
-| `empty`   | Registro reservado, sem dados                     | Renderiza `PetForm`             |
-| `filled`  | Registro com `PetPublicProfile` completo          | Renderiza o perfil público      |
+| Estado     | Quando                                            | Comportamento da página                |
+| ---------- | ------------------------------------------------- | -------------------------------------- |
+| `missing`  | Nenhum registro para o hashId                     | `notFound()` → `not-found.tsx`         |
+| `reserved` | Registro reservado, sem dados                     | Renderiza `PetForm`                    |
+| `active`   | Pet cadastrado                                    | Renderiza o perfil público             |
+| `lost`     | Pet cadastrado e marcado como perdido             | Perfil público com o banner de perdido |
 
 ## Schema de dados
 
@@ -108,7 +109,7 @@ Alternativa visual ao CLI: gera um QR Code por vez e já reserva o ID no banco.
 
 ```ts
 type PhoneChannel = "call" | "whatsapp" | "sms";
-type PetStatus    = "active" | "lost";
+type PetStatus    = "reserved" | "active" | "lost";  // Pet.status só usa active | lost
 
 interface Phone {
   e164:     string;         // digits-only E.164, sem "+" (ex.: "5548985596882")
@@ -193,7 +194,7 @@ Duas collections, referência por `ObjectId`. O Pet aponta pros guardiões via `
 | Campo         | Tipo                              | Notas                                                            |
 | ------------- | --------------------------------- | ---------------------------------------------------------------- |
 | `_id`         | `string`                          | O próprio `hashId` (12 chars). Chave primária natural.           |
-| `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. `reserved` mapeia pra estado `empty` no facade.   |
+| `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. Mesmo `PetStatus` do domínio, sem tradução.       |
 | `name`        | `string`                          | Ausente quando `status === "reserved"`.                          |
 | `pictureUrl`  | `string`                          | Ausente quando `status === "reserved"`.                          |
 | `birthdate`   | `string` (ISO-8601)               | Ausente quando `status === "reserved"`.                          |

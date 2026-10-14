@@ -1,6 +1,6 @@
 import type { Pet, PetEntry, PetStatus } from "@/types/pet";
 
-type PetEntrySummary = Array<{
+type PetEntrySummaryItem = {
   id: string;
   status: PetStatus;
   /** Only present once a pet has been registered. */
@@ -8,7 +8,9 @@ type PetEntrySummary = Array<{
   /** ISO-8601. Absent in providers that don't track timestamps (local JSON). */
   createdAt?: string;
   updatedAt?: string;
-}>;
+};
+
+type PetEntrySummary = PetEntrySummaryItem[];
 
 /** Production interface — the three operations the request path actually needs. */
 export interface PetRepository {
@@ -24,4 +26,4 @@ export interface Seedable extends PetRepository {
   listPetIds(): Promise<string[]>;
 }
 
-export type { Pet, PetEntry, PetEntrySummary };
+export type { Pet, PetEntry, PetEntrySummary, PetEntrySummaryItem };
