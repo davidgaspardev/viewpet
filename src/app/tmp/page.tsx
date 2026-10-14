@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PetRepositoryFactory } from "@/lib/repository";
 import { getDictionary } from "@/lib/i18n";
+import { tagPath } from "@/lib/utils/routes";
 import { resolveLocale } from "@/lib/i18n.server";
 import { Logo } from "@/ui/Logo";
 
@@ -38,10 +39,10 @@ export default async function HomePage() {
                 className="flex items-center justify-between gap-3"
               >
                 <Link
-                  href={`/view/${entry.id}`}
+                  href={tagPath(entry.id)}
                   className="font-mono text-sm text-ink hover:underline"
                 >
-                  /view/{entry.id}
+                  {tagPath(entry.id)}
                   {isFilled && entry.name ? (
                     <span className="ml-2 font-sans text-xs text-muted">
                       ({entry.name})

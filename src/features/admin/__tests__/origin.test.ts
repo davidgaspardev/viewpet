@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveOrigin } from "../origin";
+import { resolveOrigin, resolveQrBase } from "../origin";
 
 const headers = (h: Record<string, string>) => ({
   get: (name: string) => h[name.toLowerCase()] ?? null,
@@ -35,5 +35,51 @@ describe("resolveOrigin", () => {
       "http://localhost:3000",
     );
     expect(resolveOrigin(undefined, headers({ host: "example.com" }))).toBe("https://example.com");
+  });
+});
+
+describe("resolveQrBase", () => {
+  test("QR_BASE_URL wins: a QR encodes <QR_BASE_URL>/<id>", () => {
+    expect(
+      resolveQrBase({ QR_BASE_URL: "https://qr.viewpet.info/", SITE_URL: "https://viewpet.info" }, headers({})),
+    ).toEqual({ ok: true, base: "https://qr.viewpet.info" });
+  });
+
+  test("without QR_BASE_URL the QR points straight at the tag page", () => {
+    expect(resolveQrBase({ SITE_URL: "https://viewpet.info" }, headers({}))).toEqual({
+      ok: true,
+      base: "https://viewpet.info/tag",
+    });
+    expect(resolveQrBase({}, headers({ host: "localhost:3000" }))).toEqual({
+      ok: true,
+      base: "http://localhost:3000/tag",
+    });
+  });
+
+  test("QR_BASE_URL also needs a valid SITE_URL: the redirect can't exist without a destination", () => {
+    const qr = "https://qr.viewpet.info";
+    for (const site of [undefined, "", "oops", "ftp://viewpet.info"]) {
+      expect(resolveQrBase({ QR_BASE_URL: qr, SITE_URL: site }, headers({ host: "viewpet.info" }))).toEqual({
+        ok: false,
+        error: "invalid_site_url",
+      });
+    }
+  });
+
+  test("QR_BASE_URL must be a bare origin: a path could never be redirected", () => {
+    expect(
+      resolveQrBase({ QR_BASE_URL: "https://viewpet.info/q", SITE_URL: "https://viewpet.info" }, headers({})),
+    ).toEqual({ ok: false, error: "invalid_qr_base_url" });
+  });
+
+  test("a set-but-invalid value is an error, never silently ignored", () => {
+    expect(resolveQrBase({ QR_BASE_URL: "qr.viewpet.info" }, headers({}))).toEqual({
+      ok: false,
+      error: "invalid_qr_base_url",
+    });
+    expect(resolveQrBase({ SITE_URL: "viewpet.info" }, headers({}))).toEqual({
+      ok: false,
+      error: "invalid_site_url",
+    });
   });
 });

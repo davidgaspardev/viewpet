@@ -4,6 +4,8 @@
  * lives in `i18n.server.ts`.
  */
 
+import { TAG_ROUTE } from "./utils/routes";
+
 export const SUPPORTED_LOCALES = ["pt-BR", "en-US"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "pt-BR";
@@ -108,8 +110,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       "Não encontramos nenhum pet com esse identificador. Verifique o link e tente novamente.",
     backHome: "Voltar ao início",
     landingTitle: "View Pet",
-    landingBody:
-      "Acesse /view/<hashId> para visualizar a página pública de um pet.",
+    landingBody: `Acesse ${TAG_ROUTE}/<hashId> para visualizar a página pública de um pet.`,
     tryExamples: "Exemplos para testar:",
     formTitle: "Cadastrar pet",
     formIntro: (id) =>
@@ -179,7 +180,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       "We couldn't find a pet with that identifier. Please check the link and try again.",
     backHome: "Back to home",
     landingTitle: "View Pet",
-    landingBody: "Visit /view/<hashId> to see a pet's public profile.",
+    landingBody: `Visit ${TAG_ROUTE}/<hashId> to see a pet's public profile.`,
     tryExamples: "Try these examples:",
     formTitle: "Set up this pet",
     formIntro: (id) =>

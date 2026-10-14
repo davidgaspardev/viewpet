@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { PetRepositoryFactory } from "@/lib/repository";
 import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
+import { tagPath } from "@/lib/utils/routes";
 import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform, PetGender } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
@@ -128,7 +129,7 @@ export async function submitPet(
   };
 
   await PetRepositoryFactory.getInstance().setPet(hashId, pet);
-  revalidatePath(`/view/${hashId}`);
+  revalidatePath(tagPath(hashId));
 
   return { status: "success" };
 }
