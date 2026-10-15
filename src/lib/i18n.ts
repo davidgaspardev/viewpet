@@ -78,6 +78,9 @@ type Dictionary = {
   errorBirthdateIncomplete: string;
   errorBirthdateFuture: string;
   errorBirthdateTooOld: string;
+  // Link previews (Open Graph / Twitter)
+  ogDescription: (petName: string) => string;
+  ogGenericDescription: string;
   // Landing status
   statusReserved: string;
   statusActive: string;
@@ -152,6 +155,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
+    ogDescription: (petName) => `Perfil de ${petName}. Contate o tutor pelo link.`,
+    ogGenericDescription: "Veja as informações do seu pet e do dono em uma página pública.",
     statusReserved: "reservado — pronto para cadastro",
     statusActive: "ativo",
     statusLost: "perdido",
@@ -223,6 +228,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
+    ogDescription: (petName) => `${petName}'s profile. Contact the guardian through the link.`,
+    ogGenericDescription: "See your pet's and guardian's information on a public page.",
     statusReserved: "reserved — ready for setup",
     statusActive: "active",
     statusLost: "lost",

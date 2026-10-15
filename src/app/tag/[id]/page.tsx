@@ -1,11 +1,12 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { PetRepositoryFactory } from "@/lib/repository";
 import { formatAge } from "@/lib/utils/age";
 import { QR_SCAN_COOKIE, scanSourceFrom } from "@/lib/utils/qr-scan";
 import { resolveLocale } from "@/lib/i18n.server";
+import { getPetEntry } from "@/features/pet-profile/get-entry";
+import { metadataBaseFor, petMetadata } from "@/features/pet-profile/metadata";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
@@ -26,25 +27,20 @@ type PageProps = {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const entry = await PetRepositoryFactory.getInstance().getPetEntry(id);
+  const { lang } = await searchParams;
+  const [entry, locale, requestHeaders] = await Promise.all([
+    getPetEntry(id),
+    resolveLocale(lang),
+    headers(),
+  ]);
 
-  // Keep public pet profiles out of search engines. The page is meant to be
-  // reached via the QR on the tag, not surfaced by a generic Google query —
-  // and the guardian's phone/email shouldn't be discoverable that way.
-  // Applies to every state (missing/reserved/active/lost) so the form view and 404
-  // page are also out of the index.
-  const robots = { index: false, follow: false } as const;
+  // The preview image is a relative path; link previews need it absolute.
+  const metadataBase = metadataBaseFor(process.env.SITE_URL, requestHeaders);
 
-  if (entry.status === "missing" || entry.status === "reserved") {
-    return { title: "View Pet", robots };
-  }
-  return {
-    title: `${entry.pet.name} · View Pet`,
-    description: `Página pública de ${entry.pet.name}.`,
-    robots,
-  };
+  return { ...petMetadata(entry, locale), ...(metadataBase && { metadataBase }) };
 }
 
 /**
@@ -58,7 +54,7 @@ export default async function ViewPetPage(props: PageProps) {
   const { id } = await params;
   const { lang } = await searchParams;
 
-  const entry = await PetRepositoryFactory.getInstance().getPetEntry(id);
+  const entry = await getPetEntry(id);
   if (entry.status === "missing") notFound();
 
   const locale = await resolveLocale(lang);

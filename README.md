@@ -134,6 +134,25 @@ https://qr.viewpet.info/<hashId>  ──307──▶  <SITE_URL>/tag/<hashId>
 - **Isolamento no middleware:** o Next só permite um `middleware.ts`, então ele apenas despacha. O guard do `/admin` (`src/features/admin/guard.ts`) e o redirect do QR (`src/features/qr-redirect/handler.ts`) são módulos separados que nunca rodam na mesma requisição. O redirect nunca lança: se algo falhar, loga e deixa a requisição seguir normalmente; o guard falha fechado (500, nunca a página).
 - **Onde o caminho `/tag` mora:** `src/lib/utils/routes.ts`. Quem monta ou revalida essa URL usa `tagPath(id)`.
 
+## Pré-visualização de links (Open Graph)
+
+Quando alguém cola `/tag/<id>` no WhatsApp, Telegram, iMessage ou Slack, o app de mensagem lê as tags do `<head>` e monta um cartão: foto grande, título e descrição. Elas vêm de `src/features/pet-profile/metadata.ts`.
+
+| Tag | Valor |
+|-----|-------|
+| `og:title` / `twitter:title` | `{nome} · View Pet` |
+| `og:description` | `Perfil de {nome}. Contate o tutor pelo link.` (ou em inglês, conforme o idioma) |
+| `og:image` / `twitter:image` | a foto do pet, **reduzida** pelo otimizador de imagens do Next (`/_next/image?url=…&w=640&q=75`) |
+| `twitter:card` | `summary_large_image` |
+
+- **Foto pequena de propósito:** uploads podem ter vários MB e os apps de mensagem costumam descartar imagens grandes no preview (o número citado pro WhatsApp é ~300 KB; confirme num aparelho real). Um JPEG de 128 KB vira ~33 KB. Fotos enviadas como PNG continuam PNG (o otimizador só converte pra WebP quando o cliente aceita), então podem ficar maiores.
+- **URL absoluta:** a imagem é um caminho relativo e o Open Graph exige URL absoluta, então a página define o `metadataBase` a partir de `SITE_URL`. Se ela não estiver definida (ou for inválida), usa a origem da própria requisição, que vem dos cabeçalhos `Host`/`X-Forwarded-Host` (hosts malformados são rejeitados, nunca derrubam a página). Esses cabeçalhos só valem o que o proxy na frente garante, então **defina `SITE_URL` em produção**.
+- **Privacidade:** só o nome e a foto do pet aparecem. Nada do tutor (nome, telefone, e-mail). Tags desconhecidas ou só reservadas mostram um preview genérico (texto traduzido, sem dados de pet e sem imagem). Pet sem foto usa o cartão `summary`, sem imagem.
+- **Proxy de imagens:** o otimizador do Next só busca hosts permitidos em `images.remotePatterns` (`next.config.ts`), que hoje inclui um curinga `**` sobre https; ou seja, `/_next/image` também funciona pra imagens de qualquer outro site. Restringir isso aos hosts de storage de verdade (S3/R2/CloudFront) é uma mudança à parte, porque afeta as outras imagens do app; ao fazê-la, mantenha os hosts de onde vêm as fotos dos pets, senão os previews quebram em silêncio.
+- **`noindex` continua:** buscadores ficam de fora, mas os apps de mensagem ignoram essa regra, então os previews funcionam.
+- **Cache:** os apps guardam o preview por muito tempo e por URL. Hoje a foto só é definida no cadastro, então não há o que invalidar; se um dia ela puder ser trocada, a URL da imagem precisa mudar junto (por exemplo com um `?m=<timestamp>`).
+- **Ainda não existe:** imagem de marca gerada (`next/og`), preview específico de pet perdido e uma imagem estática de marca para o preview genérico.
+
 ## Estados do banco
 
 `src/lib/repository/index.ts` expõe `getPetEntry(hashId)` que retorna uma discriminated union:
