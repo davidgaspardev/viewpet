@@ -145,6 +145,66 @@ describe("MongoPetRepository", () => {
     });
   });
 
+  describe("breed, allergies and about", () => {
+    const rawPet = (id: string) =>
+      cleanupClient.db("viewpet").collection("pets").findOne({ _id: id } as never);
+
+    test("round-trip through the provider", async () => {
+      const provider = new MongoPetRepository();
+      const pet = makePet({
+        breed: "Shih Tzu",
+        allergies: ["Frango", "Pólen"],
+        about: "Calmo.\n\nAdora passear.",
+      });
+      await provider.setPet("details1", pet);
+      const entry = await provider.getPetEntry("details1");
+      expect("pet" in entry && entry.pet).toEqual(pet);
+    });
+
+    test("a pet saved without them stores none and loads without them", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("legacy1", makePet());
+      const raw = await rawPet("legacy1");
+      expect(raw).not.toHaveProperty("breed");
+      expect(raw).not.toHaveProperty("allergies");
+      expect(raw).not.toHaveProperty("about");
+      const entry = await provider.getPetEntry("legacy1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.breed).toBeUndefined();
+      expect(entry.pet.allergies).toBeUndefined();
+      expect(entry.pet.about).toBeUndefined();
+    });
+
+    test("an empty allergies list is not stored", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("empty1", makePet({ breed: "SRD", allergies: [] }));
+      expect(await rawPet("empty1")).not.toHaveProperty("allergies");
+    });
+
+    test("saving again without a field clears what was stored, instead of leaving it stale", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet(
+        "clear1",
+        makePet({ breed: "Beagle", allergies: ["Soja"], about: "Antigo." }),
+      );
+      await provider.setPet("clear1", makePet({ breed: "Beagle" }));
+      const raw = await rawPet("clear1");
+      expect(raw).toHaveProperty("breed", "Beagle");
+      expect(raw).not.toHaveProperty("allergies");
+      expect(raw).not.toHaveProperty("about");
+    });
+
+    test("saving again with new values replaces the old ones", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("swap1", makePet({ breed: "Beagle", allergies: ["Soja"] }));
+      await provider.setPet("swap1", makePet({ breed: "Poodle", allergies: ["Ovo", "Milho"] }));
+      const entry = await provider.getPetEntry("swap1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.breed).toBe("Poodle");
+      expect(entry.pet.allergies).toEqual(["Ovo", "Milho"]);
+    });
+  });
+
   describe("reservePetId", () => {
     test("reserves a new ID", async () => {
       const provider = new MongoPetRepository();

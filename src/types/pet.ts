@@ -86,6 +86,16 @@ export interface Pet {
   birthdate: string;
   status: RegisteredPetStatus;
   gender?: PetGender;
+  /**
+   * Free text — the registration form suggests common breeds as the user
+   * types, but any value is accepted. Required by the form, optional here so
+   * pets registered before the field existed keep loading.
+   */
+  breed?: string;
+  /** Free-text allergies, one entry each (the form suggests common ones). */
+  allergies?: string[];
+  /** Free-form paragraph with anything else worth knowing about the pet. */
+  about?: string;
   /** only populated when status === "lost" */
   lostEvent?: LostEvent;
   /** ordered: [0] is the primary guardian */

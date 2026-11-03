@@ -9,6 +9,9 @@ export type PetDoc = {
   pictureUrl?: string;
   birthdate?: string;
   gender?: PetGender;
+  breed?: string;
+  allergies?: string[];
+  about?: string;
   guardianIds?: ObjectId[];
   createdAt: Date;
   updatedAt: Date;

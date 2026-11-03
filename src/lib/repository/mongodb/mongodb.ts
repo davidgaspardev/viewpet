@@ -8,7 +8,8 @@
  *       _id: hashId,                 // the opaque QR id, used as primary key
  *       status: "reserved" | "active" | "lost",
  *       // when status !== "reserved":
- *       name, pictureUrl, birthdate,
+ *       name, pictureUrl, birthdate, gender?,
+ *       breed?, allergies?, about?,  // optional details; absent when not provided
  *       guardianIds: ObjectId[],     // ordered; [0] = primary
  *       createdAt, updatedAt,
  *     }
@@ -307,6 +308,9 @@ export class MongoPetRepository implements Seedable {
       birthdate: doc.birthdate,
       status: doc.status,
       ...(doc.gender ? { gender: doc.gender } : {}),
+      ...(doc.breed ? { breed: doc.breed } : {}),
+      ...(doc.allergies?.length ? { allergies: doc.allergies } : {}),
+      ...(doc.about ? { about: doc.about } : {}),
       ...(openEvent ? { lostEvent: lostEventDocToEntity(openEvent) } : {}),
       guardians,
     };
@@ -359,14 +363,24 @@ export class MongoPetRepository implements Seedable {
           pictureUrl: pet.pictureUrl,
           birthdate: pet.birthdate,
           ...(pet.gender ? { gender: pet.gender } : {}),
+          ...(pet.breed ? { breed: pet.breed } : {}),
+          ...(pet.allergies?.length ? { allergies: pet.allergies } : {}),
+          ...(pet.about ? { about: pet.about } : {}),
           guardianIds,
           updatedAt: now,
         },
         $setOnInsert: { createdAt: now },
-        // Legacy: clear any embedded `lostInfo` field from the pre-collection
-        // schema. Safe to run unconditionally — it's a no-op when the field
-        // isn't there. Can be removed once all production docs are migrated.
-        $unset: { lostInfo: "" } as Record<string, "">,
+        $unset: {
+          // Legacy: clear any embedded `lostInfo` field from the pre-collection
+          // schema. Safe to run unconditionally — it's a no-op when the field
+          // isn't there. Can be removed once all production docs are migrated.
+          lostInfo: "",
+          // The optional details are replaced wholesale: saving a pet without
+          // one clears what an earlier save stored, instead of leaving it stale.
+          ...(pet.breed ? {} : { breed: "" }),
+          ...(pet.allergies?.length ? {} : { allergies: "" }),
+          ...(pet.about ? {} : { about: "" }),
+        } as Record<string, "">,
       },
       { upsert: true },
     );
