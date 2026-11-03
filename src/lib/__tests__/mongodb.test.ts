@@ -12,7 +12,7 @@ import type { Pet } from "@/types/pet";
 let mongod: MongoMemoryServer;
 let cleanupClient: MongoClient;
 
-const COLLECTIONS = ["pets", "guardians", "lostEvents"] as const;
+const COLLECTIONS = ["pets", "guardians", "lost_events"] as const;
 
 function makePet(overrides: Partial<Pet> = {}): Pet {
   return {
@@ -378,7 +378,7 @@ describe("MongoPetRepository", () => {
       // ...but the doc survives in lostEvents with endedAt stamped.
       const events = await cleanupClient
         .db("viewpet")
-        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lost_events")
         .find({ petId: "lost2" })
         .toArray();
       expect(events).toHaveLength(1);
@@ -420,7 +420,7 @@ describe("MongoPetRepository", () => {
       // Still exactly one event for this pet — no duplicate insert
       const count = await cleanupClient
         .db("viewpet")
-        .collection("lostEvents")
+        .collection("lost_events")
         .countDocuments({ petId: "lost3" });
       expect(count).toBe(1);
     });
@@ -445,7 +445,7 @@ describe("MongoPetRepository", () => {
 
       const events = await cleanupClient
         .db("viewpet")
-        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lost_events")
         .find({ petId: "lost4" })
         .sort({ startedAt: 1 })
         .toArray();

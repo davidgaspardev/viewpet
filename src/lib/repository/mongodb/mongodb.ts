@@ -20,7 +20,7 @@
  *       createdAt, updatedAt,
  *     }
  *
- *   lostEvents:
+ *   lost_events:
  *     {
  *       _id: ObjectId,
  *       petId: hashId,               // FK to pets._id
@@ -72,7 +72,7 @@ export function resetMongoClient(): void {
 export class MongoPetRepository implements Seedable {
   private static readonly PETS = "pets";
   private static readonly GUARDIANS = "guardians";
-  private static readonly LOST_EVENTS = "lostEvents";
+  private static readonly LOST_EVENTS = "lost_events";
 
   // ── Private infrastructure ────────────────────────────────────────────────
 
