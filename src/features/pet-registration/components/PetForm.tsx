@@ -11,7 +11,10 @@ import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
 import { submitPet, type SubmitState } from "../actions";
+import { AboutField } from "./AboutField";
+import { AllergiesField } from "./AllergiesField";
 import { BirthdateField } from "./BirthdateField";
+import { BreedField } from "./BreedField";
 import { INPUT_CLASS } from "./fieldStyles";
 import { ImageUpload } from "./ImageUpload";
 
@@ -185,7 +188,9 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
             ? dict.errorPictureSize
             : state.message === "invalid_birthdate"
               ? dict.errorBirthdate
-              : dict.errorMissing
+              : state.message === "invalid_details"
+                ? dict.errorDetails
+                : dict.errorMissing
       : null;
 
   // `state` is a new object on every submission, so a repeated error is shown again.
@@ -232,8 +237,14 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
                 )}
               </div>
             </div>
+            <BreedField locale={locale} />
             <ImageUpload name="picture" required locale={locale} />
             <BirthdateField locale={locale} />
+          </Card>
+
+          <Card title={dict.petDetailsSection}>
+            <AllergiesField locale={locale} />
+            <AboutField locale={locale} />
           </Card>
 
           <GuardianList dict={dict} />

@@ -49,6 +49,17 @@ type Dictionary = {
   petGender: string;
   genderMale: string;
   genderFemale: string;
+  petBreed: string;
+  petBreedPlaceholder: string;
+  petDetailsSection: string;
+  petAllergies: string;
+  petAllergiesPlaceholder: string;
+  petAllergiesHint: string;
+  petAllergiesLimit: (max: number) => string;
+  removeAllergy: (allergy: string) => string;
+  petAbout: string;
+  petAboutPlaceholder: string;
+  aboutPet: (petName: string) => string;
   petPicture: string;
   petPictureDropzone: string;
   petPictureCamera: string;
@@ -78,6 +89,7 @@ type Dictionary = {
   errorBirthdateIncomplete: string;
   errorBirthdateFuture: string;
   errorBirthdateTooOld: string;
+  errorDetails: string;
   // Link previews (Open Graph / Twitter)
   ogDescription: (petName: string) => string;
   ogGenericDescription: string;
@@ -126,6 +138,17 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Sexo",
     genderMale: "Macho",
     genderFemale: "Fêmea",
+    petBreed: "Raça",
+    petBreedPlaceholder: "Ex.: Shih Tzu, SRD…",
+    petDetailsSection: "Mais detalhes",
+    petAllergies: "Alergias",
+    petAllergiesPlaceholder: "Ex.: frango, pólen…",
+    petAllergiesHint: "Digite e pressione Enter para adicionar.",
+    petAllergiesLimit: (max) => `Limite de ${max} alergias atingido.`,
+    removeAllergy: (allergy) => `Remover alergia: ${allergy}`,
+    petAbout: "Sobre",
+    petAboutPlaceholder: "Personalidade, hábitos, cuidados especiais…",
+    aboutPet: (petName) => `Sobre ${petName}`,
     petPicture: "Foto do pet",
     petPictureDropzone: "Arraste uma foto aqui",
     petPictureCamera: "Tirar foto agora",
@@ -155,6 +178,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
+    errorDetails: "Confira raça, alergias e sobre — algum valor está longo demais.",
     ogDescription: (petName) => `Perfil de ${petName}. Contate o tutor pelo link.`,
     ogGenericDescription: "Veja as informações do seu pet e do dono em uma página pública.",
     statusReserved: "reservado — pronto para cadastro",
@@ -199,6 +223,17 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Gender",
     genderMale: "Male",
     genderFemale: "Female",
+    petBreed: "Breed",
+    petBreedPlaceholder: "E.g. Shih Tzu, mixed breed…",
+    petDetailsSection: "More details",
+    petAllergies: "Allergies",
+    petAllergiesPlaceholder: "E.g. chicken, pollen…",
+    petAllergiesHint: "Type and press Enter to add.",
+    petAllergiesLimit: (max) => `Limit of ${max} allergies reached.`,
+    removeAllergy: (allergy) => `Remove allergy: ${allergy}`,
+    petAbout: "About",
+    petAboutPlaceholder: "Personality, habits, special care…",
+    aboutPet: (petName) => `About ${petName}`,
     petPicture: "Pet picture",
     petPictureDropzone: "Drag a photo here",
     petPictureCamera: "Take a photo now",
@@ -228,6 +263,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
+    errorDetails: "Check breed, allergies and about — a value is too long.",
     ogDescription: (petName) => `${petName}'s profile. Contact the guardian through the link.`,
     ogGenericDescription: "See your pet's and guardian's information on a public page.",
     statusReserved: "reserved — ready for setup",
