@@ -145,6 +145,28 @@ describe("Database Provider Abstraction", () => {
       });
     });
 
+    describe("breed, allergies and about", () => {
+      test("round-trip through the provider", async () => {
+        const pet = makePet({
+          breed: "Shih Tzu",
+          allergies: ["Frango", "Pólen"],
+          about: "Calmo.\n\nAdora passear.",
+        });
+        await provider.setPet("details1", pet);
+        const entry = await provider.getPetEntry("details1");
+        expect("pet" in entry && entry.pet).toEqual(pet);
+      });
+
+      test("a pet saved without them has none (legacy pets keep loading)", async () => {
+        await provider.setPet("legacy1", makePet());
+        const entry = await provider.getPetEntry("legacy1");
+        if (!("pet" in entry)) throw new Error("expected a pet");
+        expect(entry.pet.breed).toBeUndefined();
+        expect(entry.pet.allergies).toBeUndefined();
+        expect(entry.pet.about).toBeUndefined();
+      });
+    });
+
     describe("setPet", () => {
       test("stores pet data", async () => {
         const pet = makePet({

@@ -197,6 +197,10 @@ interface PetPublicProfile {
   pictureUrl: string;
   birthdate:  string;        // ISO-8601
   status:     PetStatus;
+  gender?:    "male" | "female";
+  breed?:     string;        // texto livre; o formulário sugere raças enquanto digita
+  allergies?: string[];      // texto livre, uma por item (com sugestões no formulário)
+  about?:     string;        // parágrafo livre sobre o pet (até 500 caracteres)
   lostInfo?:  LostInfo;      // só presente quando status === "lost"
   guardians:  Guardian[];    // ordem importa — [0] é o tutor principal
 }

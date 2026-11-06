@@ -7,6 +7,7 @@ import { PetRepositoryFactory } from "@/lib/repository";
 import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
 import { tagPath } from "@/lib/utils/routes";
 import { readString } from "./form-data";
+import { parsePetDetails } from "./parse-details";
 import { parsePhones } from "./parse-phones";
 import type { Pet, Guardian, SocialPlatform, PetGender } from "@/types/pet";
 
@@ -81,6 +82,9 @@ export async function submitPet(
   }
   const parsed = new Date(birthdate);
 
+  const details = parsePetDetails(form);
+  if (!details.ok) return { status: "error", message: details.error };
+
   const guardians: Guardian[] = [];
   for (let i = 0; i < MAX_GUARDIANS; i++) {
     const name = readString(form, `g${i}_name`);
@@ -115,6 +119,7 @@ export async function submitPet(
     birthdate: parsed.toISOString(),
     status: "active",
     gender,
+    ...details.details,
     guardians,
   };
 
