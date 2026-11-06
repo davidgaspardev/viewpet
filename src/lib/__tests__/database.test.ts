@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { PetRepositoryFactory } from "../repository";
 import { LocalPetRepository } from "../repository/local";
 import { MongoPetRepository } from "../repository/mongodb/mongodb";
-import type { Pet, Guardian } from "@/types/pet";
+import type { Pet, Guardian, Phone } from "@/types/pet";
 
 const TEST_DB_PATH = join(process.cwd(), "data", "test.db.json");
 
@@ -127,6 +127,21 @@ describe("Database Provider Abstraction", () => {
         if ("pet" in entry) {
           expect(entry.pet).toEqual(pet);
         }
+      });
+    });
+
+    describe("phone numbers", () => {
+      test("several numbers keep their order and their own channels, Telegram included", async () => {
+        const phones: Phone[] = [
+          { e164: "5548981111111", display: "(48) 98111-1111", channels: ["call", "whatsapp"] },
+          { e164: "5548982222222", display: "(48) 98222-2222", channels: ["telegram"] },
+          { e164: "554833334444", channels: ["call", "whatsapp", "telegram"] },
+        ];
+        const pet = makePet({ guardians: [makeGuardian({ phones })] });
+        await provider.setPet("phones1", pet);
+        const entry = await provider.getPetEntry("phones1");
+        if (!("pet" in entry)) throw new Error("expected a pet");
+        expect(entry.pet.guardians[0].phones).toEqual(phones);
       });
     });
 

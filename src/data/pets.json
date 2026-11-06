@@ -46,6 +46,14 @@
               "call",
               "whatsapp"
             ]
+          },
+          {
+            "e164": "5511977665544",
+            "display": "(11) 97766-5544",
+            "channels": [
+              "call",
+              "telegram"
+            ]
           }
         ],
         "social": {
@@ -77,7 +85,8 @@
             "display": "(21) 98877-2211",
             "channels": [
               "call",
-              "whatsapp"
+              "whatsapp",
+              "telegram"
             ]
           }
         ],

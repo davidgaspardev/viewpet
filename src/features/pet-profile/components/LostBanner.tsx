@@ -1,12 +1,25 @@
+import { Fragment } from "react";
+
 import type { Guardian, Pet, Phone, PhoneChannel } from "@/types/pet";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
+import { telegramUrl, telUrl, whatsappUrl } from "@/lib/utils/phone";
 import {
   AlertTriangleIcon,
   PhoneIcon,
+  TelegramIcon,
   UsersIcon,
   WhatsAppIcon,
 } from "@/ui/icons";
+
+type SecondaryLink = {
+  key: string;
+  href: string;
+  /** Opens in a new tab (contact apps); the in-page anchor does not. */
+  external: boolean;
+  icon: React.ReactNode;
+  label: string;
+};
 
 type LostBannerProps = {
   /** Must already have status === "lost"; the parent decides when to render. */
@@ -42,7 +55,38 @@ export function LostBanner({ pet, locale }: LostBannerProps) {
 
   const callPhone = findPhone(primary, "call");
   const whatsappPhone = findPhone(primary, "whatsapp");
+  const telegramPhone = findPhone(primary, "telegram");
   const hasOthers = pet.guardians.length > 1;
+
+  // Secondary ways to reach the guardian, after the main call button.
+  const secondaryLinks: SecondaryLink[] = [];
+  if (whatsappPhone) {
+    secondaryLinks.push({
+      key: "whatsapp",
+      href: whatsappUrl(whatsappPhone.e164),
+      external: true,
+      icon: <WhatsAppIcon className="h-4 w-4" />,
+      label: dict.lostWhatsApp,
+    });
+  }
+  if (telegramPhone) {
+    secondaryLinks.push({
+      key: "telegram",
+      href: telegramUrl(telegramPhone.e164),
+      external: true,
+      icon: <TelegramIcon className="h-4 w-4" />,
+      label: dict.lostTelegram,
+    });
+  }
+  if (hasOthers) {
+    secondaryLinks.push({
+      key: "others",
+      href: "#guardians",
+      external: false,
+      icon: <UsersIcon className="h-4 w-4" />,
+      label: dict.lostOtherGuardian,
+    });
+  }
 
   return (
     <div className="sticky top-0 z-30 bg-red-700 text-white shadow-[0_4px_12px_rgba(0,0,0,0.12)]">
@@ -61,7 +105,7 @@ export function LostBanner({ pet, locale }: LostBannerProps) {
 
         {callPhone && (
           <a
-            href={`tel:+${callPhone.e164}`}
+            href={telUrl(callPhone.e164)}
             className="mt-5 flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-white text-base font-semibold text-red-900 transition active:scale-[0.98]"
           >
             <PhoneIcon className="h-5 w-5" />
@@ -69,31 +113,21 @@ export function LostBanner({ pet, locale }: LostBannerProps) {
           </a>
         )}
 
-        {(whatsappPhone || hasOthers) && (
-          <div className="mt-4 flex items-center justify-center gap-4 text-sm">
-            {whatsappPhone && (
-              <a
-                href={`https://wa.me/${whatsappPhone.e164}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-white/90 transition hover:text-white"
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                {dict.lostWhatsApp}
-              </a>
-            )}
-            {whatsappPhone && hasOthers && (
-              <span className="text-white/30">·</span>
-            )}
-            {hasOthers && (
-              <a
-                href="#guardians"
-                className="inline-flex items-center gap-1.5 text-white/90 transition hover:text-white"
-              >
-                <UsersIcon className="h-4 w-4" />
-                {dict.lostOtherGuardian}
-              </a>
-            )}
+        {secondaryLinks.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
+            {secondaryLinks.map(({ key, href, external, icon, label }, i) => (
+              <Fragment key={key}>
+                {i > 0 && <span className="text-white/30">·</span>}
+                <a
+                  href={href}
+                  className="inline-flex items-center gap-1.5 text-white/90 transition hover:text-white"
+                  {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                >
+                  {icon}
+                  {label}
+                </a>
+              </Fragment>
+            ))}
           </div>
         )}
       </div>

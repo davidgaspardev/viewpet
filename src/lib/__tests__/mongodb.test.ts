@@ -7,7 +7,7 @@ import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:tes
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { MongoClient } from "mongodb";
 import { MongoPetRepository, resetMongoClient } from "../repository/mongodb/mongodb";
-import type { Pet } from "@/types/pet";
+import type { Pet, Phone } from "@/types/pet";
 
 let mongod: MongoMemoryServer;
 let cleanupClient: MongoClient;
@@ -95,6 +95,24 @@ describe("MongoPetRepository", () => {
         expect(entry.pet.status).toBe("active");
         expect(entry.pet.guardians[0]?.name).toBe("Test Guardian");
       }
+    });
+  });
+
+  describe("phone numbers", () => {
+    test("several numbers keep their order and their own channels, Telegram included", async () => {
+      const provider = new MongoPetRepository();
+      const phones: Phone[] = [
+        { e164: "5548981111111", display: "(48) 98111-1111", channels: ["call", "whatsapp"] },
+        { e164: "5548982222222", display: "(48) 98222-2222", channels: ["telegram"] },
+        { e164: "554833334444", channels: ["call", "whatsapp", "telegram"] },
+      ];
+      const pet = makePet({
+        guardians: [{ name: "Test Guardian", email: "multi@example.com", phones, social: {} }],
+      });
+      await provider.setPet("phones1", pet);
+      const entry = await provider.getPetEntry("phones1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.guardians[0].phones).toEqual(phones);
     });
   });
 

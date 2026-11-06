@@ -25,12 +25,17 @@ type Dictionary = {
   name: string;
   email: string;
   cellphone: string;
+  /** Label of a guardian's first number when they list several. */
+  cellphoneMain: string;
+  /** Label of the n-th number (n ≥ 2). */
+  cellphoneNumber: (n: number) => string;
   social: string;
   close: string;
   actionCall: string;
   actionCallTooltip: string;
   actionEmail: string;
   actionWhatsApp: string;
+  actionTelegram: string;
   yearsOld: (n: number) => string;
   monthsOld: (n: number) => string;
   notFoundTitle: string;
@@ -66,6 +71,12 @@ type Dictionary = {
   removeGuardian: string;
   guardianNumber: (n: number) => string;
   phoneChannelCall: string;
+  phoneChannelsLegend: string;
+  phoneChannelRequired: string;
+  phoneIncomplete: string;
+  addPhone: string;
+  removePhone: string;
+  removePhoneNumber: (n: number) => string;
   socialPlaceholder: string;
   optional: string;
   submit: string;
@@ -78,6 +89,8 @@ type Dictionary = {
   errorBirthdateIncomplete: string;
   errorBirthdateFuture: string;
   errorBirthdateTooOld: string;
+  errorPhone: string;
+  errorPhoneChannels: string;
   // Link previews (Open Graph / Twitter)
   ogDescription: (petName: string) => string;
   ogGenericDescription: string;
@@ -91,6 +104,7 @@ type Dictionary = {
   lostBody: string;
   lostCallPrimary: (guardianFirstName: string) => string;
   lostWhatsApp: string;
+  lostTelegram: string;
   lostOtherGuardian: string;
 };
 
@@ -101,12 +115,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     name: "Nome",
     email: "E-mail",
     cellphone: "Celular",
+    cellphoneMain: "Celular principal",
+    cellphoneNumber: (n) => `Celular ${n}`,
     social: "Redes sociais",
     close: "Fechar",
     actionCall: "Ligar",
     actionCallTooltip: "Clique neste botão para ligar para o tutor",
     actionEmail: "Enviar e-mail",
     actionWhatsApp: "Abrir WhatsApp",
+    actionTelegram: "Abrir Telegram",
     yearsOld: (n) => (n === 1 ? "1 ano" : `${n} anos`),
     monthsOld: (n) => (n === 1 ? "1 mês" : `${n} meses`),
     notFoundTitle: "Pet não encontrado",
@@ -143,6 +160,12 @@ const dictionaries: Record<Locale, Dictionary> = {
     removeGuardian: "Remover",
     guardianNumber: (n) => `Tutor ${n}`,
     phoneChannelCall: "Chamadas",
+    phoneChannelsLegend: "Formas de contato",
+    phoneChannelRequired: "Escolha pelo menos uma forma de contato.",
+    phoneIncomplete: "Digite o número com DDD (10 ou 11 dígitos).",
+    addPhone: "Adicionar outro número",
+    removePhone: "Remover",
+    removePhoneNumber: (n) => `Remover celular ${n}`,
     socialPlaceholder: "@usuario",
     optional: "opcional",
     submit: "Publicar",
@@ -155,6 +178,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
+    errorPhone: "Confira os celulares: digite o número com DDD (10 ou 11 dígitos).",
+    errorPhoneChannels:
+      "Escolha pelo menos uma forma de contato (chamada, WhatsApp ou Telegram) para cada celular.",
     ogDescription: (petName) => `Perfil de ${petName}. Contate o tutor pelo link.`,
     ogGenericDescription: "Veja as informações do seu pet e do dono em uma página pública.",
     statusReserved: "reservado — pronto para cadastro",
@@ -166,6 +192,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       "Você o encontrou? Ligue para o tutor agora — qualquer informação ajuda.",
     lostCallPrimary: (firstName) => `Ligar para ${firstName}`,
     lostWhatsApp: "WhatsApp",
+    lostTelegram: "Telegram",
     lostOtherGuardian: "Outro tutor",
   },
   "en-US": {
@@ -174,12 +201,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     name: "Name",
     email: "Email",
     cellphone: "Cellphone",
+    cellphoneMain: "Main cellphone",
+    cellphoneNumber: (n) => `Cellphone ${n}`,
     social: "Social",
     close: "Close",
     actionCall: "Call",
     actionCallTooltip: "Click this button to call the guardian",
     actionEmail: "Send email",
     actionWhatsApp: "Open WhatsApp",
+    actionTelegram: "Open Telegram",
     yearsOld: (n) => (n === 1 ? "1 year old" : `${n} years old`),
     monthsOld: (n) => (n === 1 ? "1 month old" : `${n} months old`),
     notFoundTitle: "Pet not found",
@@ -216,6 +246,12 @@ const dictionaries: Record<Locale, Dictionary> = {
     removeGuardian: "Remove",
     guardianNumber: (n) => `Guardian ${n}`,
     phoneChannelCall: "Calls",
+    phoneChannelsLegend: "Ways to reach this number",
+    phoneChannelRequired: "Choose at least one way to be contacted.",
+    phoneIncomplete: "Enter the number with area code (10 or 11 digits).",
+    addPhone: "Add another number",
+    removePhone: "Remove",
+    removePhoneNumber: (n) => `Remove cellphone ${n}`,
     socialPlaceholder: "@username",
     optional: "optional",
     submit: "Publish",
@@ -228,6 +264,9 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
+    errorPhone: "Check the cellphones: enter each number with area code (10 or 11 digits).",
+    errorPhoneChannels:
+      "Choose at least one way to be contacted (call, WhatsApp or Telegram) for each cellphone.",
     ogDescription: (petName) => `${petName}'s profile. Contact the guardian through the link.`,
     ogGenericDescription: "See your pet's and guardian's information on a public page.",
     statusReserved: "reserved — ready for setup",
@@ -239,6 +278,7 @@ const dictionaries: Record<Locale, Dictionary> = {
       "Did you find them? Call the guardian now — any information helps.",
     lostCallPrimary: (firstName) => `Call ${firstName}`,
     lostWhatsApp: "WhatsApp",
+    lostTelegram: "Telegram",
     lostOtherGuardian: "Other guardian",
   },
 };

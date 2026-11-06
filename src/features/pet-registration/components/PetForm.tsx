@@ -14,33 +14,18 @@ import { submitPet, type SubmitState } from "../actions";
 import { BirthdateField } from "./BirthdateField";
 import { INPUT_CLASS } from "./fieldStyles";
 import { ImageUpload } from "./ImageUpload";
+import { PhoneFields } from "./PhoneFields";
 
 const MAX_GUARDIANS = 2;
 const initialState: SubmitState = { status: "idle" };
 
 type Dict = ReturnType<typeof getDictionary>;
 
-// ── Phone mask ────────────────────────────────────────────────────────────────
-
-function applyPhoneMask(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (!digits) return "";
-  if (digits.length <= 2) return `(${digits}`;
-  const ddd = digits.slice(0, 2);
-  const local = digits.slice(2);
-  if (local.length <= 4) return `(${ddd}) ${local}`;
-  // 11 digits → 9-digit mobile: (DD) 9XXXX-XXXX
-  if (digits.length === 11) return `(${ddd}) ${local.slice(0, 5)}-${local.slice(5)}`;
-  // ≤10 digits → 8-digit landline: (DD) XXXX-XXXX
-  return `(${ddd}) ${local.slice(0, 4)}-${local.slice(4)}`;
-}
-
 // ── Guardian fields ───────────────────────────────────────────────────────────
 
 function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
   const p = `g${index}_`;
   const isPrimary = index === 0;
-  const [phone, setPhone] = useState("");
 
   return (
     <>
@@ -52,43 +37,7 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
         autoComplete="email"
       />
 
-      {/* Phone with mask */}
-      <div>
-        <label className="block">
-          <span className="text-xs font-medium text-muted">
-            {dict.guardianPhone}
-            {isPrimary && <span className="ml-1 text-red-500">*</span>}
-          </span>
-          <input
-            name={`${p}phone`}
-            type="tel"
-            required={isPrimary}
-            autoComplete="tel"
-            value={phone}
-            placeholder="(48) 98123-4567"
-            onChange={(e) => setPhone(applyPhoneMask(e.target.value))}
-            className={INPUT_CLASS}
-          />
-        </label>
-        <div className="mt-2 flex gap-4">
-          {(
-            [
-              { name: `${p}phone_call`, label: dict.phoneChannelCall },
-              { name: `${p}phone_whatsapp`, label: "WhatsApp" },
-            ] as const
-          ).map(({ name, label }) => (
-            <label key={name} className="flex items-center gap-1.5 text-xs text-muted">
-              <input
-                type="checkbox"
-                name={name}
-                defaultChecked
-                className="rounded"
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
+      <PhoneFields prefix={p} isPrimaryGuardian={isPrimary} dict={dict} />
 
       {/* Social links */}
       <div className="pt-1">
@@ -185,7 +134,11 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
             ? dict.errorPictureSize
             : state.message === "invalid_birthdate"
               ? dict.errorBirthdate
-              : dict.errorMissing
+              : state.message === "invalid_phone"
+                ? dict.errorPhone
+                : state.message === "invalid_phone_channels"
+                  ? dict.errorPhoneChannels
+                  : dict.errorMissing
       : null;
 
   // `state` is a new object on every submission, so a repeated error is shown again.
