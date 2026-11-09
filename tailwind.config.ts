@@ -14,6 +14,16 @@ const config: Config = {
         muted: "#6B7A8F",
         surface: "#F3F4F2",
         accent: "#D7E9F1",
+        // Brand accent (Sage, from the style guide). Used for fills and tints —
+        // number badges, the tag chip, info and selected states — never for text
+        // or as the only focus signal: on white it is 2.06:1, white on it is too.
+        // Put `ink` on top of it (6.79:1).
+        sage: "#91BFA4",
+      },
+      borderRadius: {
+        // Cards and panels: a touch under `rounded-xl` (12px). Controls inside
+        // them (inputs, pills, drop zones) stay at `rounded-lg` (8px).
+        card: "0.625rem",
       },
       fontFamily: {
         sans: ["system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],

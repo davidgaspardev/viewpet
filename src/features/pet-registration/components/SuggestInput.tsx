@@ -2,7 +2,7 @@
 
 import { useId, useState, type KeyboardEvent } from "react";
 
-import { INPUT_CLASS } from "./fieldStyles";
+import { HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { filterSuggestions } from "./suggest";
 
 type SuggestInputProps = {
@@ -26,6 +26,8 @@ type SuggestInputProps = {
   placeholder?: string;
   autoComplete?: string;
   describedBy?: string;
+  /** Helper text under the input; wired to it with `aria-describedby`. */
+  hint?: string;
 };
 
 /**
@@ -50,8 +52,10 @@ export function SuggestInput({
   placeholder,
   autoComplete = "off",
   describedBy,
+  hint,
 }: SuggestInputProps) {
   const listId = useId();
+  const hintId = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
 
@@ -97,7 +101,7 @@ export function SuggestInput({
   return (
     <div className="relative">
       <label className="block">
-        <span className="text-xs font-medium text-muted">
+        <span className={LABEL_CLASS}>
           {label}
           {labelSuffix}
         </span>
@@ -109,7 +113,7 @@ export function SuggestInput({
           aria-expanded={expanded}
           aria-controls={listId}
           aria-activedescendant={expanded && active >= 0 ? optionId(active) : undefined}
-          aria-describedby={describedBy}
+          aria-describedby={[describedBy, hint ? hintId : undefined].filter(Boolean).join(" ") || undefined}
           required={required}
           maxLength={maxLength}
           placeholder={placeholder}
@@ -129,6 +133,11 @@ export function SuggestInput({
           className={INPUT_CLASS}
         />
       </label>
+      {hint && (
+        <p id={hintId} className={HINT_CLASS}>
+          {hint}
+        </p>
+      )}
 
       <ul
         id={listId}
@@ -146,7 +155,7 @@ export function SuggestInput({
             // Keep focus in the input: a blur would close the list before the click lands.
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => choose(option)}
-            className={`cursor-pointer px-3 py-2 text-sm text-ink ${index === active ? "bg-surface" : "hover:bg-surface"}`}
+            className={`min-h-11 cursor-pointer px-3 py-2.5 text-sm text-ink ${index === active ? "bg-surface" : "hover:bg-surface"}`}
           >
             {option}
           </li>

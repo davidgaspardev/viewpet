@@ -46,7 +46,28 @@ type Dictionary = {
   tryExamples: string;
   // Form (reserved entry → cadastro)
   formTitle: string;
-  formIntro: (id: string) => string;
+  formLead: string;
+  formTagLabel: string;
+  formStepsTitle: string;
+  formSteps: ReadonlyArray<{ title: string; body: string }>;
+  formPublicNotice: string;
+  requiredLegend: string;
+  petSectionHint: string;
+  petDetailsHint: string;
+  guardianSectionHint: string;
+  petNameHint: string;
+  petNamePlaceholder: string;
+  petBreedHint: string;
+  petPictureTip: string;
+  guardianNameHint: string;
+  guardianNamePlaceholder: string;
+  guardianEmailHint: string;
+  guardianEmailPlaceholder: string;
+  phoneHint: string;
+  phoneChannelsLabel: string;
+  socialHint: string;
+  addGuardianHint: string;
+  submitNotice: string;
   petSection: string;
   guardianSection: string;
   socialSectionOptional: string;
@@ -82,7 +103,6 @@ type Dictionary = {
   removeGuardian: string;
   guardianNumber: (n: number) => string;
   phoneChannelCall: string;
-  phoneChannelsLegend: string;
   phoneChannelRequired: string;
   phoneIncomplete: string;
   addPhone: string;
@@ -145,10 +165,45 @@ const dictionaries: Record<Locale, Dictionary> = {
     landingTitle: "View Pet",
     landingBody: `Acesse ${TAG_ROUTE}/<hashId> para visualizar a página pública de um pet.`,
     tryExamples: "Exemplos para testar:",
-    formTitle: "Cadastrar pet",
-    formIntro: (id) =>
-      `Esta página (${id}) está reservada mas ainda não tem dados. Preencha os campos abaixo para publicar.`,
-    petSection: "Sobre o pet",
+    formTitle: "Cadastre seu pet",
+    formLead:
+      "Preencha uma vez e a plaquinha já funciona: quem escanear o QR vê a página do seu pet e consegue falar com você.",
+    formTagLabel: "Plaquinha",
+    formStepsTitle: "Como funciona",
+    formSteps: [
+      {
+        title: "Preencha os dados",
+        body: "Leva poucos minutos. Só o essencial é obrigatório: nome, sexo, raça, foto, nascimento e um contato.",
+      },
+      {
+        title: "Publicamos a página",
+        body: "Ao tocar em Publicar, a página do seu pet entra no ar na hora.",
+      },
+      {
+        title: "Quem achar fala com você",
+        body: "Basta escanear o QR da plaquinha para ver as informações e ligar ou mandar mensagem para o tutor.",
+      },
+    ],
+    formPublicNotice:
+      "Tudo o que você preencher aparece na página pública do pet, para qualquer pessoa que escanear o QR — inclusive os contatos do tutor. Confira os dados antes de publicar.",
+    requiredLegend: "Campos com * são obrigatórios.",
+    petSectionHint: "É o que aparece no topo da página pública.",
+    petDetailsHint: "Opcional, mas ajuda quem cuidar do pet numa emergência — e o veterinário.",
+    guardianSectionHint: "Quem encontrar o pet usa estes contatos. É a parte mais importante.",
+    petNameHint: "Como seu pet é chamado.",
+    petNamePlaceholder: "Ex.: Thor",
+    petBreedHint: "Digite e escolha uma sugestão, ou escreva a sua. Sem raça definida? Use SRD.",
+    petPictureTip: "Uma foto nítida, de frente e com boa luz ajuda quem encontrar o pet a reconhecê-lo.",
+    guardianNameHint: "A pessoa que deve ser procurada.",
+    guardianNamePlaceholder: "Ex.: Maria Silva",
+    guardianEmailHint: "Aparece na página pública, com um botão para enviar e-mail.",
+    guardianEmailPlaceholder: "nome@exemplo.com",
+    phoneHint: "É o número em destaque. Marque como você aceita ser contatado.",
+    phoneChannelsLabel: "Pode ser contatado por",
+    socialHint: "Aparecem como links na página pública.",
+    addGuardianHint: "Pet de família? A segunda pessoa também aparece como contato.",
+    submitNotice: "Ao publicar, a página fica pública para quem escanear a plaquinha.",
+    petSection: "Seu pet",
     guardianSection: "Contato do tutor",
     socialSectionOptional: "Redes sociais (opcional)",
     petName: "Nome do pet",
@@ -183,7 +238,6 @@ const dictionaries: Record<Locale, Dictionary> = {
     removeGuardian: "Remover",
     guardianNumber: (n) => `Tutor ${n}`,
     phoneChannelCall: "Chamadas",
-    phoneChannelsLegend: "Formas de contato",
     phoneChannelRequired: "Escolha pelo menos uma forma de contato.",
     phoneIncomplete: "Digite o número com DDD (10 ou 11 dígitos).",
     addPhone: "Adicionar outro número",
@@ -243,10 +297,45 @@ const dictionaries: Record<Locale, Dictionary> = {
     landingTitle: "View Pet",
     landingBody: `Visit ${TAG_ROUTE}/<hashId> to see a pet's public profile.`,
     tryExamples: "Try these examples:",
-    formTitle: "Set up this pet",
-    formIntro: (id) =>
-      `This page (${id}) is reserved but has no data yet. Fill in the fields below to publish.`,
-    petSection: "About the pet",
+    formTitle: "Set up your pet",
+    formLead:
+      "Fill this in once and the tag works: anyone who scans the QR sees your pet's page and can get in touch with you.",
+    formTagLabel: "Tag",
+    formStepsTitle: "How it works",
+    formSteps: [
+      {
+        title: "Fill in the details",
+        body: "It takes a few minutes. Only the essentials are required: name, gender, breed, photo, birthdate and one contact.",
+      },
+      {
+        title: "We publish the page",
+        body: "The moment you tap Publish, your pet's page goes live.",
+      },
+      {
+        title: "Whoever finds them reaches you",
+        body: "They just scan the tag's QR to see the details and call or message the guardian.",
+      },
+    ],
+    formPublicNotice:
+      "Everything you fill in appears on the pet's public page, to anyone who scans the QR — including the guardian's contacts. Check the details before publishing.",
+    requiredLegend: "Fields marked * are required.",
+    petSectionHint: "This is what shows at the top of the public page.",
+    petDetailsHint: "Optional, but it helps whoever looks after the pet in an emergency — and the vet.",
+    guardianSectionHint: "Whoever finds the pet uses these contacts. This is the most important part.",
+    petNameHint: "What your pet is called.",
+    petNamePlaceholder: "E.g. Buddy",
+    petBreedHint: "Type and pick a suggestion, or write your own. Not sure? Choose Mixed breed.",
+    petPictureTip: "A clear, front-facing photo in good light helps whoever finds the pet recognise them.",
+    guardianNameHint: "The person to reach out to.",
+    guardianNamePlaceholder: "E.g. Jane Smith",
+    guardianEmailHint: "Shown on the public page, with a button to send an email.",
+    guardianEmailPlaceholder: "name@example.com",
+    phoneHint: "This is the number shown first. Tick how you are happy to be contacted.",
+    phoneChannelsLabel: "Can be reached by",
+    socialHint: "Shown as links on the public page.",
+    addGuardianHint: "Family pet? The second person is listed as a contact too.",
+    submitNotice: "Once published, the page is public to anyone who scans the tag.",
+    petSection: "Your pet",
     guardianSection: "Guardian contact",
     socialSectionOptional: "Social (optional)",
     petName: "Pet name",
@@ -281,7 +370,6 @@ const dictionaries: Record<Locale, Dictionary> = {
     removeGuardian: "Remove",
     guardianNumber: (n) => `Guardian ${n}`,
     phoneChannelCall: "Calls",
-    phoneChannelsLegend: "Ways to reach this number",
     phoneChannelRequired: "Choose at least one way to be contacted.",
     phoneIncomplete: "Enter the number with area code (10 or 11 digits).",
     addPhone: "Add another number",

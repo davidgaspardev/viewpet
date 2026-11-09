@@ -22,7 +22,7 @@ export function PetDetails({ pet, locale }: PetDetailsProps) {
     <section
       id="pet-details"
       aria-labelledby="pet-details-heading"
-      className="rounded-xl bg-surface"
+      className="rounded-card bg-surface"
     >
       <header className="mx-2 flex h-16 items-center border-b border-black/10 py-4 pb-3">
         <h2

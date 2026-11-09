@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 import type { getDictionary } from "@/lib/i18n";
 import {
@@ -11,7 +11,8 @@ import {
   type SelectablePhoneChannel,
 } from "@/lib/utils/phone";
 
-import { INPUT_CLASS } from "./fieldStyles";
+import { RequiredMark } from "./FieldMarks";
+import { HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 
 type Dict = ReturnType<typeof getDictionary>;
 
@@ -43,6 +44,7 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
   const phoneRef = useRef<HTMLInputElement>(null);
   const channelRefs = useRef<Array<HTMLInputElement | null>>([]);
 
+  const hintId = useId();
   const label = row === 0 ? dict.cellphoneMain : dict.cellphoneNumber(row + 1);
 
   // Hold the submit with the browser's own message when the number can't be
@@ -63,16 +65,16 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <label htmlFor={`${name}phone`} className="text-xs font-medium text-muted">
+        <label htmlFor={`${name}phone`} className={LABEL_CLASS}>
           {label}
-          {required && <span className="ml-1 text-red-500">*</span>}
+          {required && <RequiredMark />}
         </label>
         {onRemove && (
           <button
             type="button"
             onClick={onRemove}
             aria-label={dict.removePhoneNumber(row + 1)}
-            className="text-xs text-muted transition hover:text-red-500"
+            className="min-h-10 px-2 text-sm text-ink/70 transition hover:text-red-700"
           >
             {dict.removePhone}
           </button>
@@ -85,6 +87,7 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
         type="tel"
         required={required}
         autoComplete={row === 0 ? "tel" : "off"}
+        aria-describedby={row === 0 ? hintId : undefined}
         value={phone}
         placeholder="(48) 98123-4567"
         onChange={(e) => {
@@ -94,23 +97,34 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
         }}
         className={INPUT_CLASS}
       />
-      <fieldset className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-        <legend className="sr-only">{dict.phoneChannelsLegend}</legend>
-        {SELECTABLE_PHONE_CHANNELS.map((channel, i) => (
-          <label key={channel} className="flex items-center gap-1.5 text-xs text-muted">
-            <input
-              ref={(el) => {
-                channelRefs.current[i] = el;
-              }}
-              type="checkbox"
-              name={`${name}${channel}`}
-              defaultChecked={DEFAULT_CHANNELS[channel]}
-              onChange={() => syncValidity(phone)}
-              className="rounded"
-            />
-            {channelLabel(channel, dict)}
-          </label>
-        ))}
+      {row === 0 && (
+        <p id={hintId} className={HINT_CLASS}>
+          {dict.phoneHint}
+        </p>
+      )}
+      <fieldset className="mt-3">
+        <legend className="text-xs font-medium text-ink/70">{dict.phoneChannelsLabel}</legend>
+        <div className="mt-1.5 flex flex-wrap gap-2">
+          {SELECTABLE_PHONE_CHANNELS.map((channel, i) => (
+            // A real checkbox inside a big tap target; the box lights up when ticked.
+            <label
+              key={channel}
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-black/10 bg-white px-3 text-sm text-ink transition has-[:checked]:border-sage has-[:checked]:bg-sage/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30"
+            >
+              <input
+                ref={(el) => {
+                  channelRefs.current[i] = el;
+                }}
+                type="checkbox"
+                name={`${name}${channel}`}
+                defaultChecked={DEFAULT_CHANNELS[channel]}
+                onChange={() => syncValidity(phone)}
+                className="h-4 w-4 rounded accent-ink"
+              />
+              {channelLabel(channel, dict)}
+            </label>
+          ))}
+        </div>
       </fieldset>
     </div>
   );
@@ -153,7 +167,7 @@ export function PhoneFields({
         <button
           type="button"
           onClick={() => setKeys((k) => [...k, nextKey.current++])}
-          className="w-full rounded-lg border border-dashed border-black/20 py-2.5 text-sm text-muted transition hover:border-ink/40 hover:text-ink"
+          className="min-h-11 w-full rounded-lg border border-dashed border-black/20 text-sm font-medium text-ink/80 transition hover:border-ink/40 hover:text-ink"
         >
           + {dict.addPhone}
         </button>
