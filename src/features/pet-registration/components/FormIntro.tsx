@@ -11,7 +11,7 @@ function Steps({ dict }: { dict: Dict }) {
         <li key={step.title} className="flex gap-3 px-4 py-3.5">
           <span
             aria-hidden="true"
-            className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-sage text-sm font-bold text-ink"
+            className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-sage bg-[url(/noise-light.png)] text-sm font-bold text-ink"
           >
             {i + 1}
           </span>

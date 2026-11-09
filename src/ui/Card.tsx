@@ -16,7 +16,7 @@ export function Card({ title, description, step, headerAction, children }: CardP
           {step !== undefined && (
             <span
               aria-hidden="true"
-              className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-sage text-sm font-bold text-ink"
+              className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-sage bg-[url(/noise-light.png)] text-sm font-bold text-ink"
             >
               {step}
             </span>

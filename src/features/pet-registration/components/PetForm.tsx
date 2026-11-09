@@ -321,7 +321,7 @@ function SubmitButton({ labelIdle, labelBusy }: { labelIdle: string; labelBusy: 
     <button
       type="submit"
       disabled={pending}
-      className="min-h-12 w-full rounded-full bg-ink px-6 text-base font-semibold text-white shadow-pill transition hover:bg-ink/90 disabled:opacity-60"
+      className="min-h-12 w-full rounded-full bg-ink bg-[url(/noise-light.png)] px-6 text-base font-semibold text-white shadow-pill transition hover:bg-ink/90 disabled:opacity-60"
     >
       {pending ? labelBusy : labelIdle}
     </button>
