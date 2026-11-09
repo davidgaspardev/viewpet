@@ -118,3 +118,26 @@ export function XIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+/** Tabler `gender-male` (the Mars symbol). */
+export function GenderMaleIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+      <path d="M19 5l-5.4 5.4" />
+      <path d="M19 5h-5" />
+      <path d="M19 5v5" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `gender-female` (the Venus symbol). */
+export function GenderFemaleIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M7 9a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+      <path d="M12 14v7" />
+      <path d="M9 18h6" />
+    </BaseIcon>
+  );
+}

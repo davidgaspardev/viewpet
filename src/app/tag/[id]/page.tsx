@@ -76,7 +76,13 @@ export default async function ViewPetPage(props: PageProps) {
     <main data-scan-source={scanSource} className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
-      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} gender={pet.gender ?? undefined} />
+      <PetHero
+        name={pet.name}
+        pictureUrl={pet.pictureUrl}
+        ageLabel={ageLabel}
+        gender={pet.gender ?? undefined}
+        locale={locale}
+      />
 
       <div className="space-y-6 px-4 pt-8">
         <PetDetails pet={pet} locale={locale} />
