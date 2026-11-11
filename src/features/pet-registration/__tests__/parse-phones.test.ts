@@ -52,6 +52,33 @@ describe("parsePhones", () => {
     });
   });
 
+  test("`display` is rebuilt from the digits — text around or inside the number never reaches the page", () => {
+    const form = formOf([
+      ["g0_p0_phone", "48981111111" + " ".repeat(50) + "visite exemplo.com/promo"],
+      ["g0_p0_call", "on"],
+      ["g1_p0_phone", "+55 48 3333-4444 ligue já"],
+      ["g1_p0_call", "on"],
+    ]);
+    const first = parsePhones(form, "g0_");
+    expect(first.ok && first.phones[0].display).toBe("(48) 98111-1111");
+    const second = parsePhones(form, "g1_");
+    expect(second.ok && second.phones[0].display).toBe("(48) 3333-4444");
+    expect(second.ok && second.phones[0].e164).toBe("554833334444");
+  });
+
+  test("a DDD-55 number keeps its area code in `display`", () => {
+    const form = formOf([
+      ["g0_p0_phone", "(55) 98123-4567"],
+      ["g0_p0_call", "on"],
+    ]);
+    const result = parsePhones(form, "g0_");
+    expect(result.ok && result.phones[0]).toEqual({
+      e164: "5555981234567",
+      display: "(55) 98123-4567",
+      channels: ["call"],
+    });
+  });
+
   test("only reads the rows of the guardian it is asked about", () => {
     const form = formOf([
       ["g0_p0_phone", "(48) 98111-1111"],

@@ -3,7 +3,7 @@ export const MAX_VISIBLE_SUGGESTIONS = 6;
 
 /** Lower-cased, accent-free form used for matching, so "mal" finds "Maltês". */
 export function normalizeForSearch(value: string): string {
-  return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase().trim();
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }
 
 type FilterOptions = {

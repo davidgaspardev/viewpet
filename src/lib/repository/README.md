@@ -71,7 +71,7 @@ Sem split de collection, sem dedup de tutores, sem histórico de lost events. É
 
 Três collections. Pets referenciam tutores via `guardianIds: ObjectId[]` (ordem importa — índice 0 é o principal). Tutores com email são deduplicados, então um casal com dois pets compartilha um único documento — atualizar o telefone é um único write que reflete em todos os pets. Lost events vivem em coleção própria com `petId` apontando pro pet, e o evento "aberto" (se houver) é descoberto pelo filtro `{ petId, endedAt: null }` — eventos resolvidos ficam como histórico.
 
-Três collections (`pets`, `guardians` e `lost_events`) com índices criados sob demanda na primeira conexão:
+Três collections (`pets`, `guardians` e `lost_events`) com índices criados sob demanda na primeira conexão. A collection de eventos já se chamou `lostEvents`: se um banco ainda a tiver com o nome antigo, ela é renomeada para `lost_events` nessa mesma primeira conexão (com documentos e índices).
 
 ```js
 db.guardians.createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });

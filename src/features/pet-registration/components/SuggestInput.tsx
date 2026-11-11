@@ -18,13 +18,13 @@ type SuggestInputProps = {
   onSelect?: (value: string) => void;
   /** Runs after this component's own handling, so it can check `defaultPrevented`. */
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
-  onBlur?: () => void;
   /** Form field name; leave out when a parent collects the value itself. */
   name?: string;
   required?: boolean;
+  /** Keeps the input focusable but not editable, e.g. when a list is full. */
+  readOnly?: boolean;
   maxLength?: number;
   placeholder?: string;
-  autoComplete?: string;
   describedBy?: string;
   /** Helper text under the input; wired to it with `aria-describedby`. */
   hint?: string;
@@ -45,12 +45,11 @@ export function SuggestInput({
   exclude,
   onSelect,
   onKeyDown,
-  onBlur,
   name,
   required,
+  readOnly,
   maxLength,
   placeholder,
-  autoComplete = "off",
   describedBy,
   hint,
 }: SuggestInputProps) {
@@ -74,8 +73,7 @@ export function SuggestInput({
     // Enter/arrows while composing (IME) belong to the composition.
     if (event.nativeEvent.isComposing) return;
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      if (options.length === 0) return;
+    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && options.length > 0) {
       event.preventDefault();
       setOpen(true);
       const step = event.key === "ArrowDown" ? 1 : -1;
@@ -115,9 +113,10 @@ export function SuggestInput({
           aria-activedescendant={expanded && active >= 0 ? optionId(active) : undefined}
           aria-describedby={[describedBy, hint ? hintId : undefined].filter(Boolean).join(" ") || undefined}
           required={required}
+          readOnly={readOnly}
           maxLength={maxLength}
           placeholder={placeholder}
-          autoComplete={autoComplete}
+          autoComplete="off"
           value={value}
           onChange={(event) => {
             onValueChange(event.target.value);
@@ -128,7 +127,6 @@ export function SuggestInput({
           onBlur={() => {
             setOpen(false);
             setActive(-1);
-            onBlur?.();
           }}
           className={INPUT_CLASS}
         />

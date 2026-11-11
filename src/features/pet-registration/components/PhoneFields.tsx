@@ -12,7 +12,8 @@ import {
 } from "@/lib/utils/phone";
 
 import { RequiredMark } from "./FieldMarks";
-import { HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
+import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
+import { useKeyedList } from "./useKeyedList";
 
 type Dict = ReturnType<typeof getDictionary>;
 
@@ -147,8 +148,7 @@ export function PhoneFields({
   isPrimaryGuardian: boolean;
   dict: Dict;
 }) {
-  const [keys, setKeys] = useState<number[]>([0]);
-  const nextKey = useRef(1);
+  const { keys, add, remove } = useKeyedList();
 
   return (
     <div className="space-y-4">
@@ -158,7 +158,7 @@ export function PhoneFields({
           name={`${prefix}p${row}_`}
           row={row}
           required={isPrimaryGuardian && row === 0}
-          onRemove={row > 0 ? () => setKeys((k) => k.filter((_, i) => i !== row)) : undefined}
+          onRemove={row > 0 ? () => remove(row) : undefined}
           dict={dict}
         />
       ))}
@@ -166,8 +166,8 @@ export function PhoneFields({
       {keys.length < MAX_PHONES_PER_GUARDIAN && (
         <button
           type="button"
-          onClick={() => setKeys((k) => [...k, nextKey.current++])}
-          className="min-h-11 w-full rounded-lg border border-dashed border-black/20 text-sm font-medium text-ink/80 transition hover:border-ink/40 hover:text-ink"
+          onClick={add}
+          className={ADD_BUTTON_CLASS}
         >
           + {dict.addPhone}
         </button>

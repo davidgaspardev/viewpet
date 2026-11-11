@@ -8,6 +8,7 @@ import { AllergiesField } from "../components/AllergiesField";
 import { FormIntro } from "../components/FormIntro";
 import { PetForm } from "../components/PetForm";
 import { PhoneFields } from "../components/PhoneFields";
+import { SuggestInput } from "../components/SuggestInput";
 
 /** The markup renders `'` as `&#x27;` and so on; compare against the text the user reads. */
 const decode = (html: string) =>
@@ -38,10 +39,14 @@ describe("FormIntro", () => {
     });
   }
 
-  test("the steps are folded on phones and open from sm up", () => {
+  test("the steps are folded on phones and open from sm up, from a single list", () => {
     const html = renderToStaticMarkup(<FormIntro hashId="38q9uymz5c43" locale="pt-BR" />);
-    expect(html).toContain('<details class="group sm:hidden"');
+    // A toggle that exists only on phones, collapsed to start with...
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*sm:hidden/);
+    // ...controlling a list that is hidden on phones and shown from sm up.
     expect(html).toContain('class="hidden sm:block"');
+    // The list is in the page once, not once per breakpoint.
+    expect(html.split("<ol").length - 1).toBe(1);
   });
 });
 
@@ -156,6 +161,21 @@ describe("AllergiesField", () => {
     // The visible input has no name of its own; what it holds is sent via the hidden field.
     const visible = html.match(/<input[^>]*role="combobox"[^>]*>/)![0];
     expect(visible).not.toContain("name=");
+  });
+});
+
+describe("SuggestInput", () => {
+  const props = { label: "Alergias", value: "", onValueChange: () => {}, suggestions: [] };
+  const comboboxOf = (html: string) => html.match(/<input[^>]*role="combobox"[^>]*>/)![0];
+
+  test("is editable by default", () => {
+    expect(comboboxOf(renderToStaticMarkup(<SuggestInput {...props} />))).not.toContain("readOnly");
+  });
+
+  test("read-only keeps the input in the page — so focus isn't lost — but not editable", () => {
+    expect(comboboxOf(renderToStaticMarkup(<SuggestInput {...props} readOnly />))).toContain(
+      'readOnly=""',
+    );
   });
 });
 

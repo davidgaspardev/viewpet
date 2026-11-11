@@ -102,6 +102,12 @@ describe("applyPhoneMask", () => {
     expect(applyPhoneMask("(55) 98123-4567")).toBe("(55) 98123-4567");
   });
 
+  test("an extra keystroke on a DDD-55 number is dropped, not read as a country code", () => {
+    // The field's own output plus one more digit: "55" is still the area code.
+    expect(applyPhoneMask("(55) 98123-45678")).toBe("(55) 98123-4567");
+    expect(applyPhoneMask("(55) 33334-44445")).toBe("(55) 33334-4444");
+  });
+
   test("a pasted number round-trips to the right E.164", () => {
     for (const pasted of ["+55 48 98111-1111", "5548981111111", "(48) 98111-1111", "48981111111"]) {
       expect(toE164Brazil(applyPhoneMask(pasted))).toBe("5548981111111");

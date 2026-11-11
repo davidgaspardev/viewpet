@@ -90,6 +90,12 @@ export async function submitPet(
     const name = readString(form, `g${i}_name`);
     if (!name) {
       if (i === 0) return { status: "error", message: "missing_fields" };
+      // A secondary guardian with a phone but no name is a partial fill, not an
+      // empty card: dropping it would publish without the contact they typed.
+      const phones = parsePhones(form, `g${i}_`);
+      if (phones.ok || phones.error !== "missing_fields") {
+        return { status: "error", message: "missing_fields" };
+      }
       break; // secondary guardian completely empty — stop here
     }
     // name present but phone missing → partial fill → validation error

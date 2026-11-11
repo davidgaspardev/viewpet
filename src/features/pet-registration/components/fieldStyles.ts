@@ -9,5 +9,9 @@ export const INPUT_CLASS =
  */
 export const LABEL_CLASS = "text-sm font-medium text-ink";
 
+/** Dashed full-width "+ add another" button under a repeatable block. */
+export const ADD_BUTTON_CLASS =
+  "min-h-11 w-full rounded-lg border border-dashed border-black/20 text-sm font-medium text-ink/80 transition hover:border-ink/40 hover:text-ink";
+
 /** Helper text under a field. `ink/70` is 5.07:1 on the card surface (`muted` was 3.96:1). */
 export const HINT_CLASS = "mt-1 text-xs text-ink/70";

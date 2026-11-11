@@ -1,3 +1,7 @@
+"use client";
+
+import { useId, useState } from "react";
+
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { InfoCircleIcon } from "@/ui/icons";
 
@@ -33,6 +37,8 @@ function Steps({ dict }: { dict: Dict }) {
  */
 export function FormIntro({ hashId, locale }: { hashId: string; locale: Locale }) {
   const dict = getDictionary(locale);
+  const stepsId = useId();
+  const [stepsOpen, setStepsOpen] = useState(false);
 
   return (
     <header>
@@ -46,19 +52,22 @@ export function FormIntro({ hashId, locale }: { hashId: string; locale: Locale }
       <p className="mt-2 max-w-prose text-base text-ink/80">{dict.formLead}</p>
 
       <div className="mt-5">
-        <details className="group sm:hidden">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-card bg-surface px-4 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
-            {dict.formStepsTitle}
-            <span aria-hidden="true" className="text-ink/70 transition group-open:rotate-45">
-              +
-            </span>
-          </summary>
-          <div className="mt-3">
-            <Steps dict={dict} />
-          </div>
-        </details>
-        <div className="hidden sm:block">
-          <h2 className="sr-only">{dict.formStepsTitle}</h2>
+        {/* One list, rendered once: the button only exists on phones, and from
+            `sm` up the list is shown whatever the toggle says. */}
+        <button
+          type="button"
+          aria-expanded={stepsOpen}
+          aria-controls={stepsId}
+          onClick={() => setStepsOpen((open) => !open)}
+          className="flex min-h-11 w-full items-center justify-between rounded-card bg-surface px-4 text-sm font-semibold text-ink sm:hidden"
+        >
+          {dict.formStepsTitle}
+          <span aria-hidden="true" className={`text-ink/70 transition ${stepsOpen ? "rotate-45" : ""}`}>
+            +
+          </span>
+        </button>
+        <div id={stepsId} className={stepsOpen ? "mt-3 sm:mt-0" : "hidden sm:block"}>
+          <h2 className="sr-only hidden sm:block">{dict.formStepsTitle}</h2>
           <Steps dict={dict} />
         </div>
       </div>

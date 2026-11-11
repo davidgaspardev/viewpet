@@ -74,6 +74,8 @@ export class MongoPetRepository implements Seedable {
   private static readonly PETS = "pets";
   private static readonly GUARDIANS = "guardians";
   private static readonly LOST_EVENTS = "lost_events";
+  /** Former name of `LOST_EVENTS`; see `migrateLegacyLostEvents`. */
+  private static readonly LEGACY_LOST_EVENTS = "lostEvents";
 
   // ── Private infrastructure ────────────────────────────────────────────────
 
@@ -105,7 +107,34 @@ export class MongoPetRepository implements Seedable {
     };
   }
 
+  /**
+   * The lost-events collection used to be called `lostEvents`. Rename it in
+   * place (its documents and indexes go with it) so open events and history
+   * written before the rename are still found. A no-op once renamed, or on a
+   * database that never had the old name. A failure is logged, not thrown:
+   * the app keeps working, just without the old events.
+   */
+  private async migrateLegacyLostEvents(database: Db): Promise<void> {
+    try {
+      const names = new Set(
+        (await database.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name),
+      );
+      if (names.has(MongoPetRepository.LEGACY_LOST_EVENTS) && !names.has(MongoPetRepository.LOST_EVENTS)) {
+        await database.renameCollection(
+          MongoPetRepository.LEGACY_LOST_EVENTS,
+          MongoPetRepository.LOST_EVENTS,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[Repository] Could not rename "${MongoPetRepository.LEGACY_LOST_EVENTS}" to "${MongoPetRepository.LOST_EVENTS}":`,
+        err,
+      );
+    }
+  }
+
   private async ensureIndexes(database: Db): Promise<void> {
+    await this.migrateLegacyLostEvents(database);
     await database
       .collection<GuardianDoc>(MongoPetRepository.GUARDIANS)
       .createIndex(
@@ -375,8 +404,9 @@ export class MongoPetRepository implements Seedable {
           // schema. Safe to run unconditionally — it's a no-op when the field
           // isn't there. Can be removed once all production docs are migrated.
           lostInfo: "",
-          // The optional details are replaced wholesale: saving a pet without
+          // The optional fields are replaced wholesale: saving a pet without
           // one clears what an earlier save stored, instead of leaving it stale.
+          ...(pet.gender ? {} : { gender: "" }),
           ...(pet.breed ? {} : { breed: "" }),
           ...(pet.allergies?.length ? {} : { allergies: "" }),
           ...(pet.about ? {} : { about: "" }),

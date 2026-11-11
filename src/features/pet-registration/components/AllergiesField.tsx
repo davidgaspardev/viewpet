@@ -7,7 +7,7 @@ import { getAllergySuggestions } from "@/lib/pet-suggestions";
 import { collapseWhitespace, MAX_ALLERGIES, MAX_ALLERGY_LENGTH } from "@/lib/utils/pet-details";
 
 import { OptionalTag } from "./FieldMarks";
-import { HINT_CLASS, LABEL_CLASS } from "./fieldStyles";
+import { HINT_CLASS } from "./fieldStyles";
 import { SuggestInput } from "./SuggestInput";
 
 /**
@@ -36,7 +36,7 @@ export function AllergiesField({ locale }: { locale: Locale }) {
     setText("");
     if (!allergy) return;
     setItems((current) => {
-      const duplicate = current.some((a) => a.toLocaleLowerCase() === allergy.toLocaleLowerCase());
+      const duplicate = current.some((a) => a.toLowerCase() === allergy.toLowerCase());
       return duplicate || current.length >= MAX_ALLERGIES ? current : [...current, allergy];
     });
   };
@@ -54,23 +54,23 @@ export function AllergiesField({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      {full ? (
-        <p className={LABEL_CLASS}>{dict.petAllergies}</p>
-      ) : (
-        <SuggestInput
-          label={dict.petAllergies}
-          labelSuffix={<OptionalTag label={dict.optional} />}
-          placeholder={dict.petAllergiesPlaceholder}
-          value={text}
-          onValueChange={setText}
-          suggestions={suggestions}
-          exclude={items}
-          onSelect={commit}
-          onKeyDown={handleKeyDown}
-          maxLength={MAX_ALLERGY_LENGTH}
-          describedBy={hintId}
-        />
-      )}
+      {/* Stays mounted (read-only) at the limit: unmounting the focused input
+          would drop keyboard focus to <body> as the 10th chip is added. */}
+      <SuggestInput
+        label={dict.petAllergies}
+        labelSuffix={<OptionalTag label={dict.optional} />}
+        placeholder={dict.petAllergiesPlaceholder}
+        value={text}
+        onValueChange={setText}
+        suggestions={suggestions}
+        exclude={items}
+        onSelect={commit}
+        onKeyDown={handleKeyDown}
+        maxLength={MAX_ALLERGY_LENGTH}
+        readOnly={full}
+        describedBy={hintId}
+      />
+
       <p id={hintId} className={HINT_CLASS}>
         {full ? dict.petAllergiesLimit(MAX_ALLERGIES) : dict.petAllergiesHint}
       </p>

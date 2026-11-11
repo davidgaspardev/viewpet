@@ -38,7 +38,8 @@ export function normalizeAllergies(values: readonly string[]): NormalizedAllergi
     const allergy = collapseWhitespace(raw);
     if (!allergy) continue;
     if (allergy.length > MAX_ALLERGY_LENGTH) return { ok: false };
-    const key = allergy.toLocaleLowerCase();
+    // Not `toLocaleLowerCase()`: under tr-TR "I" → "ı", so the key would depend on the runtime's locale.
+    const key = allergy.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     allergies.push(allergy);

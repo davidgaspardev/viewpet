@@ -1,5 +1,6 @@
 import type { Phone } from "@/types/pet";
 import {
+  applyPhoneMask,
   isPlausibleBrazilPhone,
   MAX_PHONES_PER_GUARDIAN,
   SELECTABLE_PHONE_CHANNELS,
@@ -28,6 +29,8 @@ export type ParsedPhones =
  * - A number that isn't 10–11 digits (with or without the country code) is an
  *   error: stored as typed it would become a dead `tel:` / `wa.me` link.
  * - A number with no channel ticked is an error: it could not be used.
+ * - The stored `display` is the number re-formatted from its digits, so any
+ *   other text sent in the field is dropped.
  * - The same number typed twice (however it is formatted) is kept once, at its
  *   first position, with the channels of both rows combined.
  *
@@ -55,7 +58,9 @@ export function parsePhones(form: FormData, prefix: string): ParsedPhones {
         (channel) => existing.channels.includes(channel) || channels.includes(channel),
       );
     } else {
-      phones.push({ e164, display, channels });
+      // Rebuilt from the digits, never the typed text: `display` is shown on the
+      // public page, so anything that isn't the number must not get through.
+      phones.push({ e164, display: applyPhoneMask(e164), channels });
     }
   }
 

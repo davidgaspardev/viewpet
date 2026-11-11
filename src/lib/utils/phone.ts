@@ -28,13 +28,15 @@ export const MAX_PHONES_PER_GUARDIAN = 3;
  * A pasted international number (`+55 48 98111-1111`, `5548981111111`) has
  * its leading country code dropped instead of being cut at 11 digits, which
  * would keep the "55" and lose the end of the number. Typing can't reach 12
- * digits (the mask stops at 11), so 12 or more starting with 55 is a paste;
- * the one thing that misreads is a DDD-55 number typed with a stray 12th digit.
- * Any other extra digits are dropped.
+ * digits (the mask stops at 11), so 12 or more starting with 55 is a paste —
+ * unless the value already starts with the mask's "(": that is the field's own
+ * output plus a keystroke (a DDD-55 number with a stray extra digit), where "55"
+ * is the area code and must stay. Any other extra digits are dropped.
  */
 export function applyPhoneMask(value: string): string {
   let digits = value.replace(/\D/g, "");
-  if (digits.length >= 12 && digits.startsWith("55")) digits = digits.slice(2);
+  const alreadyMasked = value.trimStart().startsWith("(");
+  if (!alreadyMasked && digits.length >= 12 && digits.startsWith("55")) digits = digits.slice(2);
   digits = digits.slice(0, 11);
   if (!digits) return "";
   if (digits.length <= 2) return `(${digits}`;

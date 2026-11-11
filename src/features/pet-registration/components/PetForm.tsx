@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, useRef } from "react";
+import { useEffect, useId } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -16,10 +16,11 @@ import { AllergiesField } from "./AllergiesField";
 import { BirthdateField } from "./BirthdateField";
 import { BreedField } from "./BreedField";
 import { RequiredMark } from "./FieldMarks";
-import { HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
+import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { FormIntro } from "./FormIntro";
 import { ImageUpload } from "./ImageUpload";
 import { PhoneFields } from "./PhoneFields";
+import { useKeyedList } from "./useKeyedList";
 
 const MAX_GUARDIANS = 2;
 const initialState: SubmitState = { status: "idle" };
@@ -92,15 +93,7 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
 // ── Guardian list (dynamic) ───────────────────────────────────────────────────
 
 function GuardianList({ dict }: { dict: Dict }) {
-  const [keys, setKeys] = useState<number[]>([0]);
-  const nextKey = useRef(1);
-
-  const add = () => {
-    setKeys((k) => [...k, nextKey.current++]);
-  };
-  const remove = (idx: number) => {
-    setKeys((k) => k.filter((_, i) => i !== idx));
-  };
+  const { keys, add, remove } = useKeyedList();
 
   return (
     <>
@@ -131,7 +124,7 @@ function GuardianList({ dict }: { dict: Dict }) {
           <button
             type="button"
             onClick={add}
-            className="min-h-11 w-full rounded-lg border border-dashed border-black/20 text-sm font-medium text-ink/80 transition hover:border-ink/40 hover:text-ink"
+            className={ADD_BUTTON_CLASS}
           >
             + {dict.addGuardian}
           </button>
@@ -165,24 +158,18 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
     initialState,
   );
 
+  // Server error code → text; anything else (`missing_fields`) is the generic one.
+  const errorTexts: Record<string, string> = {
+    invalid_picture: dict.errorPicture,
+    invalid_picture_type: dict.errorPictureType,
+    invalid_picture_size: dict.errorPictureSize,
+    invalid_birthdate: dict.errorBirthdate,
+    invalid_details: dict.errorDetails,
+    invalid_phone: dict.errorPhone,
+    invalid_phone_channels: dict.errorPhoneChannels,
+  };
   const errorMessage =
-    state.status === "error"
-      ? state.message === "invalid_picture"
-        ? dict.errorPicture
-        : state.message === "invalid_picture_type"
-          ? dict.errorPictureType
-          : state.message === "invalid_picture_size"
-            ? dict.errorPictureSize
-            : state.message === "invalid_birthdate"
-              ? dict.errorBirthdate
-              : state.message === "invalid_details"
-                ? dict.errorDetails
-                : state.message === "invalid_phone"
-                  ? dict.errorPhone
-                  : state.message === "invalid_phone_channels"
-                    ? dict.errorPhoneChannels
-                    : dict.errorMissing
-      : null;
+    state.status === "error" ? (errorTexts[state.message ?? ""] ?? dict.errorMissing) : null;
 
   // `state` is a new object on every submission, so a repeated error is shown again.
   useEffect(() => {

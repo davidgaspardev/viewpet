@@ -24,7 +24,7 @@ export function PetDetails({ pet, locale }: PetDetailsProps) {
       aria-labelledby="pet-details-heading"
       className="rounded-card bg-surface"
     >
-      <header className="mx-2 flex h-16 items-center border-b border-black/10 py-4 pb-3">
+      <header className="mx-2 flex min-h-16 items-center border-b border-black/10 py-4 pb-3">
         <h2
           id="pet-details-heading"
           className="pl-2 text-lg font-bold tracking-tight text-ink"
@@ -46,9 +46,11 @@ export function PetDetails({ pet, locale }: PetDetailsProps) {
             <dt className="text-xs font-medium text-muted">{dict.petAllergies}</dt>
             <dd className="mt-1.5">
               <ul className="flex flex-wrap gap-2">
-                {allergies.map((allergy) => (
+                {allergies.map((allergy, i) => (
+                  // The index is part of the key: stored data is not deduped
+                  // (a hand-edited document or the JSON seed can repeat a value).
                   <li
-                    key={allergy}
+                    key={`${allergy}-${i}`}
                     className="rounded-full bg-white px-3 py-1 text-sm text-ink ring-1 ring-black/10"
                   >
                     {allergy}
