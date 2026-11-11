@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import HomePage, { metadata } from "@/app/page";
 import { GET as getHomeQr } from "@/app/home-qr.svg/route";
+import * as getEntryModule from "@/features/pet-profile/get-entry";
 import { OG_LOCALE, SITE_NAME } from "@/features/pet-profile/metadata";
 import { maskPhoneDisplay } from "@/lib/utils/phone";
 import { MAX_GUARDIANS } from "@/types/pet";
@@ -14,13 +15,34 @@ import { demoTagHref } from "../demo";
 import { HOME_QR_PATH, homeQrTarget } from "../qr";
 
 const DEMO_ID = "nuxw4d83wraa";
+const LOST_ID = "n7k8w3zwe49w";
+const RESERVED_ID = "egqr8k6at59j";
 // Well formed, but no pet has it.
 const UNKNOWN_ID = "38q9uymz5c43";
+const FAILING_ID = "ujvb9gd7afsx";
 const originalDemoId = process.env.DEMO_TAG_ID;
+
+// The pets are faked: the real lookup reads `data/local.db.json`, which is
+// gitignored and so empty in CI. Copied before mocking, because the namespace
+// object is live.
+const realGetEntry = { ...getEntryModule };
+mock.module("@/features/pet-profile/get-entry", () => ({
+  getPetEntry: async (id: string) => {
+    if (id === DEMO_ID) return { status: "active", pet: {} };
+    if (id === LOST_ID) return { status: "lost", pet: {} };
+    if (id === RESERVED_ID) return { status: "reserved" };
+    if (id === FAILING_ID) throw new Error("database unreachable");
+    return { status: "missing" };
+  },
+}));
 
 afterEach(() => {
   if (originalDemoId === undefined) delete process.env.DEMO_TAG_ID;
   else process.env.DEMO_TAG_ID = originalDemoId;
+});
+
+afterAll(() => {
+  mock.module("@/features/pet-profile/get-entry", () => realGetEntry);
 });
 
 const countOf = (html: string, needle: string) => html.split(needle).length - 1;
@@ -41,8 +63,24 @@ describe("demoTagHref", () => {
     expect(await demoTagHref("short")).toBeUndefined();
   });
 
-  test("is undefined for a well-formed id that no pet has", async () => {
+  test("also links to a lost pet's page", async () => {
+    expect(await demoTagHref(LOST_ID)).toBe(`/tag/${LOST_ID}`);
+  });
+
+  test("is undefined for a well-formed id that no pet has, or that is only reserved", async () => {
     expect(await demoTagHref(UNKNOWN_ID)).toBeUndefined();
+    // Its page is the public registration form, not an example.
+    expect(await demoTagHref(RESERVED_ID)).toBeUndefined();
+  });
+
+  test("is undefined when the lookup fails", async () => {
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(await demoTagHref(FAILING_ID)).toBeUndefined();
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 
