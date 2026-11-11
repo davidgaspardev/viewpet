@@ -36,9 +36,15 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // The hanging tag on the marketing home: a slow swing from its ring.
+        sway: {
+          "0%, 100%": { transform: "rotate(-2.5deg)" },
+          "50%": { transform: "rotate(2.5deg)" },
+        },
       },
       animation: {
         "snackbar-in": "snackbar-in 180ms ease-out",
+        sway: "sway 6s ease-in-out infinite",
       },
     },
   },

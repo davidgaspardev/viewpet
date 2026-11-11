@@ -34,6 +34,9 @@ export interface Phone {
   channels: PhoneChannel[];
 }
 
+/** Guardians one pet can have (the form and the server action both enforce it). */
+export const MAX_GUARDIANS = 2;
+
 export interface Guardian {
   name: string;
   email?: string;

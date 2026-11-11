@@ -23,7 +23,8 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 | **Host curto** (`qr.`) | `qr.viewpet.info`: o endereço estável que vai no QR e só redireciona pra página real, pra poder mudar a página sem reimprimir nada. | `src/middleware.ts`, seção "Host curto do QR" |
 | **Scan** | Uma visita que chegou pelo QR (pelo host curto), em vez de por um link direto. O redirect marca com o cookie `qr_scan`; a página lê. | `src/features/qr-redirect/`, `src/lib/utils/qr-scan.ts` |
 | **Pendant** | O modelo 3D da tag (o pingente), em Rust/Bevy. Ainda não está nesta branch: está sendo desenvolvido à parte. | `native/pendant/` (outro branch) |
-| **`pet-tag`** | A feature web que mostra o carrossel 3D de modelos de tag (Three.js). Fala do **desenho** da tag, não da rota `/tag`. | `src/features/pet-tag/` |
+| **`pet-tag`** | A feature web com a cena 3D da tag (Three.js). Fala do **desenho** da tag, não da rota `/tag`. Não aparece mais na home, que usa uma ilustração em CSS. | `src/features/pet-tag/` |
+| **Home** | A página `/`: apresenta o produto (hero, como funciona, o que a página do pet mostra, a plaquinha). | `src/app/page.tsx`, `src/features/home/` |
 
 ## Stack
 
@@ -312,6 +313,14 @@ MONGODB_URI=mongodb://localhost:27017/viewpet
 
 **Providers recomendados:** [MongoDB Atlas](https://www.mongodb.com/atlas), [Railway](https://railway.app/).
 
+## Home (marketing)
+
+A página `/` apresenta o produto: hero, "como funciona", o que a página do pet mostra e a plaquinha. O texto fica em `src/features/home/content.ts` (tudo o que ele afirma tem que existir no app) e cada bloco é um componente em `src/features/home/components/`. A plaquinha e o celular das ilustrações são HTML/CSS e um SVG de QR Code, sem imagem nem cena 3D; o QR da ilustração abre `SITE_URL` (ou `https://viewpet.info`, se ela estiver vazia ou inválida) e é um único arquivo, `/home-qr.svg`, compartilhado pelas duas ilustrações. A home é gerada no build e de novo, no máximo, a cada hora: `SITE_URL` (QR e `canonical`) e `DEMO_TAG_ID` são lidas nessas duas ocasiões, e o ano do rodapé acompanha.
+
+| Variável | Exemplo | Efeito |
+|----------|---------|--------|
+| `DEMO_TAG_ID` | `nuxw4d83wraa` | Id de um pet **publicado** (ativo ou perdido), usado nos botões "Ver uma página de exemplo". Sem ela, com um id malformado, inexistente, ainda só reservado (cuja página é o formulário público) ou se o banco não responder, esses botões somem e a home continua funcionando. Use um pet de exemplo dedicado, não o de um cliente: a página mostra os contatos dele a qualquer visitante. É lida quando a home é gerada (build e a cada hora), então o banco precisa estar acessível no build. |
+
 ## URLs de exemplo
 
 O seed (`src/data/pets.json`) inclui pets ativos e um perdido:
@@ -353,7 +362,7 @@ scripts/
 src/
 ├── app/
 │   ├── layout.tsx                # layout raiz + fontes + globals
-│   ├── page.tsx                  # landing
+│   ├── page.tsx                  # home de marketing
 │   ├── globals.css               # tailwind base/components/utilities
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
 │   └── tag/[id]/
@@ -364,7 +373,8 @@ src/
 │       └── not-found.tsx         # fallback 404
 ├── features/
 │   ├── pet-profile/components/   # PetHero, GuardianContact, SocialLinks, ActionButton, ImageUpload, PetForm
-│   └── pet-tag/                  # carousel 3D da plaquinha (Three.js / R3F)
+│   ├── home/                     # blocos e texto da home de marketing
+│   └── pet-tag/                  # cena 3D da plaquinha (Three.js / R3F); fora da home
 ├── ui/                           # primitives compartilhadas: Logo, Card, Tooltip, StickyHeader, icons
 ├── lib/
 │   ├── repository/

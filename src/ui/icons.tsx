@@ -141,3 +141,85 @@ export function GenderFemaleIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+/** Tabler `qrcode`. */
+export function QrCodeIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M7 17l0 .01" />
+      <path d="M14 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M7 7l0 .01" />
+      <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+      <path d="M17 7l0 .01" />
+      <path d="M14 14l3 0" />
+      <path d="M20 14l0 .01" />
+      <path d="M14 14l0 3" />
+      <path d="M14 20l3 0" />
+      <path d="M17 17l3 0" />
+      <path d="M20 17l0 3" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `heart`. */
+export function HeartIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `lock`. */
+export function LockIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6" />
+      <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+      <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `device-mobile`. */
+export function DeviceMobileIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 5a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-14" />
+      <path d="M11 4h2" />
+      <path d="M12 17v.01" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `arrow-right`. */
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 12l14 0" />
+      <path d="M13 18l6 -6" />
+      <path d="M13 6l6 6" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `arrow-down`. */
+export function ArrowDownIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 5l0 14" />
+      <path d="M18 13l-6 6" />
+      <path d="M6 13l6 6" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `check`. */
+export function CheckIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 12l5 5l10 -10" />
+    </BaseIcon>
+  );
+}

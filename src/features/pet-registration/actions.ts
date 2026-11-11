@@ -9,6 +9,7 @@ import { tagPath } from "@/lib/utils/routes";
 import { readString } from "./form-data";
 import { parsePetDetails } from "./parse-details";
 import { parsePhones } from "./parse-phones";
+import { MAX_GUARDIANS } from "@/types/pet";
 import type { Pet, Guardian, SocialPlatform, PetGender } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
@@ -17,8 +18,6 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "facebook",
   "tiktok",
 ];
-
-const MAX_GUARDIANS = 2;
 
 export type SubmitState = {
   status: "idle" | "success" | "error";

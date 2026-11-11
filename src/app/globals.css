@@ -11,6 +11,13 @@ body {
   height: 100%;
 }
 
+/* In-page links glide instead of jumping, on the marketing home only (its <main> carries the attribute). */
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-smooth-scroll]) {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: #ffffff;
   color: #1f2d3d;
