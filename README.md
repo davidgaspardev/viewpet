@@ -315,11 +315,11 @@ MONGODB_URI=mongodb://localhost:27017/viewpet
 
 ## Home (marketing)
 
-A página `/` apresenta o produto: hero, "como funciona", o que a página do pet mostra e a plaquinha. O texto fica em `src/features/home/content.ts` (tudo o que ele afirma tem que existir no app) e cada bloco é um componente em `src/features/home/components/`. A plaquinha e o celular das ilustrações são HTML/CSS e um SVG de QR Code, sem imagem nem cena 3D; o QR da ilustração abre `SITE_URL` (ou `https://viewpet.info`).
+A página `/` apresenta o produto: hero, "como funciona", o que a página do pet mostra e a plaquinha. O texto fica em `src/features/home/content.ts` (tudo o que ele afirma tem que existir no app) e cada bloco é um componente em `src/features/home/components/`. A plaquinha e o celular das ilustrações são HTML/CSS e um SVG de QR Code, sem imagem nem cena 3D; o QR da ilustração abre `SITE_URL` (ou `https://viewpet.info`, se ela estiver vazia ou inválida) e é um único arquivo, `/home-qr.svg`, compartilhado pelas duas ilustrações. A home é gerada no build e de novo, no máximo, a cada hora: `SITE_URL` (QR e `canonical`) e `DEMO_TAG_ID` são lidas nessas duas ocasiões, e o ano do rodapé acompanha.
 
 | Variável | Exemplo | Efeito |
 |----------|---------|--------|
-| `DEMO_TAG_ID` | `nuxw4d83wraa` | Id de um pet cadastrado, usado nos botões "Ver uma página de exemplo". Sem ela (ou com um id inválido) esses botões somem e a home continua funcionando. É lida no **build**, então mudar o valor pede um novo deploy. |
+| `DEMO_TAG_ID` | `nuxw4d83wraa` | Id de um pet **publicado** (ativo ou perdido), usado nos botões "Ver uma página de exemplo". Sem ela, com um id malformado, inexistente, ainda só reservado (cuja página é o formulário público) ou se o banco não responder, esses botões somem e a home continua funcionando. Use um pet de exemplo dedicado, não o de um cliente: a página mostra os contatos dele a qualquer visitante. É lida quando a home é gerada (build e a cada hora), então o banco precisa estar acessível no build. |
 
 ## URLs de exemplo
 

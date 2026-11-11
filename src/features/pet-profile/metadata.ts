@@ -4,9 +4,9 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import { resolveOrigin, type HeaderReader } from "@/lib/utils/origin";
 import type { PetEntry } from "@/types/pet";
 
-const SITE_NAME = "View Pet";
+export const SITE_NAME = "View Pet";
 
-const OG_LOCALE: Record<Locale, string> = { "pt-BR": "pt_BR", "en-US": "en_US" };
+export const OG_LOCALE: Record<Locale, string> = { "pt-BR": "pt_BR", "en-US": "en_US" };
 
 /** Width, in px, of the preview image: well above the ~300px link previews need, still small. */
 export const OG_IMAGE_WIDTH = 640;

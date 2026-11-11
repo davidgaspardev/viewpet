@@ -1,17 +1,9 @@
-import { LOGO_DATA_URI } from "@/lib/qrcode/logo";
-import { renderQrSvg } from "@/lib/qrcode/render";
+import Image from "next/image";
 
-/** What the illustration's QR Code opens when someone scans the screen: the site itself. */
-const QR_TARGET = process.env.SITE_URL ?? "https://viewpet.info";
-
-const QR_SVG = renderQrSvg(QR_TARGET, {
-  logoHref: LOGO_DATA_URI,
-  color: "#1F2D3D",
-  background: "#ffffff",
-});
+import { HOME_QR_PATH } from "../qr";
 
 type TagIllustrationProps = {
-  /** Name engraved on the tag. */
+  /** Name shown on the tag. */
   name: string;
   /** Swing slowly from the ring (motion-safe only). */
   swing?: boolean;
@@ -20,14 +12,14 @@ type TagIllustrationProps = {
 
 /**
  * A flat illustration of the product: a dark enamel pendant hanging from its
- * ring, with the pet's name and a QR Code. Drawn with CSS and an inline SVG
- * (no 3D scene, no image), so it costs nothing to load.
+ * ring, with the pet's name and a QR Code. Drawn with CSS (no 3D scene); the QR
+ * is one small SVG file shared by every copy of the illustration.
  */
 export function TagIllustration({ name, swing = false, className = "" }: TagIllustrationProps) {
   return (
     <div
       role="img"
-      aria-label={`Plaquinha de metal com o nome ${name} gravado e um QR Code`}
+      aria-label={`Plaquinha de metal com o nome ${name} e um QR Code`}
       className={`relative aspect-[4/5] w-full max-w-[17rem] origin-top ${
         swing ? "motion-safe:animate-sway" : ""
       } ${className}`}
@@ -49,10 +41,9 @@ export function TagIllustration({ name, swing = false, className = "" }: TagIllu
         <span className="relative text-lg font-semibold tracking-[0.4em] text-white/90">
           <span className="pl-[0.4em]">{name.toUpperCase()}</span>
         </span>
-        <div
-          className="relative aspect-square w-[50%] rounded-xl bg-white p-[3%] shadow-[0_2px_10px_rgba(0,0,0,0.25)] [&>svg]:h-full [&>svg]:w-full"
-          dangerouslySetInnerHTML={{ __html: QR_SVG }}
-        />
+        <div className="relative aspect-square w-[50%] rounded-xl bg-white p-[3%] shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+          <Image src={HOME_QR_PATH} alt="" width={256} height={256} unoptimized className="h-full w-full" />
+        </div>
         <span className="relative text-[0.6rem] font-medium uppercase tracking-[0.28em] text-white/65">
           Escaneie e ligue
         </span>

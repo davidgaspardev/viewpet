@@ -1,5 +1,7 @@
+import { getDictionary } from "@/lib/i18n";
+import { MAX_PHONES_PER_GUARDIAN } from "@/lib/utils/phone";
+import { MAX_GUARDIANS } from "@/types/pet";
 import {
-  AlertTriangleIcon,
   DeviceMobileIcon,
   HeartIcon,
   LockIcon,
@@ -10,12 +12,16 @@ import {
 
 /**
  * Copy of the marketing home (pt-BR). Everything it says about the product
- * is something the app already does — the registration form, the public pet
- * page and the lost-pet banner — so a claim here should be checked against
- * those before it is changed.
+ * is something the app already does for a tutor — the registration form and
+ * the public pet page — so a claim here should be checked against those before
+ * it is changed. What the registration form already says (the
+ * required fields, the public-data notice, the limits) is read from the
+ * dictionary and the shared constants, not typed again.
  */
 
 type Icon = typeof PhoneIcon;
+
+const dict = getDictionary("pt-BR");
 
 export const SECTION_IDS = {
   howItWorks: "como-funciona",
@@ -37,7 +43,6 @@ export const HERO = {
   demoCta: "Ver uma página de exemplo",
   howCta: "Entenda como funciona",
   reassurance: ["Sem app para instalar", "Você decide o que aparece"],
-  lostChip: { title: "Modo pet perdido", body: "Alerta em destaque e botão para ligar" },
 } as const;
 
 export const PET_PAGE = {
@@ -48,17 +53,17 @@ export const PET_PAGE = {
     {
       icon: PhoneIcon,
       title: "Fale com o tutor na hora",
-      body: "Ligação, WhatsApp ou Telegram: cada número escolhe como pode ser contatado, e um toque já abre o aplicativo certo.",
+      body: "Ligação, WhatsApp ou Telegram: cada número escolhe como pode ser contatado, e a página mostra só os botões que você marcou.",
     },
     {
-      icon: AlertTriangleIcon,
-      title: "Modo pet perdido",
-      body: "Quando o pet some, a página ganha um alerta no topo, com o botão de ligar para o tutor sempre à vista.",
+      icon: QrCodeIcon,
+      title: "No ar na hora",
+      body: dict.formSteps[1].body,
     },
     {
       icon: UsersIcon,
       title: "Pet de família",
-      body: "Até dois tutores, cada um com até três números. O principal aparece em destaque e os outros ficam um toque abaixo.",
+      body: `Até ${MAX_GUARDIANS} tutores, cada um com até ${MAX_PHONES_PER_GUARDIAN} números. O principal aparece em destaque e os outros ficam um toque abaixo.`,
     },
     {
       icon: HeartIcon,
@@ -84,31 +89,29 @@ export const HOW_IT_WORKS = {
   steps: [
     {
       title: "Escaneie e cadastre",
-      body: "Cada plaquinha tem um QR Code único. Escaneie, preencha os dados do pet e os contatos. Só o essencial é obrigatório: nome, sexo, raça, foto, nascimento e um contato.",
+      body: `Cada plaquinha tem um QR Code único. Escaneie e cadastre o pet. ${dict.formSteps[0].body}`,
     },
     {
       title: "Prenda na coleira",
-      body: "O pingente de metal vai com o seu pet para onde ele for, com o nome gravado e o QR Code sempre à mostra.",
+      body: "O pingente de metal vai com o seu pet para onde ele for, com o QR Code sempre à mostra.",
     },
     {
       title: "Quem achar escaneia",
       body: "Com a câmera do celular, a pessoa abre a página, vê as informações e liga ou manda mensagem para você.",
     },
   ],
-  notice:
-    "Tudo o que você preencher aparece na página pública do pet, para qualquer pessoa que escanear o QR Code. Confira os dados antes de publicar.",
+  notice: dict.formPublicNotice,
 } as const;
 
 export const TAG = {
   eyebrow: "A plaquinha",
   title: "Um pingente feito para o dia a dia.",
-  lead: "Metal com o nome do pet gravado e um QR Code que leva à página digital dele. Discreta na coleira, fácil de escanear.",
+  lead: "Metal com um QR Code que leva à página digital do pet. Discreta na coleira, fácil de escanear.",
   traits: [
-    { title: "Personalizada", body: "Nome do pet gravado, com acabamento em esmalte escuro." },
+    { title: "Fácil de ler", body: "Esmalte escuro com o QR Code sobre fundo claro." },
     { title: "Resistente", body: "Metal inoxidável de alta durabilidade." },
     { title: "Conectada", body: "QR Code único que abre a página digital do pet." },
   ],
-  icon: QrCodeIcon,
 } as const;
 
 export const FINAL_CTA = {

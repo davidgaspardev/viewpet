@@ -1,14 +1,13 @@
 import Link from "next/link";
 
-import { AlertTriangleIcon, ArrowDownIcon, ArrowRightIcon, CheckIcon } from "@/ui/icons";
+import { ArrowDownIcon, ArrowRightIcon, CheckIcon } from "@/ui/icons";
 
 import { HERO, SECTION_IDS } from "../content";
 import { PhoneMockup } from "./PhoneMockup";
 import { TagIllustration } from "./TagIllustration";
 
-const BUTTON_BASE =
-  "inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-base font-semibold transition";
-const PRIMARY_BUTTON = `${BUTTON_BASE} bg-ink bg-[url(/noise-light.png)] text-white shadow-pill hover:bg-ink/90`;
+const BUTTON_BASE = "inline-flex min-h-12 items-center gap-2 rounded-full text-base font-semibold transition";
+const PRIMARY_BUTTON = `${BUTTON_BASE} px-6 bg-ink bg-[url(/noise-light.png)] text-white shadow-pill hover:bg-ink/90`;
 
 /**
  * Opening section. The tag and the phone are laid out at their full size and
@@ -88,24 +87,12 @@ export function Hero({ demoHref }: { demoHref?: string }) {
         </div>
 
         <div className="relative mx-auto h-[21rem] w-full max-w-[23rem] sm:h-[35rem] sm:max-w-[34rem]">
-          <div className="absolute left-0 top-0 w-[17rem] origin-top-left scale-[0.62] sm:scale-100">
+          {/* Full size needs 512px (tag 272 + phone 240); the lg column is narrower until ~1130px. */}
+          <div className="absolute left-0 top-0 w-[17rem] origin-top-left scale-[0.62] sm:scale-100 lg:scale-[0.88] xl:scale-100">
             <TagIllustration name="Thor" swing />
           </div>
-          <div className="absolute bottom-0 right-0 origin-bottom-right scale-[0.62] rotate-[3deg] sm:scale-100">
+          <div className="absolute bottom-0 right-0 origin-bottom-right scale-[0.62] rotate-[3deg] sm:scale-100 lg:scale-[0.88] xl:scale-100">
             <PhoneMockup />
-          </div>
-
-          <div
-            aria-hidden="true"
-            className="absolute bottom-0 left-0 flex max-w-[15rem] items-center gap-2.5 rounded-card bg-white p-2.5 shadow-[0_12px_30px_-10px_rgba(31,45,61,0.35)] ring-1 ring-black/5 sm:bottom-14 sm:gap-3 sm:p-3"
-          >
-            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-red-700 text-white sm:h-9 sm:w-9">
-              <AlertTriangleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            </span>
-            <span>
-              <span className="block text-sm font-bold text-ink">{HERO.lostChip.title}</span>
-              <span className="hidden text-xs text-ink/70 sm:block">{HERO.lostChip.body}</span>
-            </span>
           </div>
         </div>
       </div>

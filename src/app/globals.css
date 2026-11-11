@@ -11,9 +11,9 @@ body {
   height: 100%;
 }
 
-/* In-page links (the marketing home's nav) glide instead of jumping. */
+/* In-page links glide instead of jumping, on the marketing home only (its <main> carries the attribute). */
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  html:has([data-smooth-scroll]) {
     scroll-behavior: smooth;
   }
 }

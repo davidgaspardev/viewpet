@@ -9,6 +9,7 @@ import { SnackbarProvider, useSnackbar } from "@/ui/Snackbar";
 import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
+import { MAX_GUARDIANS } from "@/types/pet";
 
 import { submitPet, type SubmitState } from "../actions";
 import { AboutField } from "./AboutField";
@@ -22,7 +23,6 @@ import { ImageUpload } from "./ImageUpload";
 import { PhoneFields } from "./PhoneFields";
 import { useKeyedList } from "./useKeyedList";
 
-const MAX_GUARDIANS = 2;
 const initialState: SubmitState = { status: "idle" };
 
 type Dict = ReturnType<typeof getDictionary>;
