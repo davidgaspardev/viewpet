@@ -169,13 +169,13 @@ Quando alguém cola `/tag/<id>` no WhatsApp, Telegram, iMessage ou Slack, o app 
 ### Tipos TypeScript (`src/types/pet.ts`)
 
 ```ts
-type PhoneChannel = "call" | "whatsapp" | "sms";
+type PhoneChannel = "call" | "whatsapp" | "telegram" | "sms";
 type PetStatus    = "reserved" | "active" | "lost";  // Pet.status só usa active | lost
 
 interface Phone {
   e164:     string;         // digits-only E.164, sem "+" (ex.: "5548985596882")
   display?: string;         // como o tutor digitou (ex.: "(48) 98559-6882")
-  channels: PhoneChannel[];
+  channels: PhoneChannel[]; // como o número pode ser contatado (qualquer combinação; o formulário oferece call, whatsapp e telegram)
 }
 
 interface Guardian {
@@ -197,10 +197,16 @@ interface PetPublicProfile {
   pictureUrl: string;
   birthdate:  string;        // ISO-8601
   status:     PetStatus;
+  gender?:    "male" | "female";
+  breed?:     string;        // texto livre; o formulário sugere raças enquanto digita
+  allergies?: string[];      // texto livre, uma por item (com sugestões no formulário)
+  about?:     string;        // parágrafo livre sobre o pet (até 500 caracteres)
   lostInfo?:  LostInfo;      // só presente quando status === "lost"
   guardians:  Guardian[];    // ordem importa — [0] é o tutor principal
 }
 ```
+
+Cada tutor pode ter mais de um número (`phones`, até 3 pelo formulário), e o primeiro é o principal — a página pública o rotula "Celular principal" e o banner de pet perdido liga para o primeiro número que aceita chamadas. Cada número escolhe sozinho seus canais: ligação, WhatsApp, Telegram, ou qualquer combinação (o botão do Telegram abre `https://t.me/+<número>`, que só resolve se a pessoa permitir ser encontrada pelo número).
 
 `guardians` é um array porque pet costuma ser de uma família. O índice `0` é o tutor principal (convenção — não tem flag); a página pública dá destaque pra ele e lista os demais como contatos secundários.
 

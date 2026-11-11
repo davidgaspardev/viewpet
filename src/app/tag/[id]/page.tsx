@@ -9,6 +9,7 @@ import { getPetEntry } from "@/features/pet-profile/get-entry";
 import { metadataBaseFor, petMetadata } from "@/features/pet-profile/metadata";
 import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
+import { PetDetails } from "@/features/pet-profile/components/PetDetails";
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
 import { Logo } from "@/ui/Logo";
 
@@ -75,9 +76,16 @@ export default async function ViewPetPage(props: PageProps) {
     <main data-scan-source={scanSource} className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
-      <PetHero name={pet.name} pictureUrl={pet.pictureUrl} ageLabel={ageLabel} gender={pet.gender ?? undefined} />
+      <PetHero
+        name={pet.name}
+        pictureUrl={pet.pictureUrl}
+        ageLabel={ageLabel}
+        gender={pet.gender ?? undefined}
+        locale={locale}
+      />
 
-      <div className="px-4 pt-8">
+      <div className="space-y-6 px-4 pt-8">
+        <PetDetails pet={pet} locale={locale} />
         <GuardianContact guardians={pet.guardians} locale={locale} />
       </div>
 

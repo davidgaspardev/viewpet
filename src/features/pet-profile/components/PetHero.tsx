@@ -1,4 +1,7 @@
 import Image from "next/image";
+import type { Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n";
+import { GenderFemaleIcon, GenderMaleIcon } from "@/ui/icons";
 import { Logo } from "@/ui/Logo";
 
 type PetHeroProps = {
@@ -6,9 +9,11 @@ type PetHeroProps = {
   pictureUrl: string;
   ageLabel: string;
   gender?: "male" | "female";
+  locale: Locale;
 };
 
-export function PetHero({ name, pictureUrl, ageLabel, gender }: PetHeroProps) {
+export function PetHero({ name, pictureUrl, ageLabel, gender, locale }: PetHeroProps) {
+  const dict = getDictionary(locale);
   return (
     <div className="relative w-full">
       <div className="relative aspect-[3/4] w-full overflow-hidden sm:aspect-[4/3] md:aspect-[16/10]">
@@ -34,10 +39,9 @@ export function PetHero({ name, pictureUrl, ageLabel, gender }: PetHeroProps) {
 
       {/* Name pill overlapping the bottom of the image */}
       <div className="relative -mt-16 flex flex-col items-center">
-        <span className="rounded-full bg-white/65 backdrop-blur-md px-6 py-3 text-lg font-bold text-ink">
-          {gender && (
-            <span className="mr-2">{gender === "male" ? "♂" : "♀"}</span>
-          )}
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/65 backdrop-blur-md px-6 py-3 text-lg font-bold text-ink">
+          {gender === "male" && <GenderMaleIcon className="h-5 w-5 flex-none" title={dict.genderMale} />}
+          {gender === "female" && <GenderFemaleIcon className="h-5 w-5 flex-none" title={dict.genderFemale} />}
           {name}
         </span>
       </div>

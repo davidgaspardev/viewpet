@@ -6,7 +6,10 @@ import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { PetRepositoryFactory } from "@/lib/repository";
 import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
 import { tagPath } from "@/lib/utils/routes";
-import type { Pet, Guardian, Phone, PhoneChannel, SocialPlatform, PetGender } from "@/types/pet";
+import { readString } from "./form-data";
+import { parsePetDetails } from "./parse-details";
+import { parsePhones } from "./parse-phones";
+import type { Pet, Guardian, SocialPlatform, PetGender } from "@/types/pet";
 
 const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "instagram",
@@ -15,8 +18,6 @@ const SOCIAL_PLATFORMS: SocialPlatform[] = [
   "tiktok",
 ];
 
-const PHONE_CHANNELS: PhoneChannel[] = ["call", "whatsapp"];
-
 const MAX_GUARDIANS = 2;
 
 export type SubmitState = {
@@ -24,31 +25,18 @@ export type SubmitState = {
   message?: string;
 };
 
-function readString(form: FormData, key: string): string {
-  const v = form.get(key);
-  return typeof v === "string" ? v.trim() : "";
-}
+type GuardianResult =
+  | { ok: true; guardian: Guardian }
+  | { ok: false; error: "missing_fields" | "invalid_phone" | "invalid_phone_channels" };
 
-function toE164Brazil(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("55") && digits.length >= 12) return digits;
-  return `55${digits}`;
-}
-
-function readGuardian(form: FormData, i: number): Guardian | null {
+function readGuardian(form: FormData, i: number): GuardianResult {
   const p = `g${i}_`;
   // Caller is responsible for checking name presence before calling this.
-  // Returns null only when phone is missing (partial fill).
-  const display = readString(form, `${p}phone`);
-  if (!display) return null;
+  // Fails when the guardian has no usable phone (partial fill).
+  const phones = parsePhones(form, p);
+  if (!phones.ok) return phones;
 
   const name = readString(form, `${p}name`);
-
-  const phone: Phone = {
-    e164: toE164Brazil(display),
-    display,
-    channels: PHONE_CHANNELS.filter((ch) => form.get(`${p}phone_${ch}`) === "on"),
-  };
 
   const social: Partial<Record<SocialPlatform, string>> = {};
   for (const platform of SOCIAL_PLATFORMS) {
@@ -59,10 +47,13 @@ function readGuardian(form: FormData, i: number): Guardian | null {
   const email = readString(form, `${p}email`);
 
   return {
-    name,
-    ...(email ? { email } : {}),
-    phones: [phone],
-    social,
+    ok: true,
+    guardian: {
+      name,
+      ...(email ? { email } : {}),
+      phones: phones.phones,
+      social,
+    },
   };
 }
 
@@ -91,17 +82,26 @@ export async function submitPet(
   }
   const parsed = new Date(birthdate);
 
+  const details = parsePetDetails(form);
+  if (!details.ok) return { status: "error", message: details.error };
+
   const guardians: Guardian[] = [];
   for (let i = 0; i < MAX_GUARDIANS; i++) {
     const name = readString(form, `g${i}_name`);
     if (!name) {
       if (i === 0) return { status: "error", message: "missing_fields" };
+      // A secondary guardian with a phone but no name is a partial fill, not an
+      // empty card: dropping it would publish without the contact they typed.
+      const phones = parsePhones(form, `g${i}_`);
+      if (phones.ok || phones.error !== "missing_fields") {
+        return { status: "error", message: "missing_fields" };
+      }
       break; // secondary guardian completely empty — stop here
     }
     // name present but phone missing → partial fill → validation error
     const guardian = readGuardian(form, i);
-    if (!guardian) return { status: "error", message: "missing_fields" };
-    guardians.push(guardian);
+    if (!guardian.ok) return { status: "error", message: guardian.error };
+    guardians.push(guardian.guardian);
   }
 
   let pictureUrl: string;
@@ -125,6 +125,7 @@ export async function submitPet(
     birthdate: parsed.toISOString(),
     status: "active",
     gender,
+    ...details.details,
     guardians,
   };
 

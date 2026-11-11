@@ -4,6 +4,11 @@
     "pictureUrl": "https://bestforpet.com.au/wp-content/uploads/2025/11/Husky.jpg",
     "birthdate": "2018-04-21T18:21:09.372Z",
     "gender": "male",
+    "breed": "Husky Siberiano",
+    "allergies": [
+      "Frango"
+    ],
+    "about": "Muito brincalhão e adora neve (e ar-condicionado no máximo). Late pouco, mas uiva quando fica sozinho. Come só ração sem frango.",
     "status": "active",
     "guardians": [
       {
@@ -33,6 +38,7 @@
     "pictureUrl": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200&q=80",
     "birthdate": "2022-08-10T10:00:00.000Z",
     "gender": "female",
+    "breed": "SRD (sem raça definida)",
     "status": "active",
     "guardians": [
       {
@@ -45,6 +51,14 @@
             "channels": [
               "call",
               "whatsapp"
+            ]
+          },
+          {
+            "e164": "5511977665544",
+            "display": "(11) 97766-5544",
+            "channels": [
+              "call",
+              "telegram"
             ]
           }
         ],
@@ -61,6 +75,12 @@
     "pictureUrl": "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1200&q=80",
     "birthdate": "2016-01-15T08:30:00.000Z",
     "gender": "male",
+    "breed": "Pastor Alemão",
+    "allergies": [
+      "Picada de pulga (DAPP)",
+      "Pólen"
+    ],
+    "about": "Dócil com crianças, mas assustado com fogos de artifício. Usa coleira azul com plaquinha e atende pelo nome.",
     "status": "lost",
     "lostEvent": {
       "startedAt": "2026-05-22T18:00:00.000Z",
@@ -77,7 +97,8 @@
             "display": "(21) 98877-2211",
             "channels": [
               "call",
-              "whatsapp"
+              "whatsapp",
+              "telegram"
             ]
           }
         ],

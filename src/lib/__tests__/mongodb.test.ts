@@ -3,16 +3,16 @@
  * Run with: bun test src/lib/__tests__/mongodb.test.ts
  */
 
-import { describe, expect, test, beforeAll, afterAll, beforeEach } from "bun:test";
+import { describe, expect, test, beforeAll, afterAll, afterEach, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { MongoPetRepository, resetMongoClient } from "../repository/mongodb/mongodb";
-import type { Pet } from "@/types/pet";
+import type { Pet, Phone } from "@/types/pet";
 
 let mongod: MongoMemoryServer;
 let cleanupClient: MongoClient;
 
-const COLLECTIONS = ["pets", "guardians", "lostEvents"] as const;
+const COLLECTIONS = ["pets", "guardians", "lost_events"] as const;
 
 function makePet(overrides: Partial<Pet> = {}): Pet {
   return {
@@ -98,6 +98,24 @@ describe("MongoPetRepository", () => {
     });
   });
 
+  describe("phone numbers", () => {
+    test("several numbers keep their order and their own channels, Telegram included", async () => {
+      const provider = new MongoPetRepository();
+      const phones: Phone[] = [
+        { e164: "5548981111111", display: "(48) 98111-1111", channels: ["call", "whatsapp"] },
+        { e164: "5548982222222", display: "(48) 98222-2222", channels: ["telegram"] },
+        { e164: "554833334444", channels: ["call", "whatsapp", "telegram"] },
+      ];
+      const pet = makePet({
+        guardians: [{ name: "Test Guardian", email: "multi@example.com", phones, social: {} }],
+      });
+      await provider.setPet("phones1", pet);
+      const entry = await provider.getPetEntry("phones1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.guardians[0].phones).toEqual(phones);
+    });
+  });
+
   describe("setPet", () => {
     test("stores and retrieves full pet profile", async () => {
       const provider = new MongoPetRepository();
@@ -142,6 +160,123 @@ describe("MongoPetRepository", () => {
         .collection<{ _id: string; status: string }>("pets")
         .findOne({ _id: "filled1" } as never);
       expect(raw?.status).toBe("active");
+    });
+  });
+
+  describe("breed, allergies and about", () => {
+    const rawPet = (id: string) =>
+      cleanupClient.db("viewpet").collection("pets").findOne({ _id: id } as never);
+
+    test("round-trip through the provider", async () => {
+      const provider = new MongoPetRepository();
+      const pet = makePet({
+        breed: "Shih Tzu",
+        allergies: ["Frango", "Pólen"],
+        about: "Calmo.\n\nAdora passear.",
+      });
+      await provider.setPet("details1", pet);
+      const entry = await provider.getPetEntry("details1");
+      expect("pet" in entry && entry.pet).toEqual(pet);
+    });
+
+    test("a pet saved without them stores none and loads without them", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("legacy1", makePet());
+      const raw = await rawPet("legacy1");
+      expect(raw).not.toHaveProperty("breed");
+      expect(raw).not.toHaveProperty("allergies");
+      expect(raw).not.toHaveProperty("about");
+      const entry = await provider.getPetEntry("legacy1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.breed).toBeUndefined();
+      expect(entry.pet.allergies).toBeUndefined();
+      expect(entry.pet.about).toBeUndefined();
+    });
+
+    test("an empty allergies list is not stored", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("empty1", makePet({ breed: "SRD", allergies: [] }));
+      expect(await rawPet("empty1")).not.toHaveProperty("allergies");
+    });
+
+    test("saving again without a field clears what was stored, instead of leaving it stale", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet(
+        "clear1",
+        makePet({ breed: "Beagle", allergies: ["Soja"], about: "Antigo." }),
+      );
+      await provider.setPet("clear1", makePet({ breed: "Beagle" }));
+      const raw = await rawPet("clear1");
+      expect(raw).toHaveProperty("breed", "Beagle");
+      expect(raw).not.toHaveProperty("allergies");
+      expect(raw).not.toHaveProperty("about");
+    });
+
+    test("saving again without a gender clears it too", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("gender1", makePet({ gender: "male" }));
+      expect(await rawPet("gender1")).toHaveProperty("gender", "male");
+      await provider.setPet("gender1", makePet());
+      expect(await rawPet("gender1")).not.toHaveProperty("gender");
+    });
+
+    test("saving again with new values replaces the old ones", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("swap1", makePet({ breed: "Beagle", allergies: ["Soja"] }));
+      await provider.setPet("swap1", makePet({ breed: "Poodle", allergies: ["Ovo", "Milho"] }));
+      const entry = await provider.getPetEntry("swap1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.breed).toBe("Poodle");
+      expect(entry.pet.allergies).toEqual(["Ovo", "Milho"]);
+    });
+  });
+
+  describe("legacy `lostEvents` collection", () => {
+    const legacyEvent = (petId: string) => ({
+      _id: new ObjectId(),
+      petId,
+      startedAt: "2026-05-22T18:00:00.000Z",
+      endedAt: null,
+      lastSeenLocation: "Praça central",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    afterEach(async () => {
+      await cleanupClient.db("viewpet").collection("lostEvents").drop().catch(() => {});
+    });
+
+    test("is renamed to lost_events on first connection, open events included", async () => {
+      const db = cleanupClient.db("viewpet");
+      await db.collection("lostEvents").insertOne(legacyEvent("old1") as never);
+      await insertRawPet({
+        _id: "old1",
+        status: "lost",
+        name: "Rex",
+        pictureUrl: "/uploads/rex.jpg",
+        birthdate: "2020-01-01T00:00:00.000Z",
+        guardianIds: [],
+      });
+
+      const entry = await new MongoPetRepository().getPetEntry("old1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.lostEvent?.lastSeenLocation).toBe("Praça central");
+
+      const names = (await db.listCollections().toArray()).map((c) => c.name);
+      expect(names).toContain("lost_events");
+      expect(names).not.toContain("lostEvents");
+    });
+
+    test("leaves an existing lost_events collection alone", async () => {
+      const db = cleanupClient.db("viewpet");
+      await db.collection("lost_events").insertOne(legacyEvent("new1") as never);
+      await db.collection("lostEvents").insertOne(legacyEvent("old2") as never);
+
+      await new MongoPetRepository().getPetEntry("anything");
+
+      expect(await db.collection("lost_events").countDocuments({ petId: "new1" })).toBe(1);
+      expect(await db.collection("lost_events").countDocuments({ petId: "old2" })).toBe(0);
+      expect(await db.collection("lostEvents").countDocuments({ petId: "old2" })).toBe(1);
     });
   });
 
@@ -378,7 +513,7 @@ describe("MongoPetRepository", () => {
       // ...but the doc survives in lostEvents with endedAt stamped.
       const events = await cleanupClient
         .db("viewpet")
-        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lost_events")
         .find({ petId: "lost2" })
         .toArray();
       expect(events).toHaveLength(1);
@@ -420,7 +555,7 @@ describe("MongoPetRepository", () => {
       // Still exactly one event for this pet — no duplicate insert
       const count = await cleanupClient
         .db("viewpet")
-        .collection("lostEvents")
+        .collection("lost_events")
         .countDocuments({ petId: "lost3" });
       expect(count).toBe(1);
     });
@@ -445,7 +580,7 @@ describe("MongoPetRepository", () => {
 
       const events = await cleanupClient
         .db("viewpet")
-        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lostEvents")
+        .collection<{ petId: string; startedAt: string; endedAt: string | null }>("lost_events")
         .find({ petId: "lost4" })
         .sort({ startedAt: 1 })
         .toArray();

@@ -12,6 +12,9 @@ import {
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
 
+import { RequiredMark } from "./FieldMarks";
+import { HINT_CLASS, LABEL_CLASS } from "./fieldStyles";
+
 const ACCEPTED_MIMES = [
   "image/jpeg",
   "image/png",
@@ -120,10 +123,11 @@ export function ImageUpload({
 
   return (
     <div className="w-full min-w-0">
-      <span className="text-xs font-medium text-muted">
+      <span className={LABEL_CLASS}>
         {dict.petPicture}
-        {required && <span className="ml-1 text-red-500">*</span>}
+        {required && <RequiredMark />}
       </span>
+      <p className={HINT_CLASS}>{dict.petPictureTip}</p>
 
       {/* The single source of truth for the form submission. Hidden but
           actually focusable via the dropzone label. */}
@@ -159,7 +163,7 @@ export function ImageUpload({
           onDrop={onDrop}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
-          className={`mt-1 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
+          className={`mt-2 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-6 text-center transition sm:py-8 ${
             isDragging
               ? "border-ink bg-ink/5"
               : "border-black/15 bg-white"
@@ -173,7 +177,7 @@ export function ImageUpload({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/15 bg-white px-5 text-sm font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
             >
               <GalleryIcon />
               {dict.petPictureBrowseBtn}
@@ -181,16 +185,16 @@ export function ImageUpload({
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink/15 bg-white px-5 text-sm font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
             >
               <CameraIcon />
               {dict.petPictureCamera}
             </button>
           </div>
-          <p className="text-[11px] text-muted">{dict.petPictureHint}</p>
+          <p className="text-xs text-ink/70">{dict.petPictureHint}</p>
         </div>
       ) : (
-        <div className="mt-1 w-full overflow-hidden rounded-xl border border-black/10 bg-white">
+        <div className="mt-2 w-full overflow-hidden rounded-lg border border-black/10 bg-white sm:max-w-xs">
           {/* Local preview only — file isn't uploaded until the form submits. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -199,19 +203,19 @@ export function ImageUpload({
             className="block aspect-square w-full object-cover"
           />
           <div className="flex items-center justify-between gap-3 border-t border-black/5 px-4 py-3">
-            <p className="truncate text-xs text-muted">{previewName}</p>
+            <p className="truncate text-xs text-ink/70">{previewName}</p>
             <div className="flex shrink-0 gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="rounded-full border border-ink/15 bg-white px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
+                className="min-h-10 rounded-full border border-ink/15 bg-white px-4 text-sm font-semibold text-ink transition hover:border-ink/40 hover:bg-ink/5"
               >
                 {dict.petPictureReplace}
               </button>
               <button
                 type="button"
                 onClick={onRemove}
-                className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
+                className="min-h-10 rounded-full border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50"
               >
                 {dict.petPictureRemove}
               </button>
@@ -223,7 +227,7 @@ export function ImageUpload({
       {errorMessage && (
         <p
           role="alert"
-          className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+          className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
         >
           {errorMessage}
         </p>

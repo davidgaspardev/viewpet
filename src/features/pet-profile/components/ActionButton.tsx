@@ -17,7 +17,7 @@ export function ActionButton({
     "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition active:scale-95";
   const variantClasses =
     variant === "filled"
-      ? "bg-ink text-white hover:bg-ink/90"
+      ? "bg-ink bg-[url(/noise-light.png)] text-white hover:bg-ink/90"
       : "border border-black/10 bg-white text-ink hover:bg-black/[0.02]";
   return (
     <a

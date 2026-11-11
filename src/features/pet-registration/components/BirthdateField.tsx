@@ -6,7 +6,8 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import { applyDateMask, caretAfterMask, localTodayIso } from "@/lib/utils/birthdate";
 
 import { birthdateFeedback } from "./birthdateFeedback";
-import { INPUT_CLASS } from "./fieldStyles";
+import { RequiredMark } from "./FieldMarks";
+import { INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 
 /**
  * Typed birthdate (`DD/MM/YYYY`, numeric keyboard) instead of a calendar
@@ -49,9 +50,9 @@ export function BirthdateField({ locale }: { locale: Locale }) {
   return (
     <div>
       <label className="block">
-        <span className="text-xs font-medium text-muted">
+        <span className={LABEL_CLASS}>
           {dict.petBirthdate}
-          <span className="ml-1 text-red-500">*</span>
+          <RequiredMark />
         </span>
         <input
           ref={inputRef}
@@ -73,11 +74,11 @@ export function BirthdateField({ locale }: { locale: Locale }) {
         />
       </label>
       <input type="hidden" name="birthdate" value={iso} />
-      <p id={hintId} className={`mt-1 text-[11px] ${echo ? "font-medium text-ink" : "text-muted"}`}>
+      <p id={hintId} className={`mt-1 text-xs ${echo ? "font-medium text-ink" : "text-ink/70"}`}>
         {echo ?? dict.petBirthdateHint}
       </p>
       {showError && (
-        <p id={errorId} role="alert" className="mt-1 text-xs text-red-600">
+        <p id={errorId} role="alert" className="mt-1 text-xs text-red-700">
           {message}
         </p>
       )}

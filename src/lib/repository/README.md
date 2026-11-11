@@ -71,13 +71,13 @@ Sem split de collection, sem dedup de tutores, sem histórico de lost events. É
 
 Três collections. Pets referenciam tutores via `guardianIds: ObjectId[]` (ordem importa — índice 0 é o principal). Tutores com email são deduplicados, então um casal com dois pets compartilha um único documento — atualizar o telefone é um único write que reflete em todos os pets. Lost events vivem em coleção própria com `petId` apontando pro pet, e o evento "aberto" (se houver) é descoberto pelo filtro `{ petId, endedAt: null }` — eventos resolvidos ficam como histórico.
 
-Três collections (`pets`, `guardians` e `lostEvents`) com índices criados sob demanda na primeira conexão:
+Três collections (`pets`, `guardians` e `lost_events`) com índices criados sob demanda na primeira conexão. A collection de eventos já se chamou `lostEvents`: se um banco ainda a tiver com o nome antigo, ela é renomeada para `lost_events` nessa mesma primeira conexão (com documentos e índices).
 
 ```js
 db.guardians.createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
 db.pets.createIndex({ guardianIds: 1 });
 db.pets.createIndex({ status: 1 });
-db.lostEvents.createIndex({ petId: 1, endedAt: 1 });
+db.lost_events.createIndex({ petId: 1, endedAt: 1 });
 ```
 
 Leitura de `/tag/<hashId>` é uma agregação com dois `$lookup` — uma round-trip pro banco:
@@ -88,7 +88,7 @@ db.pets.aggregate([
   { $lookup: { from: "guardians", localField: "guardianIds", foreignField: "_id", as: "guardians" } },
   {
     $lookup: {
-      from: "lostEvents",
+      from: "lost_events",
       let: { pid: "$_id" },
       pipeline: [{ $match: { $expr: { $and: [{ $eq: ["$petId", "$$pid"] }, { $eq: ["$endedAt", null] }] } } }],
       as: "openLostEvents",

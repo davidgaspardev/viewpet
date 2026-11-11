@@ -61,6 +61,14 @@ export function WhatsAppIcon(props: IconProps) {
   );
 }
 
+export function TelegramIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
+    </BaseIcon>
+  );
+}
+
 export function AlertTriangleIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>
@@ -107,6 +115,29 @@ export function XIcon(props: IconProps) {
     <BaseIcon {...props}>
       <path d="M18 6l-12 12" />
       <path d="M6 6l12 12" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `gender-male` (the Mars symbol). */
+export function GenderMaleIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+      <path d="M19 5l-5.4 5.4" />
+      <path d="M19 5h-5" />
+      <path d="M19 5v5" />
+    </BaseIcon>
+  );
+}
+
+/** Tabler `gender-female` (the Venus symbol). */
+export function GenderFemaleIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M7 9a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+      <path d="M12 14v7" />
+      <path d="M9 18h6" />
     </BaseIcon>
   );
 }
