@@ -11,6 +11,13 @@ body {
   height: 100%;
 }
 
+/* In-page links (the marketing home's nav) glide instead of jumping. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: #ffffff;
   color: #1f2d3d;
