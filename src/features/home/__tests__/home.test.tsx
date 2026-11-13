@@ -183,8 +183,8 @@ describe("HomePage", () => {
 
   test("the footer links the Terms of Use and the Privacy Policy", async () => {
     const html = await render();
-    expect(html).toContain('href="/termos"');
-    expect(html).toContain('href="/privacidade"');
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/privacy"');
   });
 
   test("scrolls smoothly only here: the marker is on this page's <main>", async () => {

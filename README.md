@@ -333,7 +333,7 @@ A página `/` apresenta o produto: hero, "como funciona", o que a página do pet
 
 O cadastro só publica a página se o tutor marcar **duas caixas** (nenhuma vem marcada): (1) "Li e aceito os Termos de Uso e estou ciente da Política de Privacidade" e (2) a autorização específica para publicar os dados informados, inclusive nome e telefones dos tutores, com a declaração de que as pessoas cujos contatos foram informados autorizaram. Os dois textos abrem em outra aba, para o formulário não perder o que já foi digitado.
 
-- **Páginas:** `/termos` e `/privacidade`, só em português (o cadastro em inglês avisa isso). O texto fica em `src/features/legal/terms.ts` e `privacy.ts`; os links estão no rodapé da home e da página do pet.
+- **Páginas:** `/terms` e `/privacy`, com o texto só em português (o cadastro em inglês avisa isso). O texto fica em `src/features/legal/terms.ts` e `privacy.ts`; os links estão no rodapé da home e da página do pet.
 - **Validação no servidor:** `submitPet` recusa o envio sem as duas caixas (`consent_required`) antes de qualquer outra coisa, inclusive antes de salvar a foto. `required` no HTML é só conveniência.
 - **Prova do aceite (LGPD art. 8º, §2º):** o pet guarda `consent` com a data e a hora e a versão de cada documento. Nada mais: sem IP nem user agent, que seriam mais dado pessoal só para provar o aceite. O MongoDB só escreve esse campo, nunca o apaga: salvar o pet sem ele (um script, o seed) não destrói a prova.
 - **Versões:** `src/features/legal/versions.ts` tem a data de cada documento. Mude a versão no mesmo commit do texto. Pets já cadastrados mantêm a versão que aceitaram; quando uma mudança for relevante (finalidade, compartilhamento), é preciso avisar os tutores e pedir novo aceite (art. 8º, §6º). Esse fluxo de novo aceite ainda não existe.
@@ -393,8 +393,8 @@ src/
 │   ├── layout.tsx                # layout raiz + fontes + globals
 │   ├── page.tsx                  # home de marketing
 │   ├── globals.css               # tailwind base/components/utilities
-│   ├── termos/page.tsx           # Termos de Uso
-│   ├── privacidade/page.tsx      # Política de Privacidade
+│   ├── terms/page.tsx            # Termos de Uso
+│   ├── privacy/page.tsx          # Política de Privacidade
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
 │   └── tag/[id]/
 │       ├── page.tsx              # branch missing/reserved/active/lost

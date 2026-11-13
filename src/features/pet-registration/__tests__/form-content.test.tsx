@@ -239,8 +239,8 @@ describe("consent boxes", () => {
       const dict = getDictionary(locale);
       const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale={locale} />));
       for (const [href, text] of [
-        ["/termos", dict.consentTerms.terms],
-        ["/privacidade", dict.consentTerms.privacy],
+        ["/terms", dict.consentTerms.terms],
+        ["/privacy", dict.consentTerms.privacy],
       ]) {
         expect(html).toMatch(
           new RegExp(`<a href="${href}" target="_blank" rel="noopener noreferrer"[^>]*>${text}</a>`),

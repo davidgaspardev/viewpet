@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacidade/page";
-import TermsPage, { metadata as termsMetadata } from "@/app/termos/page";
+import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacy/page";
+import TermsPage, { metadata as termsMetadata } from "@/app/terms/page";
 import { PRIVACY_PATH, TERMS_PATH } from "@/lib/utils/routes";
 
 import { LegalDocumentView, formatVersionDate } from "../components/LegalDocumentView";
