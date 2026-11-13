@@ -211,3 +211,55 @@ describe("PetForm placeholders", () => {
     }
   });
 });
+
+describe("consent boxes", () => {
+  const checkboxes = (html: string) =>
+    (html.match(/<input\b[^>]*\btype="checkbox"[^>]*>/g) ?? []).filter((tag) => /name="accept_/.test(tag));
+
+  for (const locale of SUPPORTED_LOCALES) {
+    test(`${locale}: two required boxes, never pre-ticked, one for the documents and one to publish`, () => {
+      const dict = getDictionary(locale);
+      const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale={locale} />));
+
+      const boxes = checkboxes(html);
+      expect(boxes).toHaveLength(2);
+      for (const tag of boxes) {
+        expect(tag).toMatch(/\brequired\b/);
+        expect(tag).not.toMatch(/\bchecked\b/);
+      }
+      expect(boxes.some((tag) => tag.includes('name="accept_terms"'))).toBe(true);
+      expect(boxes.some((tag) => tag.includes('name="accept_public"'))).toBe(true);
+
+      expect(html).toContain(dict.consentPublic);
+      expect(html).toContain(dict.consentRevokeHint);
+      expect(html).toContain(dict.consentLegend);
+    });
+
+    test(`${locale}: the documents open in a new tab, so the form keeps what was typed`, () => {
+      const dict = getDictionary(locale);
+      const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale={locale} />));
+      for (const [href, text] of [
+        ["/termos", dict.consentTerms.terms],
+        ["/privacidade", dict.consentTerms.privacy],
+      ]) {
+        expect(html).toMatch(
+          new RegExp(`<a href="${href}" target="_blank" rel="noopener noreferrer"[^>]*>${text}</a>`),
+        );
+      }
+    });
+  }
+
+  test("the consent comes right before the submit button", () => {
+    const html = renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale="pt-BR" />);
+    const consent = html.indexOf('name="accept_terms"');
+    const submit = html.indexOf('type="submit"');
+    expect(consent).toBeGreaterThan(0);
+    expect(submit).toBeGreaterThan(consent);
+  });
+
+  test("there is a message for the server's refusal, in every language", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      expect(getDictionary(locale).errorConsent.trim()).not.toBe("");
+    }
+  });
+});

@@ -34,6 +34,21 @@ export interface Phone {
   channels: PhoneChannel[];
 }
 
+/**
+ * What the tutor agreed to when registering the pet. LGPD art. 8, §2 puts the
+ * burden of proving consent on the controller, so it is stored with the pet:
+ * when, and which version of each document was on screen. Nothing else (no IP
+ * address, no user agent): the proof needs no more personal data than that.
+ */
+export interface ConsentRecord {
+  /** ISO-8601 — when the form was submitted with both boxes ticked. */
+  acceptedAt: string;
+  /** Version (a date, `YYYY-MM-DD`) of the Terms of Use that were shown. */
+  termsVersion: string;
+  /** Version (a date, `YYYY-MM-DD`) of the Privacy Policy that was shown. */
+  privacyVersion: string;
+}
+
 /** Guardians one pet can have (the form and the server action both enforce it). */
 export const MAX_GUARDIANS = 2;
 
@@ -99,6 +114,11 @@ export interface Pet {
   allergies?: string[];
   /** Free-form paragraph with anything else worth knowing about the pet. */
   about?: string;
+  /**
+   * The tutor's acceptance of the terms and of publishing the page. Absent on
+   * pets registered before the terms existed.
+   */
+  consent?: ConsentRecord;
   /** only populated when status === "lost" */
   lostEvent?: LostEvent;
   /** ordered: [0] is the primary guardian */

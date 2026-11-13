@@ -1,3 +1,4 @@
+import { LegalLinks } from "@/features/legal/components/LegalLinks";
 import { LogoRef } from "@/ui/Logo";
 
 import { FOOTER, NAV_LINKS } from "../content";
@@ -27,9 +28,10 @@ export function HomeFooter() {
           ))}
         </nav>
       </div>
-      <p className="mx-auto mt-6 max-w-6xl px-6 text-xs text-ink/70">
-        © {new Date().getFullYear()} ViewPet
-      </p>
+      <div className="mx-auto mt-6 flex max-w-6xl flex-col gap-3 px-6 text-xs text-ink/70 sm:flex-row sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} ViewPet</p>
+        <LegalLinks locale="pt-BR" />
+      </div>
     </footer>
   );
 }

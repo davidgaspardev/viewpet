@@ -123,6 +123,16 @@ type Dictionary = {
   errorPhone: string;
   errorPhoneChannels: string;
   errorDetails: string;
+  errorConsent: string;
+  // Consent to the terms and to publishing the page (checkboxes before "Publicar")
+  consentLegend: string;
+  consentTerms: { before: string; terms: string; between: string; privacy: string; after: string };
+  consentPublic: string;
+  consentRevokeHint: string;
+  // Links to the legal documents (footers)
+  legalNavLabel: string;
+  legalTerms: string;
+  legalPrivacy: string;
   // Link previews (Open Graph / Twitter)
   ogDescription: (petName: string) => string;
   ogGenericDescription: string;
@@ -256,6 +266,22 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
     errorDetails: "Confira raça, alergias e sobre — algum valor está longo demais.",
+    errorConsent: "Marque as duas caixas de aceite para publicar a página.",
+    consentLegend: "Termos e autorização",
+    consentTerms: {
+      before: "Li e aceito os ",
+      terms: "Termos de Uso",
+      between: " e estou ciente da ",
+      privacy: "Política de Privacidade",
+      after: ".",
+    },
+    consentPublic:
+      "Autorizo a publicação, na página pública do pet, dos dados que informei neste cadastro, inclusive nome e telefones dos tutores, e declaro ter autorização das pessoas cujos contatos informei.",
+    consentRevokeHint:
+      "Você pode revogar essa autorização e pedir a exclusão da página a qualquer momento, pelo contato indicado na Política de Privacidade.",
+    legalNavLabel: "Documentos legais",
+    legalTerms: "Termos de Uso",
+    legalPrivacy: "Política de Privacidade",
     errorPhone: "Confira os celulares: digite o número com DDD (10 ou 11 dígitos).",
     errorPhoneChannels:
       "Escolha pelo menos uma forma de contato (chamada, WhatsApp ou Telegram) para cada celular.",
@@ -388,6 +414,22 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
     errorDetails: "Check breed, allergies and about — a value is too long.",
+    errorConsent: "Tick both boxes to publish the page.",
+    consentLegend: "Terms and authorization",
+    consentTerms: {
+      before: "I have read and accept the ",
+      terms: "Terms of Use",
+      between: " and I acknowledge the ",
+      privacy: "Privacy Policy",
+      after: " (both in Portuguese).",
+    },
+    consentPublic:
+      "I authorize publishing the information I provided in this registration on the pet's public page, including the guardians' names and phone numbers, and I declare that I have permission from the people whose contact details I entered.",
+    consentRevokeHint:
+      "You can withdraw this authorization and ask for the page to be removed at any time, using the contact in the Privacy Policy.",
+    legalNavLabel: "Legal documents",
+    legalTerms: "Terms of Use",
+    legalPrivacy: "Privacy Policy",
     errorPhone: "Check the cellphones: enter each number with area code (10 or 11 digits).",
     errorPhoneChannels:
       "Choose at least one way to be contacted (call, WhatsApp or Telegram) for each cellphone.",

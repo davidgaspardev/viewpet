@@ -1,4 +1,4 @@
-import { Guardian, PetGender, PetStatus } from "@/types/pet";
+import { ConsentRecord, Guardian, PetGender, PetStatus } from "@/types/pet";
 import { ObjectId } from "mongodb";
 
 
@@ -12,6 +12,7 @@ export type PetDoc = {
   breed?: string;
   allergies?: string[];
   about?: string;
+  consent?: ConsentRecord;
   guardianIds?: ObjectId[];
   createdAt: Date;
   updatedAt: Date;

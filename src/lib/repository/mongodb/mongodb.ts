@@ -10,6 +10,8 @@
  *       // when status !== "reserved":
  *       name, pictureUrl, birthdate, gender?,
  *       breed?, allergies?, about?,  // optional details; absent when not provided
+ *       consent?,                    // { acceptedAt, termsVersion, privacyVersion }; absent on
+ *                                    // pets registered before the terms existed
  *       guardianIds: ObjectId[],     // ordered; [0] = primary
  *       createdAt, updatedAt,
  *     }
@@ -340,6 +342,7 @@ export class MongoPetRepository implements Seedable {
       ...(doc.breed ? { breed: doc.breed } : {}),
       ...(doc.allergies?.length ? { allergies: doc.allergies } : {}),
       ...(doc.about ? { about: doc.about } : {}),
+      ...(doc.consent ? { consent: doc.consent } : {}),
       ...(openEvent ? { lostEvent: lostEventDocToEntity(openEvent) } : {}),
       guardians,
     };
@@ -395,6 +398,9 @@ export class MongoPetRepository implements Seedable {
           ...(pet.breed ? { breed: pet.breed } : {}),
           ...(pet.allergies?.length ? { allergies: pet.allergies } : {}),
           ...(pet.about ? { about: pet.about } : {}),
+          // Proof of consent is only ever written, never cleared: saving a pet
+          // that carries none (a script, a seed) must not erase it.
+          ...(pet.consent ? { consent: pet.consent } : {}),
           guardianIds,
           updatedAt: now,
         },

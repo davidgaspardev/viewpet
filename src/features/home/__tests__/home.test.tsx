@@ -181,6 +181,12 @@ describe("HomePage", () => {
     expect(html).not.toContain('href="/tag/');
   });
 
+  test("the footer links the Terms of Use and the Privacy Policy", async () => {
+    const html = await render();
+    expect(html).toContain('href="/termos"');
+    expect(html).toContain('href="/privacidade"');
+  });
+
   test("scrolls smoothly only here: the marker is on this page's <main>", async () => {
     expect(await render()).toContain("<main data-smooth-scroll");
   });

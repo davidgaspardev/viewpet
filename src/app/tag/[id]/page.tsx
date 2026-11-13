@@ -11,6 +11,7 @@ import { PetHero } from "@/features/pet-profile/components/PetHero";
 import { GuardianContact } from "@/features/pet-profile/components/GuardianContact";
 import { PetDetails } from "@/features/pet-profile/components/PetDetails";
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
+import { LegalLinks } from "@/features/legal/components/LegalLinks";
 import { Logo } from "@/ui/Logo";
 
 import { PetForm } from "@/features/pet-registration/components/PetForm";
@@ -89,8 +90,9 @@ export default async function ViewPetPage(props: PageProps) {
         <GuardianContact guardians={pet.guardians} locale={locale} />
       </div>
 
-      <div className="mt-auto flex justify-center py-14 text-muted/30">
+      <div className="mt-auto flex flex-col items-center gap-10 pb-14 pt-14 text-muted/30">
         <Logo className="h-28 w-28" />
+        <LegalLinks locale={locale} className="justify-center text-xs text-ink/70" />
       </div>
     </main>
   );
