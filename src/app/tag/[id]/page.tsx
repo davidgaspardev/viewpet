@@ -2,7 +2,6 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { formatAge } from "@/lib/utils/age";
 import { QR_SCAN_COOKIE, scanSourceFrom } from "@/lib/utils/qr-scan";
 import { resolveLocale } from "@/lib/i18n.server";
 import { getPetEntry } from "@/features/pet-profile/get-entry";
@@ -66,7 +65,6 @@ export default async function ViewPetPage(props: PageProps) {
   }
 
   const pet = entry.pet;
-  const ageLabel = formatAge(pet.birthdate, locale);
 
   // "qr" when this visit just came through the short QR host (see the
   // `qr_scan` cookie set by its redirect), "direct" otherwise. Exposed as a
@@ -80,7 +78,6 @@ export default async function ViewPetPage(props: PageProps) {
       <PetHero
         name={pet.name}
         pictureUrl={pet.pictureUrl}
-        ageLabel={ageLabel}
         gender={pet.gender ?? undefined}
         locale={locale}
       />

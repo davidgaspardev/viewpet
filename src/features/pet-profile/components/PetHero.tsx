@@ -7,12 +7,11 @@ import { Logo } from "@/ui/Logo";
 type PetHeroProps = {
   name: string;
   pictureUrl: string;
-  ageLabel: string;
   gender?: "male" | "female";
   locale: Locale;
 };
 
-export function PetHero({ name, pictureUrl, ageLabel, gender, locale }: PetHeroProps) {
+export function PetHero({ name, pictureUrl, gender, locale }: PetHeroProps) {
   const dict = getDictionary(locale);
   return (
     <div className="relative w-full">
@@ -29,11 +28,6 @@ export function PetHero({ name, pictureUrl, ageLabel, gender, locale }: PetHeroP
         {/* Top-left logo chip */}
         <div className="absolute left-4 top-0 flex h-16 w-14 items-center justify-center rounded-b-2xl bg-white/65 backdrop-blur-md text-ink">
           <Logo className="h-12 w-12" />
-        </div>
-
-        {/* Top-right age pill */}
-        <div className="absolute right-0 top-4 rounded-l-full bg-white/65 backdrop-blur-md px-4 py-2 text-sm font-bold text-ink">
-          {ageLabel}
         </div>
       </div>
 

@@ -36,3 +36,16 @@ export function formatAge(
   const months = ageInMonths(date, now);
   return dict.monthsOld(Math.max(1, months));
 }
+
+/**
+ * Month and year of a birthdate, in the reader's language ("abr. de 2022" /
+ * "Apr 2022"), or `undefined` for a value that isn't a date. Read in UTC:
+ * birthdates are stored as UTC midnight of the day the tutor typed, so a
+ * viewer west of UTC would otherwise see the previous day, and for a pet born
+ * on the 1st, the previous month.
+ */
+export function formatBirthMonth(birthdate: string | Date, locale: Locale): string | undefined {
+  const date = typeof birthdate === "string" ? new Date(birthdate) : birthdate;
+  if (Number.isNaN(date.getTime())) return undefined;
+  return new Intl.DateTimeFormat(locale, { month: "short", year: "numeric", timeZone: "UTC" }).format(date);
+}
