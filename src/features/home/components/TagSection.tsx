@@ -1,6 +1,6 @@
 import { CheckIcon } from "@/ui/icons";
 
-import { SECTION_IDS, TAG } from "../content";
+import { EXAMPLE_TAG_ID, SECTION_IDS, TAG } from "../content";
 import { SectionHeading } from "./SectionHeading";
 import { TagIllustration } from "./TagIllustration";
 
@@ -35,7 +35,7 @@ export function TagSection() {
         </div>
 
         <div className="rounded-[2rem] bg-gradient-to-br from-sage/30 to-accent/60 px-6 py-12">
-          <TagIllustration name="Lupe" className="mx-auto" />
+          <TagIllustration tagId={EXAMPLE_TAG_ID} className="mx-auto" />
         </div>
       </div>
     </section>

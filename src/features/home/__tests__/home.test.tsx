@@ -2,17 +2,17 @@ import { afterAll, afterEach, describe, expect, mock, spyOn, test } from "bun:te
 import { renderToStaticMarkup } from "react-dom/server";
 
 import HomePage, { metadata } from "@/app/page";
-import { GET as getHomeQr } from "@/app/home-qr.svg/route";
 import * as getEntryModule from "@/features/pet-profile/get-entry";
 import { OG_LOCALE, SITE_NAME } from "@/features/pet-profile/metadata";
+import { isHashId } from "@/lib/utils/id-format";
 import { maskPhoneDisplay } from "@/lib/utils/phone";
 import { MAX_GUARDIANS } from "@/types/pet";
 
 import { FinalCta } from "../components/FinalCta";
 import { HomeHeader } from "../components/HomeHeader";
-import { PET_PAGE, NAV_LINKS, PAGE_META, SECTION_IDS } from "../content";
+import { EXAMPLE_TAG_ID, PET_PAGE, NAV_LINKS, PAGE_META, SECTION_IDS } from "../content";
 import { demoTagHref } from "../demo";
-import { HOME_QR_PATH, homeQrTarget } from "../qr";
+import { HOME_QR_ID, homeQrSymbol, homeQrTarget } from "../qr";
 
 const DEMO_ID = "nuxw4d83wraa";
 const LOST_ID = "n7k8w3zwe49w";
@@ -96,11 +96,17 @@ describe("homeQrTarget", () => {
   });
 });
 
-describe("home QR image", () => {
-  test("is served as one SVG file", async () => {
-    const res = getHomeQr();
-    expect(res.headers.get("Content-Type")).toBe("image/svg+xml");
-    expect(await res.text()).toContain("<svg");
+describe("homeQrSymbol", () => {
+  test("splits the QR Code into its viewBox and its drawing, with no outer <svg>", () => {
+    const { viewBox, content } = homeQrSymbol("https://example.com");
+    expect(viewBox).toMatch(/^0 0 \d+ \d+$/);
+    expect(content).toContain("<circle");
+    expect(content).toContain("<image");
+    expect(content).not.toContain("<svg");
+  });
+
+  test("draws the target it was given", () => {
+    expect(homeQrSymbol("https://a.example.com").content).not.toBe(homeQrSymbol("https://b.example.com").content);
   });
 });
 
@@ -130,10 +136,34 @@ describe("HomePage", () => {
     expect(html).not.toContain("Digite o nome abaixo e visualize em 3D");
   });
 
-  test("shows the QR code of the tag illustration as a shared file, not inline", async () => {
+  test("defines the QR code once and draws it in each tag, with no image file", async () => {
     const html = await render();
-    expect(countOf(html, `src="${HOME_QR_PATH}"`)).toBe(2);
+    expect(countOf(html, `id="${HOME_QR_ID}"`)).toBe(1);
+    expect(countOf(html, `href="#${HOME_QR_ID}"`)).toBe(2);
+    // The logo in the middle of the code is the only <image>, and it is in the symbol.
+    expect(countOf(html, "<image")).toBe(1);
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("home-qr.svg");
     expect(html).not.toContain('aria-label="QR code"');
+  });
+
+  test("the tags show an example id under the QR code and no pet name", async () => {
+    const html = await render();
+    expect(isHashId(EXAMPLE_TAG_ID)).toBe(true);
+    expect(countOf(html, `>${EXAMPLE_TAG_ID}</span>`)).toBe(2);
+    const labels = html.match(/aria-label="Plaquinha[^"]*"/g) ?? [];
+    expect(labels).toHaveLength(2);
+    for (const label of labels) {
+      expect(label).toContain("aço escovado");
+      expect(label).toContain(EXAMPLE_TAG_ID);
+      expect(label).not.toMatch(/Thor|Lupe|nome/);
+    }
+  });
+
+  test("describes the tag as steel, not as enamel or engraved with a name", async () => {
+    const html = await render();
+    expect(html).toContain("Aço escovado");
+    expect(html).not.toMatch(/esmalte|Esmalte|gravado com o nome|nome gravado/);
   });
 
   test("repeats the logo path once: the footer and the phone mock point at the header's", async () => {

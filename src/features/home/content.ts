@@ -23,6 +23,13 @@ type Icon = typeof PhoneIcon;
 
 const dict = getDictionary("pt-BR");
 
+/**
+ * The code printed under the QR Code in the tag illustrations. It is made up:
+ * it has the shape of a real tag id (so the picture is true to the product) but
+ * belongs to no pet.
+ */
+export const EXAMPLE_TAG_ID = "7h3m9xk2q4wp";
+
 export const SECTION_IDS = {
   howItWorks: "como-funciona",
   petPage: "pagina-do-pet",
@@ -39,7 +46,7 @@ export const HERO = {
   eyebrow: "Identificação inteligente para pets",
   title: "Seu pet se perdeu?",
   highlight: "Quem achar fala com você.",
-  lead: "Uma plaquinha de metal com QR Code na coleira. Quem encontrar escaneia com a câmera do celular e abre a página do seu pet: nome, cuidados e o jeito mais rápido de falar com você. Sem aplicativo.",
+  lead: "Uma plaquinha de aço com QR Code na coleira. Quem encontrar escaneia com a câmera do celular e abre a página do seu pet: nome, cuidados e o jeito mais rápido de falar com você. Sem aplicativo.",
   demoCta: "Ver uma página de exemplo",
   howCta: "Entenda como funciona",
   reassurance: ["Sem app para instalar", "Você decide o que aparece"],
@@ -93,7 +100,7 @@ export const HOW_IT_WORKS = {
     },
     {
       title: "Prenda na coleira",
-      body: "O pingente de metal vai com o seu pet para onde ele for, com o QR Code sempre à mostra.",
+      body: "A plaquinha de aço vai com o seu pet para onde ele for, com o QR Code sempre à mostra.",
     },
     {
       title: "Quem achar escaneia",
@@ -106,11 +113,11 @@ export const HOW_IT_WORKS = {
 export const TAG = {
   eyebrow: "A plaquinha",
   title: "Um pingente feito para o dia a dia.",
-  lead: "Metal com um QR Code que leva à página digital do pet. Discreta na coleira, fácil de escanear.",
+  lead: "Aço escovado com o QR Code gravado atrás e, logo abaixo dele, o código da plaquinha: o mesmo que aparece no endereço da página do pet.",
   traits: [
-    { title: "Fácil de ler", body: "Esmalte escuro com o QR Code sobre fundo claro." },
-    { title: "Resistente", body: "Metal inoxidável de alta durabilidade." },
-    { title: "Conectada", body: "QR Code único que abre a página digital do pet." },
+    { title: "Aço escovado", body: "Acabamento metálico escovado, discreto na coleira." },
+    { title: "Resistente", body: "Aço de alta durabilidade, feito para o dia a dia do pet." },
+    { title: "Identificada", body: "Um QR Code único e, embaixo dele, o código da plaquinha." },
   ],
 } as const;
 
@@ -127,5 +134,5 @@ export const FOOTER = {
 export const PAGE_META = {
   title: "ViewPet: identificação inteligente para pets",
   description:
-    "Plaquinha de metal com QR Code que abre a página do seu pet no celular de quem o encontrar: contatos do tutor, alergias e cuidados. Sem aplicativo.",
+    "Plaquinha de aço com QR Code que abre a página do seu pet no celular de quem o encontrar: contatos do tutor, alergias e cuidados. Sem aplicativo.",
 } as const;
