@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ArrowDownIcon, ArrowRightIcon, CheckIcon } from "@/ui/icons";
 
-import { HERO, SECTION_IDS } from "../content";
+import { EXAMPLE_TAG_ID, HERO, SECTION_IDS } from "../content";
 import { PhoneMockup } from "./PhoneMockup";
 import { TagIllustration } from "./TagIllustration";
 
@@ -89,7 +89,7 @@ export function Hero({ demoHref }: { demoHref?: string }) {
         <div className="relative mx-auto h-[21rem] w-full max-w-[23rem] sm:h-[35rem] sm:max-w-[34rem]">
           {/* Full size needs 512px (tag 272 + phone 240); the lg column is narrower until ~1130px. */}
           <div className="absolute left-0 top-0 w-[17rem] origin-top-left scale-[0.62] sm:scale-100 lg:scale-[0.88] xl:scale-100">
-            <TagIllustration name="Thor" swing />
+            <TagIllustration tagId={EXAMPLE_TAG_ID} swing />
           </div>
           <div className="absolute bottom-0 right-0 origin-bottom-right scale-[0.62] rotate-[3deg] sm:scale-100 lg:scale-[0.88] xl:scale-100">
             <PhoneMockup />

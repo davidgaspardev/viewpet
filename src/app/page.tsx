@@ -5,6 +5,7 @@ import { demoTagHref } from "@/features/home/demo";
 import { FinalCta } from "@/features/home/components/FinalCta";
 import { Hero } from "@/features/home/components/Hero";
 import { HomeFooter } from "@/features/home/components/HomeFooter";
+import { HomeQrDefs } from "@/features/home/components/HomeQrDefs";
 import { HomeHeader } from "@/features/home/components/HomeHeader";
 import { HowItWorksSection } from "@/features/home/components/HowItWorksSection";
 import { PetPageSection } from "@/features/home/components/PetPageSection";
@@ -40,6 +41,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <HomeQrDefs />
       <HomeHeader demoHref={demoHref} />
       <main data-smooth-scroll>
         <Hero demoHref={demoHref} />

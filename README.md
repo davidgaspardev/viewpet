@@ -323,7 +323,7 @@ MONGODB_URI=mongodb://localhost:27017/viewpet
 
 ## Home (marketing)
 
-A página `/` apresenta o produto: hero, "como funciona", o que a página do pet mostra e a plaquinha. O texto fica em `src/features/home/content.ts` (tudo o que ele afirma tem que existir no app) e cada bloco é um componente em `src/features/home/components/`. A plaquinha e o celular das ilustrações são HTML/CSS e um SVG de QR Code, sem imagem nem cena 3D; o QR da ilustração abre `SITE_URL` (ou `https://viewpet.info`, se ela estiver vazia ou inválida) e é um único arquivo, `/home-qr.svg`, compartilhado pelas duas ilustrações. A home é gerada no build e de novo, no máximo, a cada hora: `SITE_URL` (QR e `canonical`) e `DEMO_TAG_ID` são lidas nessas duas ocasiões, e o ano do rodapé acompanha.
+A página `/` apresenta o produto: hero, "como funciona", o que a página do pet mostra e a plaquinha. O texto fica em `src/features/home/content.ts` (tudo o que ele afirma tem que existir no app) e cada bloco é um componente em `src/features/home/components/`. A plaquinha e o celular das ilustrações são HTML/CSS e SVG, sem imagem nem cena 3D. A plaquinha mostra o verso do produto: aço escovado (o componente `src/ui/BrushedMetal.tsx`: gradientes, linhas finas e um filtro `feTurbulence` esticado na horizontal), o QR Code gravado e, embaixo dele, um código de exemplo (`EXAMPLE_TAG_ID` em `content.ts`, com o formato de um id real mas sem pet), o mesmo código que vai no endereço da página do pet. O QR da ilustração abre `SITE_URL` (ou `https://viewpet.info`, se ela estiver vazia ou inválida) e é definido uma única vez na página, como um `<symbol>` (`HomeQrDefs`); cada plaquinha o desenha com um `<use>`. A home é gerada no build e de novo, no máximo, a cada hora: `SITE_URL` (QR e `canonical`) e `DEMO_TAG_ID` são lidas nessas duas ocasiões, e o ano do rodapé acompanha.
 
 | Variável | Exemplo | Efeito |
 |----------|---------|--------|
@@ -406,7 +406,7 @@ src/
 │   ├── pet-profile/components/   # PetHero, GuardianContact, SocialLinks, ActionButton, ImageUpload, PetForm
 │   ├── home/                     # blocos e texto da home de marketing
 │   └── pet-tag/                  # cena 3D da plaquinha (Three.js / R3F); fora da home
-├── ui/                           # primitives compartilhadas: Logo, Card, Tooltip, StickyHeader, icons
+├── ui/                           # primitives compartilhadas: Logo, Card, BrushedMetal (aço escovado), Tooltip, StickyHeader, icons
 ├── lib/
 │   ├── repository/
 │   │   ├── index.ts              # factory + singleton + exports diretos
