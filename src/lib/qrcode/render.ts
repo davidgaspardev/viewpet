@@ -9,6 +9,18 @@ export type QrSvgOptions = {
   background?: string;
   /** Text printed centred under the code (e.g. the pet id), outside the quiet zone. */
   label?: string;
+  /**
+   * Module shape. `true` (default) draws round dots and concentric-ring finder
+   * patterns; `false` draws the standard square modules.
+   */
+  dots?: boolean;
+  /**
+   * Error-correction level. Defaults to `H` when there is a logo (it hides
+   * the centre of the code, so the ~30% recovery covers it) and `Q` without
+   * one: a plain code has nothing to make up for, and the lower level needs a
+   * smaller, easier-to-scan grid while still surviving a worn or scratched tag.
+   */
+  errorCorrectionLevel?: "L" | "M" | "Q" | "H";
 };
 
 /** Quiet zone around the code, in modules (the QR spec asks for 4). */
@@ -32,15 +44,17 @@ const LABEL_SIDE_PADDING = 2;
 const DOT_RATIO = 0.84;
 
 /**
- * Render `text` as a self-contained SVG QR code in the "circle" style:
- * every data module is a round dot and the three finder patterns are
- * concentric rings. Error correction is fixed at level H (~30% recoverable)
- * so the logo punched out of the centre doesn't hurt scannability.
+ * Render `text` as a self-contained SVG QR code. By default it is drawn in
+ * the "circle" style: every data module is a round dot and the three finder
+ * patterns are concentric rings. With `dots: false` it is the standard code
+ * of square modules. A `logoHref` punches a clear disc out of the centre (at
+ * level H unless told otherwise, so the logo doesn't hurt scannability).
  */
 export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
-  const { logoHref, label, color = "#111b25", background = "#ffffff" } = options;
+  const { logoHref, label, dots: rounded = true, color = "#111b25", background = "#ffffff" } = options;
+  const { errorCorrectionLevel = logoHref ? "H" : "Q" } = options;
 
-  const { modules } = QRCode.create(text, { errorCorrectionLevel: "H" });
+  const { modules } = QRCode.create(text, { errorCorrectionLevel });
   const fg = escapeAttr(color);
   const bg = escapeAttr(background);
   const count = modules.size;
@@ -52,25 +66,48 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
   const inFinder = (row: number, col: number): boolean =>
     (row < 7 && col < 7) || (row < 7 && col >= count - 7) || (row >= count - 7 && col < 7);
 
-  const dots: string[] = [];
-  for (let row = 0; row < count; row++) {
-    for (let col = 0; col < count; col++) {
-      if (!modules.get(row, col) || inFinder(row, col)) continue;
-      const cx = col + MARGIN + 0.5;
-      const cy = row + MARGIN + 0.5;
-      // Leave the logo area empty (plus half a module of breathing room).
-      if (logoHref && Math.hypot(cx - centre, cy - centre) < logoRadius + 0.5) continue;
-      dots.push(`<circle cx="${cx}" cy="${cy}" r="${DOT_RATIO / 2}"/>`);
-    }
-  }
+  /** Whether the module at (row, col) is dark and not under the logo. */
+  const isDrawn = (row: number, col: number): boolean => {
+    if (!modules.get(row, col)) return false;
+    // Leave the logo area empty (plus half a module of breathing room).
+    return !logoHref || Math.hypot(col + MARGIN + 0.5 - centre, row + MARGIN + 0.5 - centre) >= logoRadius + 0.5;
+  };
 
-  const finders = [
-    [0, 0],
-    [0, count - 7],
-    [count - 7, 0],
-  ]
-    .map(([row, col]) => finder(col + MARGIN, row + MARGIN, fg, bg))
-    .join("");
+  let body: string;
+  if (rounded) {
+    const dots: string[] = [];
+    for (let row = 0; row < count; row++) {
+      for (let col = 0; col < count; col++) {
+        if (inFinder(row, col) || !isDrawn(row, col)) continue;
+        dots.push(`<circle cx="${col + MARGIN + 0.5}" cy="${row + MARGIN + 0.5}" r="${DOT_RATIO / 2}"/>`);
+      }
+    }
+    const finders = [
+      [0, 0],
+      [0, count - 7],
+      [count - 7, 0],
+    ]
+      .map(([row, col]) => finder(col + MARGIN, row + MARGIN, fg, bg))
+      .join("");
+    body = `<g fill="${fg}">${dots.join("")}</g>${finders}`;
+  } else {
+    // Standard code: finders are ordinary modules. Horizontal runs of dark
+    // modules are merged into one rectangle each, in a single path.
+    const runs: string[] = [];
+    for (let row = 0; row < count; row++) {
+      let col = 0;
+      while (col < count) {
+        if (!isDrawn(row, col)) {
+          col++;
+          continue;
+        }
+        const start = col;
+        while (col < count && isDrawn(row, col)) col++;
+        runs.push(`M${start + MARGIN} ${row + MARGIN}h${col - start}v1h-${col - start}z`);
+      }
+    }
+    body = `<path fill="${fg}" shape-rendering="crispEdges" d="${runs.join("")}"/>`;
+  }
 
   const logoSvg = logoHref
     ? `<circle cx="${centre}" cy="${centre}" r="${logoRadius}" fill="${bg}"/>` +
@@ -94,7 +131,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${height}" ` +
     `width="${size * 10}" height="${height * 10}" role="img" aria-label="${escapeAttr(label ? `QR code ${label}` : "QR code")}">` +
     `<rect width="${size}" height="${height}" fill="${bg}"/>` +
-    `<g fill="${fg}">${dots.join("")}</g>${finders}${logoSvg}${labelSvg}</svg>`
+    `${body}${logoSvg}${labelSvg}</svg>`
   );
 }
 

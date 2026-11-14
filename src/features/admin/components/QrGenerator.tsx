@@ -14,8 +14,10 @@ import {
   STATUS_FILTERS,
   type StatusFilter,
 } from "../entries";
+import { DEFAULT_QR_STYLE, type QrStyle } from "../qr-style";
 import { outlineButton } from "../styles";
 import { PetQrCard } from "./PetQrCard";
+import { Switch } from "./Switch";
 
 type ErrorCode = Extract<ReserveIdResult, { status: "error" }>["message"];
 
@@ -38,6 +40,7 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
   const [entries, setEntries] = useState(initialEntries);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [qrStyle, setQrStyle] = useState<QrStyle>(DEFAULT_QR_STYLE);
   const [pending, startTransition] = useTransition();
   const { show } = useSnackbar();
 
@@ -88,6 +91,19 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
         ))}
       </div>
 
+      <div role="group" aria-label="QR code style" className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+        <Switch
+          label="Logo in the middle"
+          checked={qrStyle.logo}
+          onChange={(logo) => setQrStyle((prev) => ({ ...prev, logo }))}
+        />
+        <Switch
+          label="Round dots"
+          checked={qrStyle.dots}
+          onChange={(dots) => setQrStyle((prev) => ({ ...prev, dots }))}
+        />
+      </div>
+
       {filtered.length === 0 ? (
         <p className="mt-6 text-sm text-muted">
           {entries.length === 0
@@ -98,7 +114,7 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
         <ul className="mt-6 flex flex-wrap gap-4">
           {filtered.slice(0, visible).map((entry) => (
             <li key={entry.id} className="w-72">
-              <PetQrCard entry={entry} qrBase={qrBase} />
+              <PetQrCard entry={entry} qrBase={qrBase} style={qrStyle} />
             </li>
           ))}
         </ul>
