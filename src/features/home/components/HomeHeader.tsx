@@ -5,15 +5,19 @@ import { Logo } from "@/ui/Logo";
 
 import { NAV_LINKS } from "../content";
 import { LOGO_PATH_ID } from "../logo";
+import { HeaderTint } from "./HeaderTint";
 
 /**
  * Fixed top bar: brand, the page's sections from `md` up, and the example link
- * when there is one (without it the nav sits at the right edge). It holds the
- * page's one copy of the logo path, which the footer and the phone mock reuse.
+ * when there is one (without it the nav sits at the right edge). Its background
+ * is clear at the top of the page and whitens with the scroll (`HeaderTint`).
+ * It holds the page's one copy of the logo path, which the footer and the phone
+ * mock reuse.
  */
 export function HomeHeader({ demoHref }: { demoHref?: string }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-black/5 bg-white/75 backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-black/5 backdrop-blur-md">
+      <HeaderTint />
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <span aria-hidden="true">
