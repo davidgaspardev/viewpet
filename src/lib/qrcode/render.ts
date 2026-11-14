@@ -7,7 +7,7 @@ export type QrSvgOptions = {
   color?: string;
   /** Background colour; also used for the logo's backing disc. */
   background?: string;
-  /** Text printed centred under the code (e.g. the pet id), outside the quiet zone. */
+  /** Text printed centred under the code (e.g. the pet id), close to it and clear of its modules. */
   label?: string;
   /**
    * Module shape. `true` (default) draws round dots and concentric-ring finder
@@ -29,12 +29,18 @@ const MARGIN = 4;
 /** Logo backing disc diameter as a fraction of the code's width. */
 const LOGO_RATIO = 0.22;
 
-/** Height, in modules, of the band under the quiet zone that holds the label. */
-const LABEL_BAND = 4;
+/** Height, in modules, added under the quiet zone for the label (its line sits partly inside that zone). */
+const LABEL_BAND = 3;
+
+/** Clear space, in modules, between the code's last row and the top of the label's capitals. */
+const LABEL_GAP = 2.5;
+
+/** Capital height of the label's monospace font, as a fraction of its size. */
+const LABEL_CAP_HEIGHT = 0.72;
 
 /** Label typography, in modules. Monospace glyphs advance ~0.6em. */
-const LABEL_FONT_SIZE = 2.2;
-const LABEL_LETTER_SPACING = 0.2;
+const LABEL_FONT_SIZE = 3;
+const LABEL_LETTER_SPACING = 0.3;
 const LABEL_ADVANCE = 0.6 * LABEL_FONT_SIZE + LABEL_LETTER_SPACING;
 
 /** Free space kept on each side of the label, in modules. */
@@ -122,7 +128,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       ? ` textLength="${labelMaxWidth}" lengthAdjust="spacingAndGlyphs"`
       : "";
   const labelSvg = label
-    ? `<text x="${centre}" y="${size + LABEL_BAND * 0.62}" text-anchor="middle" ` +
+    ? `<text x="${centre}" y="${size - MARGIN + LABEL_GAP + LABEL_FONT_SIZE * LABEL_CAP_HEIGHT}" text-anchor="middle" ` +
       `font-family="ui-monospace, Menlo, Consolas, monospace" font-size="${LABEL_FONT_SIZE}" ` +
       `letter-spacing="${LABEL_LETTER_SPACING}"${labelFit} fill="${fg}">${escapeText(label)}</text>`
     : "";

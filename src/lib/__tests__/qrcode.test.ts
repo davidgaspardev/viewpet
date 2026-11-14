@@ -190,12 +190,21 @@ describe("renderQrSvg label", () => {
 
     const [, size, height] = /viewBox="0 0 (\d+) (\d+)"/.exec(labelled)!.map(Number);
     expect(height).toBeGreaterThan(size);
-    // The text sits below the code's quiet zone, inside the extended canvas.
+    // The text sits just under the code, inside the extended canvas, and leaves room for descenders.
     const y = Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(labelled)![1]);
-    expect(y).toBeGreaterThan(size);
-    expect(y).toBeLessThan(height);
+    const fontSize = Number(/<text [^>]*font-size="([\d.]+)"/.exec(labelled)![1]);
+    expect(y).toBeGreaterThan(size - MARGIN);
+    expect(y).toBeLessThan(height - fontSize * 0.25);
+    // Capitals start at least 2 modules under the code's last row (and well within the old 4).
+    const gap = y - fontSize * 0.72 - (size - MARGIN);
+    expect(gap).toBeGreaterThanOrEqual(2);
+    expect(gap).toBeLessThan(4);
     // The code itself is unchanged by the label.
     expect(dotCells(labelled)).toEqual(dotCells(plain));
+  });
+
+  test("the label is larger than before (font size above 2.2 modules)", () => {
+    expect(Number(/font-size="([\d.]+)"/.exec(renderQrSvg(url, { label: "x" }))![1])).toBeGreaterThan(2.2);
   });
 
   test("squeezes a label that is too wide instead of letting it clip", () => {
