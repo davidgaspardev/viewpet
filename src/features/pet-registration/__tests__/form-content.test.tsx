@@ -212,6 +212,39 @@ describe("PetForm placeholders", () => {
   });
 });
 
+describe("species and breed fields", () => {
+  const field = (html: string, name: string) =>
+    (html.match(/<input\b[^>]*>/g) ?? []).filter((tag) => tag.includes(`name="${name}"`));
+
+  test("breed is optional and says so; species is required", () => {
+    const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale="pt-BR" />));
+    const [breed] = field(html, "breed");
+    expect(breed).toBeDefined();
+    expect(breed).not.toContain("required");
+    // The "(optional)" tag sits right after the label text, inside its <span>.
+    expect(html).toMatch(/Raça<span[^>]*>[^]{0,30}opcional/);
+
+    const species = field(html, "species");
+    expect(species).toHaveLength(2);
+    for (const radio of species) expect(radio).toContain("required");
+    // Nothing is pre-selected: the tutor has to choose.
+    for (const radio of species) expect(radio).not.toContain("checked");
+  });
+});
+
+describe("guardian e-mail", () => {
+  test("required for the primary guardian, optional for the second", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      const html = renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale={locale} />);
+      const email = (name: string) =>
+        (html.match(/<input\b[^>]*>/g) ?? []).find((tag) => tag.includes(`name="${name}"`));
+      expect(email("g0_email")).toContain("required");
+      // The second guardian's card only exists once "add guardian" is pressed, so only the first renders here.
+      expect(email("g1_email")).toBeUndefined();
+    }
+  });
+});
+
 describe("consent boxes", () => {
   const checkboxes = (html: string) =>
     (html.match(/<input\b[^>]*\btype="checkbox"[^>]*>/g) ?? []).filter((tag) => /name="accept_/.test(tag));

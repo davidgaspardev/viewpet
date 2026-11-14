@@ -13,9 +13,11 @@ const UNSAVEABLE_PICTURE = new File(["not an image"], "note.txt", { type: "text/
 const VALID_FIELDS: Record<string, string> = {
   name: "Thor",
   gender: "male",
+  species: "dog",
   birthdate: "2020-01-15",
   breed: "SRD",
   g0_name: "Maria",
+  g0_email: "maria@example.com",
   g0_p0_phone: "(48) 98111-1111",
   g0_p0_call: "on",
   accept_terms: "on",
@@ -80,6 +82,35 @@ describe("submitPet validation", () => {
     expect(result).toEqual({ status: "error", message: "missing_fields" });
   });
 
+  test("the primary guardian's e-mail is required, before the picture is saved", async () => {
+    for (const email of [null, "", "   "]) {
+      expect(await submit(formWith({ g0_email: email }))).toEqual({
+        status: "error",
+        message: "missing_fields",
+      });
+    }
+  });
+
+  test("an e-mail that isn't an address is rejected, whoever it belongs to", async () => {
+    for (const bad of ["maria", "maria@", "maria@example", "ma ria@example.com", "@example.com"]) {
+      expect(await submit(formWith({ g0_email: bad }))).toEqual({
+        status: "error",
+        message: "invalid_email",
+      });
+    }
+    const secondary = await submit(
+      formWith({ g1_name: "João", g1_p0_phone: "(11) 97777-7777", g1_p0_whatsapp: "on", g1_email: "joao" }),
+    );
+    expect(secondary).toEqual({ status: "error", message: "invalid_email" });
+  });
+
+  test("the secondary guardian's e-mail stays optional", async () => {
+    const result = await submit(
+      formWith({ g1_name: "João", g1_p0_phone: "(11) 97777-7777", g1_p0_whatsapp: "on", g1_email: "" }),
+    );
+    expect(result).toEqual({ status: "error", message: "invalid_picture_type" });
+  });
+
   test("a number that can't be a Brazilian phone is rejected before the picture is saved", async () => {
     const result = await submit(formWith({ g0_p0_phone: "(48) 9811" }));
     expect(result).toEqual({ status: "error", message: "invalid_phone" });
@@ -90,10 +121,42 @@ describe("submitPet validation", () => {
     expect(result).toEqual({ status: "error", message: "invalid_phone_channels" });
   });
 
-  test("a missing breed is rejected before the picture is saved", async () => {
-    expect(await submit(formWith({ breed: null }))).toEqual({
+  test("a missing species is rejected before the picture is saved", async () => {
+    expect(await submit(formWith({ species: null }))).toEqual({
       status: "error",
       message: "missing_fields",
+    });
+  });
+
+  test("an invalid weight is rejected before the picture is saved", async () => {
+    expect(await submit(formWith({ weight: "-2" }))).toEqual({
+      status: "error",
+      message: "invalid_details",
+    });
+  });
+
+  test("weight and neutered left empty are fine", async () => {
+    expect(await submit(formWith({ weight: "", neutered: "" }))).toEqual({
+      status: "error",
+      message: "invalid_picture_type",
+    });
+  });
+
+  test("breed is optional: a form without one gets as far as saving the picture", async () => {
+    expect(await submit(formWith({ breed: null }))).toEqual({
+      status: "error",
+      message: "invalid_picture_type",
+    });
+    expect(await submit(formWith({ breed: "" }))).toEqual({
+      status: "error",
+      message: "invalid_picture_type",
+    });
+  });
+
+  test("an over-long breed is rejected before the picture is saved", async () => {
+    expect(await submit(formWith({ breed: "x".repeat(61) }))).toEqual({
+      status: "error",
+      message: "invalid_details",
     });
   });
 

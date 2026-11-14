@@ -26,6 +26,25 @@ export function isRegisteredStatus(value: unknown): value is RegisteredPetStatus
 }
 export type PetGender = "male" | "female";
 
+/**
+ * What kind of animal the pet is. A closed list on purpose: the registration
+ * form, the profile and the translations all iterate it, so supporting a new
+ * kind (bird, rabbit…) is one more entry here plus its name in each locale of
+ * `i18n.ts` — nothing in the storage layer changes, it only persists the key.
+ */
+export const PET_SPECIES = ["dog", "cat"] as const;
+export type PetSpecies = (typeof PET_SPECIES)[number];
+
+/**
+ * Runtime check for a species read from storage or from a submitted form. As
+ * with `isPetStatus`, the union can't vouch for what is persisted (a species
+ * added by a newer deploy, a hand-edited doc): an unknown value is dropped,
+ * never shown as if it were known.
+ */
+export function isPetSpecies(value: unknown): value is PetSpecies {
+  return typeof value === "string" && (PET_SPECIES as readonly string[]).includes(value);
+}
+
 export interface Phone {
   /** Digits-only E.164 without "+" (e.g. "5548985596882") */
   e164: string;
@@ -104,6 +123,22 @@ export interface Pet {
   birthdate: string;
   status: RegisteredPetStatus;
   gender?: PetGender;
+  /**
+   * Dog, cat… Required by the form, optional here so pets registered before
+   * the field existed keep loading (the profile just leaves it out).
+   */
+  species?: PetSpecies;
+  /**
+   * Weight in kilograms (decimal, e.g. `4.5`). Optional: the tutor may not
+   * know it, and it changes over time — it is what they typed at registration.
+   */
+  weightKg?: number;
+  /**
+   * Spayed / neutered. Deliberately three states: `true`, `false` and
+   * `undefined` ("not informed"). Never collapse the last into `false` — the
+   * profile must not claim a pet is not neutered when the tutor never said.
+   */
+  neutered?: boolean;
   /**
    * Free text — the registration form suggests common breeds as the user
    * types, but any value is accepted. Required by the form, optional here so

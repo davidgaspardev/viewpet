@@ -4,10 +4,14 @@ import {
   MAX_ALLERGIES,
   MAX_ALLERGY_LENGTH,
   MAX_BREED_LENGTH,
+  MAX_WEIGHT_KG,
   collapseWhitespace,
+  formatWeight,
   normalizeAbout,
   normalizeAllergies,
   normalizeBreed,
+  normalizeWeight,
+  parseNeutered,
 } from "../utils/pet-details";
 
 describe("collapseWhitespace", () => {
@@ -87,5 +91,46 @@ describe("normalizeAbout", () => {
   test("accepts exactly the limit and rejects one over", () => {
     expect(normalizeAbout("a".repeat(MAX_ABOUT_LENGTH)).ok).toBe(true);
     expect(normalizeAbout("a".repeat(MAX_ABOUT_LENGTH + 1))).toEqual({ ok: false });
+  });
+});
+
+describe("normalizeWeight", () => {
+  test("blank is not provided", () => {
+    expect(normalizeWeight("")).toEqual({ ok: true });
+    expect(normalizeWeight("   ")).toEqual({ ok: true });
+  });
+
+  test("reads a comma or a point, up to two decimals", () => {
+    expect(normalizeWeight("4,5")).toEqual({ ok: true, weightKg: 4.5 });
+    expect(normalizeWeight("4.25")).toEqual({ ok: true, weightKg: 4.25 });
+    expect(normalizeWeight(" 12 ")).toEqual({ ok: true, weightKg: 12 });
+  });
+
+  test("accepts exactly the limit and rejects one over", () => {
+    expect(normalizeWeight(String(MAX_WEIGHT_KG))).toEqual({ ok: true, weightKg: MAX_WEIGHT_KG });
+    expect(normalizeWeight(String(MAX_WEIGHT_KG + 1))).toEqual({ ok: false });
+  });
+
+  test("rejects zero, negatives, units, thousands separators and extra decimals", () => {
+    for (const value of ["0", "0,00", "-1", "4 kg", "1.000,5", "4,555", "4,", ",5", "abc"]) {
+      expect(normalizeWeight(value)).toEqual({ ok: false });
+    }
+  });
+});
+
+describe("formatWeight", () => {
+  test("uses the locale's decimal separator", () => {
+    expect(formatWeight(4.5, "pt-BR")).toBe("4,5 kg");
+    expect(formatWeight(4.5, "en-US")).toBe("4.5 kg");
+    expect(formatWeight(32, "pt-BR")).toBe("32 kg");
+  });
+});
+
+describe("parseNeutered", () => {
+  test("only yes and no are answers", () => {
+    expect(parseNeutered("yes")).toBe(true);
+    expect(parseNeutered("no")).toBe(false);
+    expect(parseNeutered("")).toBeUndefined();
+    expect(parseNeutered("true")).toBeUndefined();
   });
 });

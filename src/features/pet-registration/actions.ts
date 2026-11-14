@@ -6,6 +6,7 @@ import { parseConsent } from "@/features/legal/consent";
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { PetRepositoryFactory } from "@/lib/repository";
 import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
+import { isValidEmail } from "@/lib/utils/email";
 import { tagPath } from "@/lib/utils/routes";
 import { readString } from "./form-data";
 import { parsePetDetails } from "./parse-details";
@@ -27,7 +28,10 @@ export type SubmitState = {
 
 type GuardianResult =
   | { ok: true; guardian: Guardian }
-  | { ok: false; error: "missing_fields" | "invalid_phone" | "invalid_phone_channels" };
+  | {
+      ok: false;
+      error: "missing_fields" | "invalid_phone" | "invalid_phone_channels" | "invalid_email";
+    };
 
 function readGuardian(form: FormData, i: number): GuardianResult {
   const p = `g${i}_`;
@@ -45,6 +49,11 @@ function readGuardian(form: FormData, i: number): GuardianResult {
   }
 
   const email = readString(form, `${p}email`);
+  // The primary guardian is the contact whoever finds the pet reaches, so their
+  // e-mail is required; the second guardian may leave it out. Anyone who does
+  // type one gets it checked, required or not.
+  if (i === 0 && !email) return { ok: false, error: "missing_fields" };
+  if (email && !isValidEmail(email)) return { ok: false, error: "invalid_email" };
 
   return {
     ok: true,
