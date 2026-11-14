@@ -9,6 +9,8 @@
  *       status: "reserved" | "active" | "lost",
  *       // when status !== "reserved":
  *       name, pictureUrl, birthdate, gender?,
+ *       species?,                    // "dog" | "cat" | … — the key only; absent on legacy pets
+ *       weightKg?, neutered?,        // number (kg) / boolean; absent = not informed (`false` is stored)
  *       breed?, allergies?, about?,  // optional details; absent when not provided
  *       consent?,                    // { acceptedAt, termsVersion, privacyVersion }; absent on
  *                                    // pets registered before the terms existed
@@ -47,7 +49,13 @@
 
 import { MongoClient, ObjectId, type Collection, type Db } from "mongodb";
 import type { Seedable, Pet, PetEntry, PetEntrySummary } from "../interface";
-import { isPetStatus, isRegisteredStatus, type Guardian, type LostEvent } from "@/types/pet";
+import {
+  isPetSpecies,
+  isPetStatus,
+  isRegisteredStatus,
+  type Guardian,
+  type LostEvent,
+} from "@/types/pet";
 import { PetDoc, GuardianDoc, LostEventDoc } from "./dto";
 
 type Collections = {
@@ -339,6 +347,11 @@ export class MongoPetRepository implements Seedable {
       birthdate: doc.birthdate,
       status: doc.status,
       ...(doc.gender ? { gender: doc.gender } : {}),
+      // A species this build doesn't know (written by a newer deploy) is dropped, not shown.
+      ...(isPetSpecies(doc.species) ? { species: doc.species } : {}),
+      ...(typeof doc.weightKg === "number" && doc.weightKg > 0 ? { weightKg: doc.weightKg } : {}),
+      // Tri-state: `false` must survive the round-trip, so test the type, not truthiness.
+      ...(typeof doc.neutered === "boolean" ? { neutered: doc.neutered } : {}),
       ...(doc.breed ? { breed: doc.breed } : {}),
       ...(doc.allergies?.length ? { allergies: doc.allergies } : {}),
       ...(doc.about ? { about: doc.about } : {}),
@@ -395,6 +408,9 @@ export class MongoPetRepository implements Seedable {
           pictureUrl: pet.pictureUrl,
           birthdate: pet.birthdate,
           ...(pet.gender ? { gender: pet.gender } : {}),
+          ...(pet.species ? { species: pet.species } : {}),
+          ...(pet.weightKg !== undefined ? { weightKg: pet.weightKg } : {}),
+          ...(pet.neutered !== undefined ? { neutered: pet.neutered } : {}),
           ...(pet.breed ? { breed: pet.breed } : {}),
           ...(pet.allergies?.length ? { allergies: pet.allergies } : {}),
           ...(pet.about ? { about: pet.about } : {}),
@@ -413,6 +429,9 @@ export class MongoPetRepository implements Seedable {
           // The optional fields are replaced wholesale: saving a pet without
           // one clears what an earlier save stored, instead of leaving it stale.
           ...(pet.gender ? {} : { gender: "" }),
+          ...(pet.species ? {} : { species: "" }),
+          ...(pet.weightKg !== undefined ? {} : { weightKg: "" }),
+          ...(pet.neutered !== undefined ? {} : { neutered: "" }),
           ...(pet.breed ? {} : { breed: "" }),
           ...(pet.allergies?.length ? {} : { allergies: "" }),
           ...(pet.about ? {} : { about: "" }),

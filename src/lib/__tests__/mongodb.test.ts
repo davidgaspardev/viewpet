@@ -274,6 +274,65 @@ describe("MongoPetRepository", () => {
     });
   });
 
+  describe("species, weight and neutered", () => {
+    const rawPet = (id: string) =>
+      cleanupClient.db("viewpet").collection("pets").findOne({ _id: id } as never);
+
+    test("round-trip through the provider", async () => {
+      const provider = new MongoPetRepository();
+      const pet = makePet({ species: "dog", weightKg: 24.5, neutered: true });
+      await provider.setPet("kind1", pet);
+      const entry = await provider.getPetEntry("kind1");
+      expect("pet" in entry && entry.pet).toEqual(pet);
+    });
+
+    test("`neutered: false` is stored and read back — not confused with not informed", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("kind2", makePet({ neutered: false }));
+      expect(await rawPet("kind2")).toHaveProperty("neutered", false);
+      const entry = await provider.getPetEntry("kind2");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.neutered).toBe(false);
+    });
+
+    test("a pet saved without them stores none and loads without them", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("kind3", makePet());
+      const raw = await rawPet("kind3");
+      for (const field of ["species", "weightKg", "neutered"]) {
+        expect(raw).not.toHaveProperty(field);
+      }
+      const entry = await provider.getPetEntry("kind3");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.species).toBeUndefined();
+      expect(entry.pet.weightKg).toBeUndefined();
+      expect(entry.pet.neutered).toBeUndefined();
+    });
+
+    test("saving again without them clears what was stored, `false` included", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("kind4", makePet({ species: "cat", weightKg: 4, neutered: false }));
+      await provider.setPet("kind4", makePet());
+      const raw = await rawPet("kind4");
+      for (const field of ["species", "weightKg", "neutered"]) {
+        expect(raw).not.toHaveProperty(field);
+      }
+    });
+
+    test("a species this build does not know is dropped on read, not shown", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("kind5", makePet({ species: "dog", weightKg: 5 }));
+      await cleanupClient
+        .db("viewpet")
+        .collection("pets")
+        .updateOne({ _id: "kind5" } as never, { $set: { species: "dragon" } });
+      const entry = await provider.getPetEntry("kind5");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.species).toBeUndefined();
+      expect(entry.pet.weightKg).toBe(5);
+    });
+  });
+
   describe("legacy `lostEvents` collection", () => {
     const legacyEvent = (petId: string) => ({
       _id: new ObjectId(),

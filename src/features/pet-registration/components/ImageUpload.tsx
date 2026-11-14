@@ -194,16 +194,19 @@ export function ImageUpload({
           <p className="text-xs text-ink/70">{dict.petPictureHint}</p>
         </div>
       ) : (
-        <div className="mt-2 w-full overflow-hidden rounded-lg border border-black/10 bg-white sm:max-w-xs">
+        // Same width as the dropzone it replaces, so choosing a file doesn't make the card jump.
+        <div className="mt-2 w-full overflow-hidden rounded-lg border border-black/10 bg-white">
           {/* Local preview only — file isn't uploaded until the form submits. */}
+          {/* The whole photo, not a crop: `object-contain` inside a height cap keeps a tall
+              portrait from filling the screen, and the neutral backdrop fills the bars. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt={previewName ?? ""}
-            className="block aspect-square w-full object-cover"
+            className="block max-h-96 w-full bg-surface object-contain"
           />
           <div className="flex items-center justify-between gap-3 border-t border-black/5 px-4 py-3">
-            <p className="truncate text-xs text-ink/70">{previewName}</p>
+            <p className="min-w-0 truncate text-xs text-ink/70">{previewName}</p>
             <div className="flex shrink-0 gap-2">
               <button
                 type="button"

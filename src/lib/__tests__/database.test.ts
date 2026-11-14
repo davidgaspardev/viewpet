@@ -167,6 +167,24 @@ describe("Database Provider Abstraction", () => {
       });
     });
 
+    describe("species, weight and neutered", () => {
+      test("round-trip through the provider, keeping `neutered: false`", async () => {
+        const pet = makePet({ species: "cat", weightKg: 4.5, neutered: false });
+        await provider.setPet("kind1", pet);
+        const entry = await provider.getPetEntry("kind1");
+        expect("pet" in entry && entry.pet).toEqual(pet);
+      });
+
+      test("a pet saved without them has none", async () => {
+        await provider.setPet("kind2", makePet());
+        const entry = await provider.getPetEntry("kind2");
+        if (!("pet" in entry)) throw new Error("expected a pet");
+        expect(entry.pet.species).toBeUndefined();
+        expect(entry.pet.weightKg).toBeUndefined();
+        expect(entry.pet.neutered).toBeUndefined();
+      });
+    });
+
     describe("setPet", () => {
       test("stores pet data", async () => {
         const pet = makePet({

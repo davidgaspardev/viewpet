@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -9,20 +9,24 @@ import { SnackbarProvider, useSnackbar } from "@/ui/Snackbar";
 import { StickyHeader } from "@/ui/StickyHeader";
 import type { Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n";
-import { MAX_GUARDIANS } from "@/types/pet";
+import { MAX_GUARDIANS, type PetSpecies } from "@/types/pet";
 
 import { submitPet, type SubmitState } from "../actions";
 import { AboutField } from "./AboutField";
 import { AllergiesField } from "./AllergiesField";
 import { BirthdateField } from "./BirthdateField";
 import { BreedField } from "./BreedField";
+import { ChoiceGroup } from "./ChoiceGroup";
 import { ConsentFields } from "./ConsentFields";
 import { RequiredMark } from "./FieldMarks";
 import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { FormIntro } from "./FormIntro";
 import { ImageUpload } from "./ImageUpload";
+import { NeuteredField } from "./NeuteredField";
 import { PhoneFields } from "./PhoneFields";
+import { SpeciesField } from "./SpeciesField";
 import { useKeyedList } from "./useKeyedList";
+import { WeightField } from "./WeightField";
 
 const initialState: SubmitState = { status: "idle" };
 
@@ -36,7 +40,10 @@ type Dict = ReturnType<typeof getDictionary>;
  *  - `lg`: two columns — the pet on the left, the guardians on the right —
  *    where the cards are wide enough that pairing would be cramped.
  */
-const FIELD_GRID = "grid gap-4 sm:max-lg:grid-cols-2";
+// `grid-cols-1` (= `minmax(0, 1fr)`) rather than the implicit `auto` column: an auto
+// column grows to its widest unbreakable content (a long photo file name), taking
+// the whole card past the phone's width.
+const FIELD_GRID = "grid grid-cols-1 gap-4 sm:max-lg:grid-cols-2";
 const FULL_ROW = "sm:max-lg:col-span-2";
 
 // ── Guardian fields ───────────────────────────────────────────────────────────
@@ -56,9 +63,10 @@ function GuardianFields({ index, dict }: { index: number; dict: Dict }) {
         hint={isPrimary ? dict.guardianNameHint : undefined}
       />
       <Field
-        label={dict.guardianEmailOptional}
+        label={isPrimary ? dict.email : dict.guardianEmailOptional}
         name={`${p}email`}
         type="email"
+        required={isPrimary}
         autoComplete="email"
         placeholder={dict.guardianEmailPlaceholder}
         hint={isPrimary ? dict.guardianEmailHint : undefined}
@@ -154,6 +162,8 @@ export function PetForm(props: PetFormProps) {
 function PetFormBody({ hashId, locale }: PetFormProps) {
   const dict = getDictionary(locale);
   const { show } = useSnackbar();
+  // Lifted here because the breed field's suggestions depend on it.
+  const [species, setSpecies] = useState<PetSpecies>();
   const [state, formAction] = useActionState<SubmitState, FormData>(
     submitPet.bind(null, hashId),
     initialState,
@@ -168,6 +178,7 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
     invalid_details: dict.errorDetails,
     invalid_phone: dict.errorPhone,
     invalid_phone_channels: dict.errorPhoneChannels,
+    invalid_email: dict.errorEmail,
     consent_required: dict.errorConsent,
   };
   const errorMessage =
@@ -189,16 +200,19 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
             <div className="space-y-6">
               <Card step={1} title={dict.petSection} description={dict.petSectionHint}>
                 <div className={FIELD_GRID}>
-                  <Field
-                    label={dict.petName}
-                    name="name"
-                    required
-                    autoComplete="off"
-                    placeholder={dict.petNamePlaceholder}
-                    hint={dict.petNameHint}
-                  />
+                  <div className={FULL_ROW}>
+                    <Field
+                      label={dict.petName}
+                      name="name"
+                      required
+                      autoComplete="off"
+                      placeholder={dict.petNamePlaceholder}
+                      hint={dict.petNameHint}
+                    />
+                  </div>
+                  <SpeciesField locale={locale} value={species} onValueChange={setSpecies} />
                   <GenderField dict={dict} />
-                  <BreedField locale={locale} />
+                  <BreedField locale={locale} species={species} />
                   <BirthdateField locale={locale} />
                   <div className={FULL_ROW}>
                     <ImageUpload name="picture" required locale={locale} />
@@ -207,6 +221,10 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
               </Card>
 
               <Card step={2} title={dict.petDetailsSection} description={dict.petDetailsHint}>
+                <div className={FIELD_GRID}>
+                  <WeightField locale={locale} />
+                  <NeuteredField locale={locale} />
+                </div>
                 <AllergiesField locale={locale} />
                 <AboutField locale={locale} />
               </Card>
@@ -231,33 +249,17 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
-/** Male / female as two big tap targets; a real radio group underneath. */
 function GenderField({ dict }: { dict: Dict }) {
   return (
-    <fieldset>
-      <legend className={LABEL_CLASS}>
-        {dict.petGender}
-        <RequiredMark />
-      </legend>
-      <div className="mt-1 flex gap-2">
-        {([["male", dict.genderMale], ["female", dict.genderFemale]] as const).map(
-          ([value, label]) => (
-            <label key={value} className="flex-1 cursor-pointer">
-              <input
-                type="radio"
-                name="gender"
-                value={value}
-                required
-                className="peer sr-only"
-              />
-              <span className="flex min-h-11 items-center justify-center rounded-lg border border-black/10 bg-white px-4 text-center text-sm text-ink transition peer-checked:border-ink peer-checked:bg-ink peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-ink/30">
-                {label}
-              </span>
-            </label>
-          ),
-        )}
-      </div>
-    </fieldset>
+    <ChoiceGroup
+      legend={dict.petGender}
+      name="gender"
+      required
+      choices={[
+        { value: "male", label: dict.genderMale },
+        { value: "female", label: dict.genderFemale },
+      ]}
+    />
   );
 }
 

@@ -4,6 +4,7 @@
  * lives in `i18n.server.ts`.
  */
 
+import type { PetSpecies } from "@/types/pet";
 import { TAG_ROUTE } from "./utils/routes";
 
 export const SUPPORTED_LOCALES = ["pt-BR", "en-US"] as const;
@@ -75,6 +76,16 @@ type Dictionary = {
   petGender: string;
   genderMale: string;
   genderFemale: string;
+  petSpecies: string;
+  /** Name of each kind of pet; one entry per `PET_SPECIES` value. */
+  species: Record<PetSpecies, string>;
+  petWeight: string;
+  petWeightPlaceholder: string;
+  petWeightHint: string;
+  petNeutered: string;
+  neuteredYes: string;
+  neuteredNo: string;
+  neuteredUnknown: string;
   petBreed: string;
   petBreedPlaceholder: string;
   petDetailsSection: string;
@@ -122,7 +133,9 @@ type Dictionary = {
   errorBirthdateTooOld: string;
   errorPhone: string;
   errorPhoneChannels: string;
+  errorEmail: string;
   errorDetails: string;
+  errorWeight: (max: number) => string;
   errorConsent: string;
   // Consent to the terms and to publishing the page (checkboxes before "Publicar")
   consentLegend: string;
@@ -183,7 +196,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formSteps: [
       {
         title: "Preencha os dados",
-        body: "Leva poucos minutos. Só o essencial é obrigatório: nome, sexo, raça, foto, nascimento e um contato.",
+        body: "Leva poucos minutos. Só o essencial é obrigatório: nome, tipo, sexo, foto, nascimento e o contato do tutor (celular e e-mail).",
       },
       {
         title: "Publicamos a página",
@@ -220,6 +233,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Sexo",
     genderMale: "Macho",
     genderFemale: "Fêmea",
+    petSpecies: "Tipo",
+    species: { dog: "Cachorro", cat: "Gato" },
+    petWeight: "Peso",
+    petWeightPlaceholder: "Ex.: 4,5",
+    petWeightHint: "Em quilos. Pode usar vírgula.",
+    petNeutered: "Castrado(a)",
+    neuteredYes: "Sim",
+    neuteredNo: "Não",
+    neuteredUnknown: "Não sei",
     petBreed: "Raça",
     petBreedPlaceholder: "Ex.: Shih Tzu, SRD…",
     petDetailsSection: "Mais detalhes",
@@ -265,7 +287,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
-    errorDetails: "Confira raça, alergias e sobre — algum valor está longo demais.",
+    errorDetails: "Confira raça, peso, alergias e sobre — algum valor está inválido ou longo demais.",
+    errorWeight: (max) => `Peso inválido. Digite em quilos, até ${max}. Ex.: 4,5.`,
     errorConsent: "Marque as duas caixas de aceite para publicar a página.",
     consentLegend: "Termos e autorização",
     consentTerms: {
@@ -285,6 +308,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorPhone: "Confira os celulares: digite o número com DDD (10 ou 11 dígitos).",
     errorPhoneChannels:
       "Escolha pelo menos uma forma de contato (chamada, WhatsApp ou Telegram) para cada celular.",
+    errorEmail: "Confira o e-mail do tutor: digite um endereço válido, como nome@exemplo.com.",
     ogDescription: (petName) => `Perfil de ${petName}. Contate o tutor pelo link.`,
     ogGenericDescription: "Veja as informações do seu pet e do dono em uma página pública.",
     statusReserved: "reservado — pronto para cadastro",
@@ -331,7 +355,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formSteps: [
       {
         title: "Fill in the details",
-        body: "It takes a few minutes. Only the essentials are required: name, gender, breed, photo, birthdate and one contact.",
+        body: "It takes a few minutes. Only the essentials are required: name, type, gender, photo, birthdate and the guardian's contact (phone and email).",
       },
       {
         title: "We publish the page",
@@ -368,6 +392,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Gender",
     genderMale: "Male",
     genderFemale: "Female",
+    petSpecies: "Type",
+    species: { dog: "Dog", cat: "Cat" },
+    petWeight: "Weight",
+    petWeightPlaceholder: "E.g. 4.5",
+    petWeightHint: "In kilograms. A decimal point is fine.",
+    petNeutered: "Neutered",
+    neuteredYes: "Yes",
+    neuteredNo: "No",
+    neuteredUnknown: "Not sure",
     petBreed: "Breed",
     petBreedPlaceholder: "E.g. Shih Tzu, mixed breed…",
     petDetailsSection: "More details",
@@ -413,7 +446,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
-    errorDetails: "Check breed, allergies and about — a value is too long.",
+    errorDetails: "Check breed, weight, allergies and about — a value is invalid or too long.",
+    errorWeight: (max) => `Invalid weight. Enter it in kilograms, up to ${max}. E.g. 4.5.`,
     errorConsent: "Tick both boxes to publish the page.",
     consentLegend: "Terms and authorization",
     consentTerms: {
@@ -433,6 +467,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorPhone: "Check the cellphones: enter each number with area code (10 or 11 digits).",
     errorPhoneChannels:
       "Choose at least one way to be contacted (call, WhatsApp or Telegram) for each cellphone.",
+    errorEmail: "Check the guardian's email: enter a valid address, like name@example.com.",
     ogDescription: (petName) => `${petName}'s profile. Contact the guardian through the link.`,
     ogGenericDescription: "See your pet's and guardian's information on a public page.",
     statusReserved: "reserved — ready for setup",
