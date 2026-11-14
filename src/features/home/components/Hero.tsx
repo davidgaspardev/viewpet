@@ -11,8 +11,8 @@ const PRIMARY_BUTTON = `${BUTTON_BASE} px-6 bg-ink bg-[url(/noise-light.png)] te
 
 /**
  * Opening section. The tag and the phone are laid out at their full size and
- * scaled down on narrow screens (from their outer corner, so they keep their
- * place) instead of being redrawn for each width.
+ * scaled down together on narrow screens instead of being redrawn for each
+ * width.
  */
 export function Hero({ demoHref }: { demoHref?: string }) {
   const howHref = `#${SECTION_IDS.howItWorks}`;
@@ -86,13 +86,20 @@ export function Hero({ demoHref }: { demoHref?: string }) {
           </ul>
         </div>
 
-        <div className="relative mx-auto h-[21rem] w-full max-w-[23rem] sm:h-[35rem] sm:max-w-[34rem]">
-          {/* Full size needs 512px (tag 272 + phone 240); the lg column is narrower until ~1130px. */}
-          <div className="absolute left-0 top-0 w-[17rem] origin-top-left scale-[0.62] sm:scale-100 lg:scale-[0.88] xl:scale-100">
-            <TagIllustration tagId={EXAMPLE_TAG_ID} swing />
-          </div>
-          <div className="absolute bottom-0 right-0 origin-bottom-right scale-[0.62] rotate-[3deg] sm:scale-100 lg:scale-[0.88] xl:scale-100">
-            <PhoneMockup />
+        {/*
+          The tag and the phone are one picture, laid out at its full size (29rem by 30rem) and scaled
+          down as a whole on narrow screens, so they keep their place relative to each other. The outer
+          box has the scaled size, because a scale does not change the space an element takes.
+        */}
+        <div className="relative mx-auto h-[21rem] w-[20.3rem] sm:h-[30rem] sm:w-[29rem]">
+          <div className="absolute left-0 top-0 h-[30rem] w-[29rem] origin-top-left scale-[0.7] sm:scale-100">
+            {/* Both are centred on the same line: the tag hangs in front of the phone's left edge. */}
+            <div className="absolute left-0 top-1/2 z-10 w-[15rem] -translate-y-1/2">
+              <TagIllustration tagId={EXAMPLE_TAG_ID} swing />
+            </div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 rotate-[3deg]">
+              <PhoneMockup />
+            </div>
           </div>
         </div>
       </div>
