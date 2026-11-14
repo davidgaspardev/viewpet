@@ -1,31 +1,29 @@
 import { useId } from "react";
 
 /**
- * Light and grain of brushed steel, drawn with CSS and one SVG filter (no
- * image file). From the bottom layer up:
- *  - a conic gradient, the way a disc of brushed metal catches light around its
- *    centre;
- *  - horizontal hairlines of different periods (3, 5, 7 and 11px), so the
- *    lines do not repeat in an obvious rhythm;
+ * Light and grain of brushed steel, kept quiet on purpose: it has to sit in a
+ * minimal page, not be the loudest thing on it. Drawn with CSS and one SVG
+ * filter (no image file). From the bottom layer up:
+ *  - a conic gradient in a narrow band of greys, the way a disc of brushed
+ *    metal catches light around its centre;
+ *  - one set of horizontal hairlines, barely there;
  *  - a soft highlight at the top left.
  */
 const SHEEN =
-  "conic-gradient(from 200deg at 50% 50%, #b8bec6 0deg, #e9ecef 35deg, #c3c9d0 70deg, #f3f5f7 110deg, #b4bac2 160deg, #dfe3e7 210deg, #aab1ba 250deg, #eceff2 295deg, #bcc2ca 335deg, #b8bec6 360deg)";
+  "conic-gradient(from 200deg at 50% 50%, #979da4 0deg, #b0b5bb 50deg, #9aa0a7 120deg, #b3b8be 200deg, #959ba2 270deg, #adb2b8 320deg, #979da4 360deg)";
 const HIGHLIGHT =
-  "radial-gradient(120% 90% at 22% 12%, rgba(255,255,255,0.55), rgba(255,255,255,0) 55%)";
-const HAIRLINES = [
-  "repeating-linear-gradient(0deg, rgba(255,255,255,0.22) 0 1px, rgba(255,255,255,0) 1px 3px)",
-  "repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0 1px, rgba(0,0,0,0) 1px 5px)",
-  "repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0 1px, rgba(255,255,255,0) 1px 7px)",
-  "repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, rgba(0,0,0,0) 1px 11px)",
-];
-const STEEL = [HIGHLIGHT, ...HAIRLINES, SHEEN].join(", ");
+  "radial-gradient(120% 90% at 22% 12%, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%)";
+const HAIRLINES =
+  "repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, rgba(255,255,255,0) 1px 4px)";
+const STEEL = [HIGHLIGHT, HAIRLINES, SHEEN].join(", ");
 
 type BrushedMetalProps = {
   /**
-   * Shape, size and outer shadow, as classes (`rounded-full h-full w-full`,
-   * ...). Not the position: the surface is always `relative`, which beats an
-   * `absolute` here, so place it with a wrapper.
+   * Shape and size, as classes (`rounded-full h-full w-full`, a `mask-image`
+   * to cut a hole, ...). Not the position: the surface is always `relative`,
+   * which beats an `absolute` here, so place it with a wrapper. Nor the outer
+   * shadow: a `shadow-*` here would be cut by a mask, so put a
+   * `drop-shadow` on the wrapper, which follows the cut shape.
    */
   className?: string;
   /** What is engraved on the metal. It sits under the grain, so it looks etched into it. */
@@ -53,25 +51,25 @@ export function BrushedMetal({ children, className = "" }: BrushedMetalProps) {
       <svg
         aria-hidden="true"
         focusable="false"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-60 mix-blend-overlay"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.16] mix-blend-overlay"
       >
         <filter id={filterId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.85" numOctaves="3" seed="11" />
-          {/* To grey and opaque, then more contrast around mid-grey. */}
+          <feTurbulence type="fractalNoise" baseFrequency="0.005 0.55" numOctaves="2" seed="11" />
+          {/* To grey and opaque, then a little more contrast around mid-grey. */}
           <feColorMatrix values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1" />
           <feComponentTransfer>
-            <feFuncR type="linear" slope="2.2" intercept="-0.6" />
-            <feFuncG type="linear" slope="2.2" intercept="-0.6" />
-            <feFuncB type="linear" slope="2.2" intercept="-0.6" />
+            <feFuncR type="linear" slope="1.6" intercept="-0.3" />
+            <feFuncG type="linear" slope="1.6" intercept="-0.3" />
+            <feFuncB type="linear" slope="1.6" intercept="-0.3" />
           </feComponentTransfer>
         </filter>
         <rect width="100%" height="100%" filter={`url(#${filterId})`} />
       </svg>
 
-      {/* Bevel: a lit upper edge and a shaded lower one. Apart from the surface so a `shadow-*` in `className` still works. */}
+      {/* Bevel: a thin lit edge and a faint shade at the bottom. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55),inset_0_2px_3px_rgba(255,255,255,0.45),inset_0_-3px_6px_rgba(0,0,0,0.2)]"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5),inset_0_-3px_6px_rgba(0,0,0,0.07)]"
       />
     </div>
   );
