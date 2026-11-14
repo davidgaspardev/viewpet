@@ -4,17 +4,17 @@ import { useId } from "react";
  * Light and grain of brushed steel, kept quiet on purpose: it has to sit in a
  * minimal page, not be the loudest thing on it. Drawn with CSS and one SVG
  * filter (no image file). From the bottom layer up:
- *  - a conic gradient in a narrow band of greys, the way a disc of brushed
- *    metal catches light around its centre;
+ *  - a conic gradient of two soft light bands in a very narrow range of greys,
+ *    the way a disc of metal catches light around its centre;
  *  - one set of horizontal hairlines, barely there;
  *  - a soft highlight at the top left.
  */
 const SHEEN =
-  "conic-gradient(from 200deg at 50% 50%, #979da4 0deg, #b0b5bb 50deg, #9aa0a7 120deg, #b3b8be 200deg, #959ba2 270deg, #adb2b8 320deg, #979da4 360deg)";
+  "conic-gradient(from 200deg at 50% 50%, #bcc1c7 0deg, #c9cdd2 90deg, #bcc1c7 180deg, #c9cdd2 270deg, #bcc1c7 360deg)";
 const HIGHLIGHT =
-  "radial-gradient(120% 90% at 22% 12%, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%)";
+  "radial-gradient(120% 90% at 22% 12%, rgba(255,255,255,0.14), rgba(255,255,255,0) 55%)";
 const HAIRLINES =
-  "repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, rgba(255,255,255,0) 1px 4px)";
+  "repeating-linear-gradient(0deg, rgba(255,255,255,0) 0 1px, rgba(255,255,255,0) 1px 6px)";
 const STEEL = [HIGHLIGHT, HAIRLINES, SHEEN].join(", ");
 
 type BrushedMetalProps = {
@@ -51,10 +51,10 @@ export function BrushedMetal({ children, className = "" }: BrushedMetalProps) {
       <svg
         aria-hidden="true"
         focusable="false"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.16] mix-blend-overlay"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0 mix-blend-overlay"
       >
         <filter id={filterId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.005 0.55" numOctaves="2" seed="11" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.005 0.3" numOctaves="2" seed="11" />
           {/* To grey and opaque, then a little more contrast around mid-grey. */}
           <feColorMatrix values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1" />
           <feComponentTransfer>

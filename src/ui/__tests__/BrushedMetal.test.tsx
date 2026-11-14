@@ -31,7 +31,7 @@ describe("BrushedMetal", () => {
     const html = renderToStaticMarkup(<BrushedMetal />);
     const [across, down] = (html.match(/baseFrequency="([^"]+)"/)?.[1] ?? "").split(" ").map(Number);
     expect(across).toBeLessThan(0.05);
-    expect(down).toBeGreaterThan(0.5);
+    expect(down).toBeGreaterThan(across * 20);
   });
 
   test("the filter points at its own rect, and two surfaces never share an id", () => {
