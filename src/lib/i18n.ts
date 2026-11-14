@@ -76,6 +76,9 @@ type Dictionary = {
   petGender: string;
   genderMale: string;
   genderFemale: string;
+  petAge: string;
+  /** "born {month year}", after the age. */
+  bornOn: (monthYear: string) => string;
   petSpecies: string;
   /** Name of each kind of pet; one entry per `PET_SPECIES` value. */
   species: Record<PetSpecies, string>;
@@ -233,6 +236,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Sexo",
     genderMale: "Macho",
     genderFemale: "Fêmea",
+    petAge: "Idade",
+    bornOn: (monthYear) => `nasceu em ${monthYear}`,
     petSpecies: "Tipo",
     species: { dog: "Cachorro", cat: "Gato" },
     petWeight: "Peso",
@@ -392,6 +397,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     petGender: "Gender",
     genderMale: "Male",
     genderFemale: "Female",
+    petAge: "Age",
+    bornOn: (monthYear) => `born ${monthYear}`,
     petSpecies: "Type",
     species: { dog: "Dog", cat: "Cat" },
     petWeight: "Weight",

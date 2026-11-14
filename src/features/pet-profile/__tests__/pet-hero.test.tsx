@@ -7,7 +7,7 @@ import { PetHero } from "../components/PetHero";
 
 const hero = (props: { gender?: "male" | "female"; locale: (typeof SUPPORTED_LOCALES)[number] }) =>
   renderToStaticMarkup(
-    <PetHero name="Thor" pictureUrl="/uploads/thor.jpg" ageLabel="3 years old" {...props} />,
+    <PetHero name="Thor" pictureUrl="/uploads/thor.jpg" {...props} />,
   );
 
 describe("PetHero gender", () => {
@@ -39,5 +39,11 @@ describe("PetHero gender", () => {
     expect(html).not.toContain('d="M19 5l-5.4 5.4"');
     expect(html).not.toContain('d="M12 14v7"');
     expect(html).toContain("Thor");
+  });
+
+  test("the hero no longer carries the age: no pill in the corner of the photo", () => {
+    const html = hero({ gender: "male", locale: "pt-BR" });
+    expect(html).not.toContain("rounded-l-full");
+    expect(html).not.toMatch(/\d+ (anos?|years? old|meses|months? old)/);
   });
 });

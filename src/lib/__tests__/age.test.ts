@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ageInYears, ageInMonths, formatAge } from "../utils/age";
+import { ageInYears, ageInMonths, formatAge, formatBirthMonth } from "../utils/age";
 
 const d = (s: string) => new Date(s);
 
@@ -84,5 +84,23 @@ describe("formatAge", () => {
   test("clamps month count to at least 1", () => {
     const result = formatAge("2024-06-01T00:00:00.000Z", "pt-BR", d("2024-06-01"));
     expect(result).toMatch(/1/);
+  });
+});
+
+describe("formatBirthMonth", () => {
+  test("month and year in the reader's language", () => {
+    expect(formatBirthMonth("2022-04-10T00:00:00.000Z", "pt-BR")).toBe("abr. de 2022");
+    expect(formatBirthMonth("2022-04-10T00:00:00.000Z", "en-US")).toBe("Apr 2022");
+  });
+
+  test("reads the date in UTC: the 1st stays in its month for a viewer behind UTC", () => {
+    // 2022-05-01T00:00Z is still April 30th on the US east coast; the pet was born in May.
+    expect(formatBirthMonth("2022-05-01T00:00:00.000Z", "en-US")).toBe("May 2022");
+    expect(formatBirthMonth("2022-12-31T23:59:59.000Z", "en-US")).toBe("Dec 2022");
+  });
+
+  test("a value that isn't a date is undefined, not 'Invalid Date'", () => {
+    expect(formatBirthMonth("not a date", "pt-BR")).toBeUndefined();
+    expect(formatBirthMonth("", "en-US")).toBeUndefined();
   });
 });
