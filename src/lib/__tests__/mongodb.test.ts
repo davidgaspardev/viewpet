@@ -163,6 +163,49 @@ describe("MongoPetRepository", () => {
     });
   });
 
+  describe("consent record", () => {
+    const rawPet = (id: string) =>
+      cleanupClient.db("viewpet").collection("pets").findOne({ _id: id } as never);
+    const consent = {
+      acceptedAt: "2026-11-13T15:30:00.000Z",
+      termsVersion: "2026-11-13",
+      privacyVersion: "2026-11-13",
+    };
+
+    test("is stored with the pet and loads back unchanged", async () => {
+      const provider = new MongoPetRepository();
+      const pet = makePet({ consent });
+      await provider.setPet("consent1", pet);
+      expect(await rawPet("consent1")).toMatchObject({ consent });
+      const entry = await provider.getPetEntry("consent1");
+      expect("pet" in entry && entry.pet).toEqual(pet);
+    });
+
+    test("a pet without one (registered before the terms) loads without one", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("noconsent1", makePet());
+      expect(await rawPet("noconsent1")).not.toHaveProperty("consent");
+      const entry = await provider.getPetEntry("noconsent1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.consent).toBeUndefined();
+    });
+
+    test("saving the pet again without one does not erase the proof", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("keep1", makePet({ consent }));
+      await provider.setPet("keep1", makePet({ name: "Renamed" }));
+      expect(await rawPet("keep1")).toMatchObject({ name: "Renamed", consent });
+    });
+
+    test("a new acceptance replaces the old one", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("renew1", makePet({ consent }));
+      const newer = { ...consent, acceptedAt: "2027-01-02T10:00:00.000Z", termsVersion: "2027-01-01" };
+      await provider.setPet("renew1", makePet({ consent: newer }));
+      expect(await rawPet("renew1")).toMatchObject({ consent: newer });
+    });
+  });
+
   describe("breed, allergies and about", () => {
     const rawPet = (id: string) =>
       cleanupClient.db("viewpet").collection("pets").findOne({ _id: id } as never);

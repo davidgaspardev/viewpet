@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { parseConsent } from "@/features/legal/consent";
 import { savePetImage, SaveImageException } from "@/lib/blobs";
 import { PetRepositoryFactory } from "@/lib/repository";
 import { tomorrowUtcIso, validateBirthdateIso } from "@/lib/utils/birthdate";
@@ -61,6 +62,10 @@ export async function submitPet(
   _prev: SubmitState,
   form: FormData,
 ): Promise<SubmitState> {
+  // Without the tutor's agreement nothing is processed: not even the picture is saved.
+  const consent = parseConsent(form);
+  if (!consent) return { status: "error", message: "consent_required" };
+
   const name = readString(form, "name");
   const birthdate = readString(form, "birthdate");
   const genderRaw = readString(form, "gender");
@@ -125,6 +130,7 @@ export async function submitPet(
     status: "active",
     gender,
     ...details.details,
+    consent,
     guardians,
   };
 

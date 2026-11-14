@@ -16,6 +16,7 @@ import { AboutField } from "./AboutField";
 import { AllergiesField } from "./AllergiesField";
 import { BirthdateField } from "./BirthdateField";
 import { BreedField } from "./BreedField";
+import { ConsentFields } from "./ConsentFields";
 import { RequiredMark } from "./FieldMarks";
 import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { FormIntro } from "./FormIntro";
@@ -167,6 +168,7 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
     invalid_details: dict.errorDetails,
     invalid_phone: dict.errorPhone,
     invalid_phone_channels: dict.errorPhoneChannels,
+    consent_required: dict.errorConsent,
   };
   const errorMessage =
     state.status === "error" ? (errorTexts[state.message ?? ""] ?? dict.errorMissing) : null;
@@ -215,7 +217,9 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
             </div>
           </div>
 
-          <div className="mx-auto mt-8 max-w-md space-y-3 text-center">
+          <ConsentFields locale={locale} />
+
+          <div className="mx-auto mt-6 max-w-md space-y-3 text-center">
             <p className="text-sm text-ink/70">{dict.submitNotice}</p>
             <SubmitButton labelIdle={dict.submit} labelBusy={dict.submitting} />
           </div>

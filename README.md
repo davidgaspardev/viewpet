@@ -24,6 +24,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 | **Scan** | Uma visita que chegou pelo QR (pelo host curto), em vez de por um link direto. O redirect marca com o cookie `qr_scan`; a página lê. | `src/features/qr-redirect/`, `src/lib/utils/qr-scan.ts` |
 | **Pendant** | O modelo 3D da tag (o pingente), em Rust/Bevy. Ainda não está nesta branch: está sendo desenvolvido à parte. | `native/pendant/` (outro branch) |
 | **`pet-tag`** | A feature web com a cena 3D da tag (Three.js). Fala do **desenho** da tag, não da rota `/tag`. Não aparece mais na home, que usa uma ilustração em CSS. | `src/features/pet-tag/` |
+| **Aceite** | As duas caixas do cadastro (Termos de Uso e Política de Privacidade, e a autorização para publicar os dados). Fica gravado no pet como `consent`. | `src/features/legal/`, `src/features/pet-registration/components/ConsentFields.tsx` |
 | **Home** | A página `/`: apresenta o produto (hero, como funciona, o que a página do pet mostra, a plaquinha). | `src/app/page.tsx`, `src/features/home/` |
 
 ## Stack
@@ -203,7 +204,14 @@ interface PetPublicProfile {
   allergies?: string[];      // texto livre, uma por item (com sugestões no formulário)
   about?:     string;        // parágrafo livre sobre o pet (até 500 caracteres)
   lostInfo?:  LostInfo;      // só presente quando status === "lost"
+  consent?:   ConsentRecord; // aceite dos termos (veja "Termos e LGPD"); ausente nos pets cadastrados antes dele
   guardians:  Guardian[];    // ordem importa — [0] é o tutor principal
+}
+
+interface ConsentRecord {
+  acceptedAt:     string;    // ISO-8601, quando o cadastro foi enviado com as duas caixas marcadas
+  termsVersion:   string;    // YYYY-MM-DD da versão dos Termos de Uso exibida
+  privacyVersion: string;    // YYYY-MM-DD da versão da Política de Privacidade exibida
 }
 ```
 
@@ -321,6 +329,27 @@ A página `/` apresenta o produto: hero, "como funciona", o que a página do pet
 |----------|---------|--------|
 | `DEMO_TAG_ID` | `nuxw4d83wraa` | Id de um pet **publicado** (ativo ou perdido), usado nos botões "Ver uma página de exemplo". Sem ela, com um id malformado, inexistente, ainda só reservado (cuja página é o formulário público) ou se o banco não responder, esses botões somem e a home continua funcionando. Use um pet de exemplo dedicado, não o de um cliente: a página mostra os contatos dele a qualquer visitante. É lida quando a home é gerada (build e a cada hora), então o banco precisa estar acessível no build. |
 
+## Termos e LGPD
+
+O cadastro só publica a página se o tutor marcar **duas caixas** (nenhuma vem marcada): (1) "Li e aceito os Termos de Uso e estou ciente da Política de Privacidade" e (2) a autorização específica para publicar os dados informados, inclusive nome e telefones dos tutores, com a declaração de que as pessoas cujos contatos foram informados autorizaram. Os dois textos abrem em outra aba, para o formulário não perder o que já foi digitado.
+
+- **Páginas:** `/terms` e `/privacy`, com o texto só em português (o cadastro em inglês avisa isso). O texto fica em `src/features/legal/terms.ts` e `privacy.ts`; os links estão no rodapé da home e da página do pet.
+- **Validação no servidor:** `submitPet` recusa o envio sem as duas caixas (`consent_required`) antes de qualquer outra coisa, inclusive antes de salvar a foto. `required` no HTML é só conveniência.
+- **Prova do aceite (LGPD art. 8º, §2º):** o pet guarda `consent` com a data e a hora e a versão de cada documento. Nada mais: sem IP nem user agent, que seriam mais dado pessoal só para provar o aceite. O MongoDB só escreve esse campo, nunca o apaga: salvar o pet sem ele (um script, o seed) não destrói a prova.
+- **Versões:** `src/features/legal/versions.ts` tem a data de cada documento. Mude a versão no mesmo commit do texto. Pets já cadastrados mantêm a versão que aceitaram; quando uma mudança for relevante (finalidade, compartilhamento), é preciso avisar os tutores e pedir novo aceite (art. 8º, §6º). Esse fluxo de novo aceite ainda não existe.
+- **Sem aceite registrado:** pets cadastrados antes dos termos não têm `consent`. Não há tela de edição, então eles continuam publicados sem esse registro até que o tutor seja contatado.
+
+| Variável | Efeito |
+|----------|--------|
+| `LEGAL_ENTITY_NAME` | Razão social ou nome de quem controla os dados (LGPD art. 9º, III). |
+| `LEGAL_ENTITY_DOCUMENT` | CNPJ (ou CPF) do controlador, no formato em que deve aparecer na política. |
+| `PRIVACY_CONTACT_EMAIL` | Canal para o titular exercer os direitos do art. 18 (exigido mesmo por quem for dispensado de ter encarregado; Resolução CD/ANPD nº 2/2022, art. 11). |
+| `PRIVACY_OFFICER_NAME` | Opcional: o encarregado, se houver um (art. 41). |
+
+As páginas são geradas no build e de novo, no máximo, a cada hora. Sem as três primeiras variáveis o build avisa no log e, fora de produção, a página mostra um aviso; **em produção a política ficaria sem controlador e sem contato, o que não atende o art. 9º**. Preencha antes de publicar.
+
+**Revisão jurídica:** os textos foram escritos a partir da LGPD (Lei 13.709/2018, arts. 5º a 9º, 14 a 19, 33, 41 e 46 a 48) e do que o app faz hoje, mas não passaram por advogado. Antes de ir para produção, confira com um: o prazo de 15 dias para eliminar os dados, os provedores e a transferência para fora do Brasil (art. 33), a base legal de cada finalidade, e se o ViewPet se enquadra como agente de pequeno porte. Todo texto que descreve o tratamento (`dados`, `publico`, `compartilhamento`, `cookies`) precisa ser conferido de novo sempre que o app passar a coletar ou a mostrar algo diferente, como analytics, edição do cadastro ou o modo pet perdido.
+
 ## URLs de exemplo
 
 O seed (`src/data/pets.json`) inclui pets ativos e um perdido:
@@ -364,6 +393,8 @@ src/
 │   ├── layout.tsx                # layout raiz + fontes + globals
 │   ├── page.tsx                  # home de marketing
 │   ├── globals.css               # tailwind base/components/utilities
+│   ├── terms/page.tsx            # Termos de Uso
+│   ├── privacy/page.tsx          # Política de Privacidade
 │   ├── tmp/page.tsx              # dev-only: lista de hashIds do seed
 │   └── tag/[id]/
 │       ├── page.tsx              # branch missing/reserved/active/lost

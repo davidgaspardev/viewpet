@@ -18,6 +18,8 @@ const VALID_FIELDS: Record<string, string> = {
   g0_name: "Maria",
   g0_p0_phone: "(48) 98111-1111",
   g0_p0_call: "on",
+  accept_terms: "on",
+  accept_public: "on",
 };
 
 /** The valid form with `overrides` applied; a `null` value removes the field. */
@@ -32,6 +34,29 @@ function formWith(overrides: Record<string, string | null> = {}): FormData {
 }
 
 const submit = (form: FormData) => submitPet("38q9uymz5c43", { status: "idle" }, form);
+
+describe("submitPet consent", () => {
+  test("a form with either box unticked is refused before anything else is processed", async () => {
+    for (const field of ["accept_terms", "accept_public"]) {
+      expect(await submit(formWith({ [field]: null }))).toEqual({
+        status: "error",
+        message: "consent_required",
+      });
+    }
+  });
+
+  test("it is refused even when the rest of the form is just as wrong: consent comes first", async () => {
+    const result = await submit(formWith({ accept_terms: null, name: "", birthdate: "" }));
+    expect(result).toEqual({ status: "error", message: "consent_required" });
+  });
+
+  test("anything but a ticked box does not count", async () => {
+    for (const value of ["", "off", "false", "yes"]) {
+      const result = await submit(formWith({ accept_public: value }));
+      expect(result).toEqual({ status: "error", message: "consent_required" });
+    }
+  });
+});
 
 describe("submitPet validation", () => {
   test("a valid form gets as far as saving the picture", async () => {
