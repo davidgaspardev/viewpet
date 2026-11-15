@@ -374,8 +374,10 @@ Exemplos:
 Resolução em três níveis:
 
 1. `?lang=pt` ou `?lang=en` na query
-2. Header `Accept-Language` do navegador
+2. Header `Accept-Language` do navegador, pela ordem de preferência (valores `q`; `pt_BR` com underscore também vale)
 3. Fallback pra `pt-BR`
+
+Alguns celulares mandam o header num formato que o servidor não entende e caíam em inglês. Por isso a página do pet confere, no navegador, a lista de idiomas do aparelho (`navigator.languages`): se ela diferir do idioma renderizado e a URL não tiver `?lang=`, recarrega uma vez com `?lang=` (`src/ui/LocaleSync.tsx`).
 
 Exemplo: <http://localhost:3000/tag/nuxw4d83wraa?lang=en>
 

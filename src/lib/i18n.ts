@@ -508,14 +508,63 @@ export function isLocale(value: string): value is Locale {
  * Returns the normalized locale or undefined if not supported.
  */
 export function normalizeLocale(value: string): Locale | undefined {
+  // Some Android browsers and webviews write the tag with an underscore ("pt_BR").
+  const tag = value.trim().replace(/_/g, "-");
+
   // Check if it's already a valid full locale code
-  if (isLocale(value)) return value;
+  if (isLocale(tag)) return tag;
 
   // Check if it's a legacy alias
-  const normalized = LOCALE_ALIASES[value.toLowerCase()];
+  const normalized = LOCALE_ALIASES[tag.toLowerCase()];
   if (normalized) return normalized;
 
   // Try extracting the language part from locale codes like "pt-PT" → "pt" → "pt-BR"
-  const langPart = value.toLowerCase().split("-")[0];
+  const langPart = tag.toLowerCase().split("-")[0];
   return LOCALE_ALIASES[langPart];
+}
+
+/**
+ * The language tags of an `Accept-Language` header, most preferred first:
+ * ordered by their `q` weight (ties keep the header's order) and without the
+ * ones the client rules out (`q=0`) or the `*` wildcard.
+ *
+ * "pt-BR,pt;q=0.9,en-US;q=0.8" → ["pt-BR", "pt", "en-US"]
+ */
+export function parseAcceptLanguage(header: string): string[] {
+  return header
+    .split(",")
+    .map((part, index) => {
+      const [tag = "", ...params] = part.trim().split(";");
+      const q = params.map((p) => /^\s*q\s*=\s*([\d.]+)\s*$/i.exec(p)?.[1]).find((v) => v !== undefined);
+      return { tag: tag.trim(), q: q === undefined ? 1 : Number(q), index };
+    })
+    .filter(({ tag, q }) => tag !== "" && tag !== "*" && q > 0)
+    .sort((x, y) => y.q - x.q || x.index - y.index)
+    .map(({ tag }) => tag);
+}
+
+/** The first supported locale in a preference-ordered list of language tags. */
+export function localeFromLanguages(languages: readonly string[]): Locale | undefined {
+  for (const tag of languages) {
+    const locale = normalizeLocale(tag);
+    if (locale) return locale;
+  }
+  return undefined;
+}
+
+/**
+ * The locale a page rendered in `rendered` should reload in, given the
+ * browser's own language list, or `undefined` to stay put. The server only
+ * sees the `Accept-Language` header, which some phones send in a form it does
+ * not understand; `navigator.languages` is what the user actually set. An
+ * explicit `?lang=` is never overridden.
+ */
+export function localeToSwitchTo(
+  rendered: Locale,
+  browserLanguages: readonly string[],
+  explicit: boolean,
+): Locale | undefined {
+  if (explicit) return undefined;
+  const detected = localeFromLanguages(browserLanguages);
+  return detected && detected !== rendered ? detected : undefined;
 }
