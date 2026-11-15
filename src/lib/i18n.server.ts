@@ -2,7 +2,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 
-import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "./i18n";
+import { DEFAULT_LOCALE, localeFromLanguages, normalizeLocale, parseAcceptLanguage, type Locale } from "./i18n";
 
 /**
  * Resolve locale from (in order): explicit override (e.g. ?lang=pt or ?lang=pt-BR),
@@ -21,19 +21,8 @@ export async function resolveLocale(override?: string): Promise<Locale> {
 
   try {
     const h = await headers();
-    const accept = h.get("accept-language") ?? "";
-
-    // Parse Accept-Language header: "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
-    const preferred = accept
-      .split(",")
-      .map((part) => {
-        // Extract locale tag before quality factor (;q=0.9)
-        const tag = part.trim().split(";")[0].toLowerCase();
-        return tag;
-      })
-      .map((tag) => normalizeLocale(tag))
-      .find((locale): locale is Locale => locale !== undefined);
-
+    // "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7" → the first supported tag, by preference.
+    const preferred = localeFromLanguages(parseAcceptLanguage(h.get("accept-language") ?? ""));
     if (preferred) return preferred;
   } catch {
     // headers() can throw in non-request contexts; ignore.

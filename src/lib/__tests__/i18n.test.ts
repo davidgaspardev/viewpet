@@ -4,7 +4,16 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { normalizeLocale, isLocale, getDictionary, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "../i18n";
+import {
+  normalizeLocale,
+  isLocale,
+  getDictionary,
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  localeFromLanguages,
+  localeToSwitchTo,
+  parseAcceptLanguage,
+} from "../i18n";
 import { tagPath } from "../utils/routes";
 
 describe("i18n locale handling", () => {
@@ -35,6 +44,13 @@ describe("i18n locale handling", () => {
       expect(normalizeLocale("en-GB")).toBe("en-US");
       expect(normalizeLocale("en-CA")).toBe("en-US");
       expect(normalizeLocale("en-AU")).toBe("en-US");
+    });
+
+    test("accepts the underscore spelling some Android browsers send", () => {
+      expect(normalizeLocale("pt_BR")).toBe("pt-BR");
+      expect(normalizeLocale("pt_br")).toBe("pt-BR");
+      expect(normalizeLocale("en_US")).toBe("en-US");
+      expect(normalizeLocale(" pt-BR ")).toBe("pt-BR");
     });
 
     test("returns undefined for unsupported locales", () => {
@@ -80,5 +96,51 @@ describe("landing copy", () => {
     for (const locale of SUPPORTED_LOCALES) {
       expect(getDictionary(locale).landingBody).toContain(tagPath("<hashId>"));
     }
+  });
+});
+
+describe("parseAcceptLanguage", () => {
+  test("lists the tags in the header's order when none has a weight", () => {
+    expect(parseAcceptLanguage("pt-BR,pt,en")).toEqual(["pt-BR", "pt", "en"]);
+  });
+
+  test("orders by q weight, keeping the header's order between equal weights", () => {
+    expect(parseAcceptLanguage("en-US;q=0.5, pt-BR;q=0.9, es;q=0.9")).toEqual(["pt-BR", "es", "en-US"]);
+    expect(parseAcceptLanguage("pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7")).toEqual(["pt-BR", "pt", "en-US", "en"]);
+  });
+
+  test("drops what the client rules out, the wildcard and blanks", () => {
+    expect(parseAcceptLanguage("en;q=0, pt-BR;q=0.8, *;q=0.5")).toEqual(["pt-BR"]);
+    expect(parseAcceptLanguage("")).toEqual([]);
+    expect(parseAcceptLanguage(" , ,pt")).toEqual(["pt"]);
+  });
+});
+
+describe("localeFromLanguages", () => {
+  test("is the first supported language, skipping unsupported ones", () => {
+    expect(localeFromLanguages(["fr", "pt_BR", "en"])).toBe("pt-BR");
+    expect(localeFromLanguages(["en-BR", "pt-BR"])).toBe("en-US");
+    expect(localeFromLanguages(["fr", "de"])).toBeUndefined();
+    expect(localeFromLanguages([])).toBeUndefined();
+  });
+
+  test("a Portuguese phone gets Portuguese from any of its usual headers", () => {
+    for (const header of ["pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7", "pt-BR", "pt_BR,en;q=0.5", "pt-BR;q=0.9, en;q=0.4"]) {
+      expect(localeFromLanguages(parseAcceptLanguage(header))).toBe("pt-BR");
+    }
+  });
+});
+
+describe("localeToSwitchTo", () => {
+  test("switches when the browser's language differs from what was rendered", () => {
+    expect(localeToSwitchTo("en-US", ["pt-BR", "en-US"], false)).toBe("pt-BR");
+    expect(localeToSwitchTo("pt-BR", ["en-US"], false)).toBe("en-US");
+  });
+
+  test("stays put when they agree, when the browser's languages are unsupported, or when the URL chose", () => {
+    expect(localeToSwitchTo("pt-BR", ["pt-BR", "en-US"], false)).toBeUndefined();
+    expect(localeToSwitchTo("pt-BR", ["fr"], false)).toBeUndefined();
+    expect(localeToSwitchTo("pt-BR", [], false)).toBeUndefined();
+    expect(localeToSwitchTo("en-US", ["pt-BR"], true)).toBeUndefined();
   });
 });
