@@ -11,8 +11,6 @@ import { GuardianContact } from "@/features/pet-profile/components/GuardianConta
 import { PetDetails } from "@/features/pet-profile/components/PetDetails";
 import { LostBanner } from "@/features/pet-profile/components/LostBanner";
 import { LegalLinks } from "@/features/legal/components/LegalLinks";
-import { normalizeLocale } from "@/lib/i18n";
-import { LocaleSync } from "@/ui/LocaleSync";
 import { Logo } from "@/ui/Logo";
 
 import { PetForm } from "@/features/pet-registration/components/PetForm";
@@ -61,15 +59,9 @@ export default async function ViewPetPage(props: PageProps) {
   if (entry.status === "missing") notFound();
 
   const locale = await resolveLocale(lang);
-  const localeSync = <LocaleSync locale={locale} explicit={Boolean(lang && normalizeLocale(lang))} />;
 
   if (entry.status === "reserved") {
-    return (
-      <>
-        {localeSync}
-        <PetForm hashId={id} locale={locale} />
-      </>
-    );
+    return <PetForm hashId={id} locale={locale} />;
   }
 
   const pet = entry.pet;
@@ -81,7 +73,6 @@ export default async function ViewPetPage(props: PageProps) {
 
   return (
     <main data-scan-source={scanSource} className="mx-auto flex min-h-screen max-w-md flex-col bg-white">
-      {localeSync}
       {pet.status === "lost" && <LostBanner pet={pet} locale={locale} />}
 
       <PetHero

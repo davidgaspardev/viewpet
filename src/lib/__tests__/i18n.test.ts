@@ -11,7 +11,6 @@ import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
   localeFromLanguages,
-  localeToSwitchTo,
   parseAcceptLanguage,
 } from "../i18n";
 import { tagPath } from "../utils/routes";
@@ -128,19 +127,5 @@ describe("localeFromLanguages", () => {
     for (const header of ["pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7", "pt-BR", "pt_BR,en;q=0.5", "pt-BR;q=0.9, en;q=0.4"]) {
       expect(localeFromLanguages(parseAcceptLanguage(header))).toBe("pt-BR");
     }
-  });
-});
-
-describe("localeToSwitchTo", () => {
-  test("switches when the browser's language differs from what was rendered", () => {
-    expect(localeToSwitchTo("en-US", ["pt-BR", "en-US"], false)).toBe("pt-BR");
-    expect(localeToSwitchTo("pt-BR", ["en-US"], false)).toBe("en-US");
-  });
-
-  test("stays put when they agree, when the browser's languages are unsupported, or when the URL chose", () => {
-    expect(localeToSwitchTo("pt-BR", ["pt-BR", "en-US"], false)).toBeUndefined();
-    expect(localeToSwitchTo("pt-BR", ["fr"], false)).toBeUndefined();
-    expect(localeToSwitchTo("pt-BR", [], false)).toBeUndefined();
-    expect(localeToSwitchTo("en-US", ["pt-BR"], true)).toBeUndefined();
   });
 });

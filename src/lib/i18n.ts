@@ -551,20 +551,3 @@ export function localeFromLanguages(languages: readonly string[]): Locale | unde
   }
   return undefined;
 }
-
-/**
- * The locale a page rendered in `rendered` should reload in, given the
- * browser's own language list, or `undefined` to stay put. The server only
- * sees the `Accept-Language` header, which some phones send in a form it does
- * not understand; `navigator.languages` is what the user actually set. An
- * explicit `?lang=` is never overridden.
- */
-export function localeToSwitchTo(
-  rendered: Locale,
-  browserLanguages: readonly string[],
-  explicit: boolean,
-): Locale | undefined {
-  if (explicit) return undefined;
-  const detected = localeFromLanguages(browserLanguages);
-  return detected && detected !== rendered ? detected : undefined;
-}

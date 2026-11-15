@@ -377,7 +377,7 @@ Resolução em três níveis:
 2. Header `Accept-Language` do navegador, pela ordem de preferência (valores `q`; `pt_BR` com underscore também vale)
 3. Fallback pra `pt-BR`
 
-Alguns celulares mandam o header num formato que o servidor não entende e caíam em inglês. Por isso a página do pet confere, no navegador, a lista de idiomas do aparelho (`navigator.languages`): se ela diferir do idioma renderizado e a URL não tiver `?lang=`, recarrega uma vez com `?lang=` (`src/ui/LocaleSync.tsx`).
+Só o header decide, de propósito: `navigator.languages` pode divergir dele (num Android, o servidor via português e uma checagem no navegador trocava a página para inglês logo após a primeira renderização), então não é consultado.
 
 Exemplo: <http://localhost:3000/tag/nuxw4d83wraa?lang=en>
 
