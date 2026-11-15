@@ -189,10 +189,10 @@ describe("renderQrSvg label", () => {
 
     const [, size, height] = /viewBox="0 0 (\d+) ([\d.]+)"/.exec(labelled)!.map(Number);
     expect(height).toBeGreaterThan(size);
-    // The text starts at the quiet zone's edge (never inside it) and leaves room for its descenders.
+    // The text starts at least 3 modules under the code's last row (one into the quiet zone, at most) and leaves room for its descenders.
     const y = Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(labelled)![1]);
     const fontSize = Number(/<text [^>]*font-size="([\d.]+)"/.exec(labelled)![1]);
-    expect(y - fontSize * 0.72).toBeGreaterThanOrEqual(size - 1e-9);
+    expect(y - fontSize * 0.72).toBeGreaterThanOrEqual(size - MARGIN + 3 - 1e-9);
     expect(y + fontSize * 0.25).toBeLessThan(height);
     // The code itself is unchanged by the label.
     expect(dotCells(labelled)).toEqual(dotCells(plain));

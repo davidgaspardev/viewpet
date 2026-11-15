@@ -7,7 +7,7 @@ export type QrSvgOptions = {
   color?: string;
   /** Background colour; also used for the logo's backing disc. */
   background?: string;
-  /** Text printed centred under the code (e.g. the pet id), just outside its quiet zone. */
+  /** Text printed centred under the code (e.g. the pet id), close under it, with at least 3 modules clear. */
   label?: string;
   /**
    * Module shape. `true` (default) draws round dots and concentric-ring finder
@@ -40,11 +40,11 @@ const LABEL_DESCENT = 0.25;
 /** Space kept under the label's descenders, in modules. */
 const LABEL_BOTTOM_PADDING = 1.5;
 
-/**
- * Where the label sits, in modules below the canvas of the bare code (`size`).
- * Its capitals start right under the quiet zone, so the text never intrudes on it.
- */
-const LABEL_BASELINE = LABEL_CAP_HEIGHT * LABEL_FONT_SIZE;
+/** How far the label's capitals reach into the quiet zone, in modules (3 of its 4 stay clear). */
+const LABEL_INTRUSION = 1;
+
+/** Where the label's baseline sits, in modules below the canvas of the bare code (`size`). */
+const LABEL_BASELINE = LABEL_CAP_HEIGHT * LABEL_FONT_SIZE - LABEL_INTRUSION;
 
 /** Height, in modules, added under the code for the label, derived from where its baseline is. */
 const LABEL_BAND = LABEL_BASELINE + LABEL_DESCENT * LABEL_FONT_SIZE + LABEL_BOTTOM_PADDING;
