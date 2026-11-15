@@ -51,7 +51,8 @@ describe("renderQrSvg", () => {
 
   test("embeds the logo and clears only the dots under it", () => {
     const logoHref = "data:image/svg+xml;base64,AAAA";
-    const plain = renderQrSvg(url);
+    // Same level on both sides, so the two grids are the same size.
+    const plain = renderQrSvg(url, { errorCorrectionLevel: "H" });
     const withLogo = renderQrSvg(url, { logoHref });
     expect(plain).not.toContain("<image");
     expect(withLogo).toContain(`<image xlink:href="${logoHref}"`);
@@ -74,6 +75,111 @@ describe("renderQrSvg", () => {
   });
 });
 
+/** Dark modules of a square-style SVG, read back from its path's `M x yh<w>v1…` runs. */
+function squareCells(svg: string): Set<string> {
+  const cells = new Set<string>();
+  const d = /<path fill="[^"]+" d="([^"]*)"/.exec(svg)?.[1] ?? "";
+  for (const m of d.matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+z/g)) {
+    for (let i = 0; i < Number(m[3]); i++) cells.add(`${Number(m[2]) - MARGIN},${Number(m[1]) + i - MARGIN}`);
+  }
+  return cells;
+}
+
+/** Every dark module of the code the library builds for `url` at `level`. */
+function libraryCells(level: "L" | "M" | "Q" | "H"): { cells: Set<string>; size: number } {
+  const { modules } = QRCode.create(url, { errorCorrectionLevel: level });
+  const cells = new Set<string>();
+  for (let r = 0; r < modules.size; r++) for (let c = 0; c < modules.size; c++) if (modules.get(r, c)) cells.add(`${r},${c}`);
+  return { cells, size: modules.size };
+}
+
+describe("renderQrSvg styles (logo x dots)", () => {
+  const logoHref = "data:image/svg+xml;base64,AAAA";
+
+  test("defaults to round dots", () => {
+    expect(renderQrSvg(url, { dots: true })).toBe(renderQrSvg(url));
+    expect(renderQrSvg(url, { logoHref, dots: true })).toBe(renderQrSvg(url, { logoHref }));
+  });
+
+  test("dots on, logo on: round dots, rings and the logo", () => {
+    const svg = renderQrSvg(url, { logoHref, dots: true });
+    expect(svg).toContain("<circle");
+    expect(svg).toContain("<image");
+    expect(svg).not.toContain("<path");
+  });
+
+  test("dots on, logo off: round dots and rings, no logo and no hole", () => {
+    const svg = renderQrSvg(url, { dots: true });
+    expect(svg).toContain("<circle");
+    expect(svg).not.toContain("<image");
+    // Every data module away from the finders is drawn, centre included.
+    const { cells, size } = libraryCells("H");
+    const finder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7);
+    const expected = new Set([...cells].filter((cell) => !finder(...(cell.split(",").map(Number) as [number, number]))));
+    expect(dotCells(svg)).toEqual(expected);
+  });
+
+  test("dots off, logo off: the standard code, every module square", () => {
+    const svg = renderQrSvg(url, { dots: false });
+    expect(svg).not.toContain("<circle");
+    expect(svg).not.toContain("<image");
+    expect(svg).toContain("<path");
+    expect(squareCells(svg)).toEqual(libraryCells("H").cells);
+  });
+
+  test("dots off, logo on: square modules, cleared only under the logo", () => {
+    const svg = renderQrSvg(url, { logoHref, dots: false });
+    // No dots and no finder rings; the only circle is the logo's backing disc.
+    expect(dotCells(svg).size).toBe(0);
+    expect(svg).not.toContain('r="3.5"');
+    expect(svg.match(/<circle/g)).toHaveLength(1);
+    expect(svg).toContain("<image");
+    const { cells, size } = libraryCells("H");
+    const drawn = squareCells(svg);
+    expect([...drawn].every((cell) => cells.has(cell))).toBe(true);
+    // Finder patterns stay complete: they are ordinary modules here.
+    for (const cell of cells) {
+      const [r, c] = cell.split(",").map(Number);
+      if ((r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7)) expect(drawn.has(cell)).toBe(true);
+    }
+    const centre = (size - 1) / 2;
+    const clearRadius = size * 0.11 + 0.5;
+    const removed = [...cells].filter((cell) => !drawn.has(cell));
+    expect(removed.length).toBeGreaterThan(0);
+    for (const cell of removed) {
+      const [r, c] = cell.split(",").map(Number);
+      expect(Math.hypot(r - centre, c - centre)).toBeLessThan(clearRadius + 1e-9);
+    }
+  });
+
+  test("the square code has the same canvas, label and escaping as the round one", () => {
+    const round = renderQrSvg(url, { label: "ay7vkdat8gdf" });
+    const square = renderQrSvg(url, { label: "ay7vkdat8gdf", dots: false });
+    expect(/viewBox="[^"]+"/.exec(square)![0]).toBe(/viewBox="[^"]+"/.exec(round)![0]);
+    expect(square).toContain(">ay7vkdat8gdf</text>");
+    expect(renderQrSvg(url, { dots: false, color: '"red' })).toContain("&quot;red");
+  });
+
+  test("error correction is H with or without a logo, unless set", () => {
+    const sizeOf = (svg: string) => Number(/viewBox="0 0 (\d+)/.exec(svg)![1]) - MARGIN * 2;
+    expect(sizeOf(renderQrSvg(url, { logoHref }))).toBe(libraryCells("H").size);
+    expect(sizeOf(renderQrSvg(url))).toBe(libraryCells("H").size);
+    expect(sizeOf(renderQrSvg(url, { dots: false }))).toBe(libraryCells("H").size);
+    expect(sizeOf(renderQrSvg(url, { errorCorrectionLevel: "M" }))).toBe(libraryCells("M").size);
+  });
+
+  test("every style is a well-formed, deterministic SVG", () => {
+    for (const dots of [true, false]) {
+      for (const withLogo of [true, false]) {
+        const svg = renderQrSvg(url, { dots, logoHref: withLogo ? logoHref : undefined, label: "abc" });
+        expect(svg).toStartWith("<svg");
+        expect(svg).toEndWith("</svg>");
+        expect(svg).toBe(renderQrSvg(url, { dots, logoHref: withLogo ? logoHref : undefined, label: "abc" }));
+      }
+    }
+  });
+});
+
 describe("renderQrSvg label", () => {
   test("adds the label as text in an extra band below the quiet zone", () => {
     const plain = renderQrSvg(url);
@@ -81,14 +187,19 @@ describe("renderQrSvg label", () => {
     expect(plain).not.toContain("<text");
     expect(labelled).toContain(">ay7vkdat8gdf</text>");
 
-    const [, size, height] = /viewBox="0 0 (\d+) (\d+)"/.exec(labelled)!.map(Number);
+    const [, size, height] = /viewBox="0 0 (\d+) ([\d.]+)"/.exec(labelled)!.map(Number);
     expect(height).toBeGreaterThan(size);
-    // The text sits below the code's quiet zone, inside the extended canvas.
+    // The text starts at least 3 modules under the code's last row (one into the quiet zone, at most) and leaves room for its descenders.
     const y = Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(labelled)![1]);
-    expect(y).toBeGreaterThan(size);
-    expect(y).toBeLessThan(height);
+    const fontSize = Number(/<text [^>]*font-size="([\d.]+)"/.exec(labelled)![1]);
+    expect(y - fontSize * 0.72).toBeGreaterThanOrEqual(size - MARGIN + 3 - 1e-9);
+    expect(y + fontSize * 0.25).toBeLessThan(height);
     // The code itself is unchanged by the label.
     expect(dotCells(labelled)).toEqual(dotCells(plain));
+  });
+
+  test("the label is larger than before (font size above 2.2 modules)", () => {
+    expect(Number(/font-size="([\d.]+)"/.exec(renderQrSvg(url, { label: "x" }))![1])).toBeGreaterThan(2.2);
   });
 
   test("squeezes a label that is too wide instead of letting it clip", () => {
