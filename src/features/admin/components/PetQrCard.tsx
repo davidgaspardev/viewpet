@@ -18,7 +18,7 @@ const BADGE_COLORS: Record<PetStatus, string> = {
   lost: "bg-red-100 text-red-800",
 };
 
-const tagQrSvg = (url: string, id: string, style: QrStyle) => renderQrSvg(url, tagQrOptions(style, id));
+const tagQrSvg = (url: string, id: string, qrStyle: QrStyle) => renderQrSvg(url, tagQrOptions(qrStyle, id));
 
 function downloadSvg(id: string, svg: string) {
   const href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
@@ -38,14 +38,14 @@ type PetQrCardProps = {
   /** URL prefix the QR encodes; the id is appended. */
   qrBase: string;
   /** Whether the code has the logo and round dots. */
-  style: QrStyle;
+  qrStyle: QrStyle;
 };
 
 /**
  * One pet id with its status and QR code. The QR is a pure function of the
  * public URL, so it is rendered here from the id instead of being stored.
  */
-export const PetQrCard = memo(function PetQrCard({ entry, qrBase, style }: PetQrCardProps) {
+export const PetQrCard = memo(function PetQrCard({ entry, qrBase, qrStyle }: PetQrCardProps) {
   const url = qrUrl(qrBase, entry.id);
 
   // Computed after mount, not during render: each QR is ~50 KB of markup, so
@@ -53,7 +53,7 @@ export const PetQrCard = memo(function PetQrCard({ entry, qrBase, style }: PetQr
   // hydration. An <img> keeps the card at one DOM node (the inline SVG has
   // ~600) and means the markup is never injected into the page.
   const [src, setSrc] = useState<string>();
-  const { logo, dots } = style;
+  const { logo, dots } = qrStyle;
   useEffect(() => {
     setSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(tagQrSvg(url, entry.id, { logo, dots }))}`);
   }, [url, entry.id, logo, dots]);

@@ -7,7 +7,7 @@ export type QrSvgOptions = {
   color?: string;
   /** Background colour; also used for the logo's backing disc. */
   background?: string;
-  /** Text printed centred under the code (e.g. the pet id), close to it and clear of its modules. */
+  /** Text printed centred under the code (e.g. the pet id), just outside its quiet zone. */
   label?: string;
   /**
    * Module shape. `true` (default) draws round dots and concentric-ring finder
@@ -15,10 +15,9 @@ export type QrSvgOptions = {
    */
   dots?: boolean;
   /**
-   * Error-correction level. Defaults to `H` when there is a logo (it hides
-   * the centre of the code, so the ~30% recovery covers it) and `Q` without
-   * one: a plain code has nothing to make up for, and the lower level needs a
-   * smaller, easier-to-scan grid while still surviving a worn or scratched tag.
+   * Error-correction level. Defaults to `H` (~30% recoverable): it covers the
+   * logo hiding the centre, and a tag that is worn or scratched is the same
+   * case with or without one.
    */
   errorCorrectionLevel?: "L" | "M" | "Q" | "H";
 };
@@ -29,19 +28,26 @@ const MARGIN = 4;
 /** Logo backing disc diameter as a fraction of the code's width. */
 const LOGO_RATIO = 0.22;
 
-/** Height, in modules, added under the quiet zone for the label (its line sits partly inside that zone). */
-const LABEL_BAND = 3;
-
-/** Clear space, in modules, between the code's last row and the top of the label's capitals. */
-const LABEL_GAP = 2.5;
-
-/** Capital height of the label's monospace font, as a fraction of its size. */
-const LABEL_CAP_HEIGHT = 0.72;
-
 /** Label typography, in modules. Monospace glyphs advance ~0.6em. */
 const LABEL_FONT_SIZE = 3;
 const LABEL_LETTER_SPACING = 0.3;
 const LABEL_ADVANCE = 0.6 * LABEL_FONT_SIZE + LABEL_LETTER_SPACING;
+
+/** Capital height and descender depth of the label's font, as fractions of its size. */
+const LABEL_CAP_HEIGHT = 0.72;
+const LABEL_DESCENT = 0.25;
+
+/** Space kept under the label's descenders, in modules. */
+const LABEL_BOTTOM_PADDING = 1.5;
+
+/**
+ * Where the label sits, in modules below the canvas of the bare code (`size`).
+ * Its capitals start right under the quiet zone, so the text never intrudes on it.
+ */
+const LABEL_BASELINE = LABEL_CAP_HEIGHT * LABEL_FONT_SIZE;
+
+/** Height, in modules, added under the code for the label, derived from where its baseline is. */
+const LABEL_BAND = LABEL_BASELINE + LABEL_DESCENT * LABEL_FONT_SIZE + LABEL_BOTTOM_PADDING;
 
 /** Free space kept on each side of the label, in modules. */
 const LABEL_SIDE_PADDING = 2;
@@ -57,8 +63,14 @@ const DOT_RATIO = 0.84;
  * level H unless told otherwise, so the logo doesn't hurt scannability).
  */
 export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
-  const { logoHref, label, dots: rounded = true, color = "#111b25", background = "#ffffff" } = options;
-  const { errorCorrectionLevel = logoHref ? "H" : "Q" } = options;
+  const {
+    logoHref,
+    label,
+    dots = true,
+    errorCorrectionLevel = "H",
+    color = "#111b25",
+    background = "#ffffff",
+  } = options;
 
   const { modules } = QRCode.create(text, { errorCorrectionLevel });
   const fg = escapeAttr(color);
@@ -80,12 +92,12 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
   };
 
   let body: string;
-  if (rounded) {
-    const dots: string[] = [];
+  if (dots) {
+    const circles: string[] = [];
     for (let row = 0; row < count; row++) {
       for (let col = 0; col < count; col++) {
         if (inFinder(row, col) || !isDrawn(row, col)) continue;
-        dots.push(`<circle cx="${col + MARGIN + 0.5}" cy="${row + MARGIN + 0.5}" r="${DOT_RATIO / 2}"/>`);
+        circles.push(`<circle cx="${col + MARGIN + 0.5}" cy="${row + MARGIN + 0.5}" r="${DOT_RATIO / 2}"/>`);
       }
     }
     const finders = [
@@ -95,24 +107,24 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
     ]
       .map(([row, col]) => finder(col + MARGIN, row + MARGIN, fg, bg))
       .join("");
-    body = `<g fill="${fg}">${dots.join("")}</g>${finders}`;
+    body = `<g fill="${fg}">${circles.join("")}</g>${finders}`;
   } else {
     // Standard code: finders are ordinary modules. Horizontal runs of dark
     // modules are merged into one rectangle each, in a single path.
     const runs: string[] = [];
     for (let row = 0; row < count; row++) {
-      let col = 0;
-      while (col < count) {
-        if (!isDrawn(row, col)) {
-          col++;
-          continue;
+      let start = -1;
+      // `col === count` is a sentinel that closes a run reaching the edge.
+      for (let col = 0; col <= count; col++) {
+        const drawn = col < count && isDrawn(row, col);
+        if (drawn && start < 0) start = col;
+        if (!drawn && start >= 0) {
+          runs.push(`M${start + MARGIN} ${row + MARGIN}h${col - start}v1h-${col - start}z`);
+          start = -1;
         }
-        const start = col;
-        while (col < count && isDrawn(row, col)) col++;
-        runs.push(`M${start + MARGIN} ${row + MARGIN}h${col - start}v1h-${col - start}z`);
       }
     }
-    body = `<path fill="${fg}" shape-rendering="crispEdges" d="${runs.join("")}"/>`;
+    body = `<path fill="${fg}" d="${runs.join("")}"/>`;
   }
 
   const logoSvg = logoHref
@@ -128,7 +140,7 @@ export function renderQrSvg(text: string, options: QrSvgOptions = {}): string {
       ? ` textLength="${labelMaxWidth}" lengthAdjust="spacingAndGlyphs"`
       : "";
   const labelSvg = label
-    ? `<text x="${centre}" y="${size - MARGIN + LABEL_GAP + LABEL_FONT_SIZE * LABEL_CAP_HEIGHT}" text-anchor="middle" ` +
+    ? `<text x="${centre}" y="${size + LABEL_BASELINE}" text-anchor="middle" ` +
       `font-family="ui-monospace, Menlo, Consolas, monospace" font-size="${LABEL_FONT_SIZE}" ` +
       `letter-spacing="${LABEL_LETTER_SPACING}"${labelFit} fill="${fg}">${escapeText(label)}</text>`
     : "";

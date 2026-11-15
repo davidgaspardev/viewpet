@@ -30,7 +30,7 @@ describe("renderQrSvg", () => {
   });
 
   test("draws exactly the library's dark data modules (finders excluded)", () => {
-    const { modules } = QRCode.create(url, { errorCorrectionLevel: "Q" });
+    const { modules } = QRCode.create(url, { errorCorrectionLevel: "H" });
     const n = modules.size;
     const expected = new Set<string>();
     for (let r = 0; r < n; r++) {
@@ -78,7 +78,7 @@ describe("renderQrSvg", () => {
 /** Dark modules of a square-style SVG, read back from its path's `M x yh<w>v1…` runs. */
 function squareCells(svg: string): Set<string> {
   const cells = new Set<string>();
-  const d = /<path fill="[^"]+" shape-rendering="crispEdges" d="([^"]*)"/.exec(svg)?.[1] ?? "";
+  const d = /<path fill="[^"]+" d="([^"]*)"/.exec(svg)?.[1] ?? "";
   for (const m of d.matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+z/g)) {
     for (let i = 0; i < Number(m[3]); i++) cells.add(`${Number(m[2]) - MARGIN},${Number(m[1]) + i - MARGIN}`);
   }
@@ -113,7 +113,7 @@ describe("renderQrSvg styles (logo x dots)", () => {
     expect(svg).toContain("<circle");
     expect(svg).not.toContain("<image");
     // Every data module away from the finders is drawn, centre included.
-    const { cells, size } = libraryCells("Q");
+    const { cells, size } = libraryCells("H");
     const finder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7);
     const expected = new Set([...cells].filter((cell) => !finder(...(cell.split(",").map(Number) as [number, number]))));
     expect(dotCells(svg)).toEqual(expected);
@@ -124,7 +124,7 @@ describe("renderQrSvg styles (logo x dots)", () => {
     expect(svg).not.toContain("<circle");
     expect(svg).not.toContain("<image");
     expect(svg).toContain("<path");
-    expect(squareCells(svg)).toEqual(libraryCells("Q").cells);
+    expect(squareCells(svg)).toEqual(libraryCells("H").cells);
   });
 
   test("dots off, logo on: square modules, cleared only under the logo", () => {
@@ -160,13 +160,12 @@ describe("renderQrSvg styles (logo x dots)", () => {
     expect(renderQrSvg(url, { dots: false, color: '"red' })).toContain("&quot;red");
   });
 
-  test("error correction is H with a logo and Q without, unless set", () => {
+  test("error correction is H with or without a logo, unless set", () => {
     const sizeOf = (svg: string) => Number(/viewBox="0 0 (\d+)/.exec(svg)![1]) - MARGIN * 2;
     expect(sizeOf(renderQrSvg(url, { logoHref }))).toBe(libraryCells("H").size);
-    expect(sizeOf(renderQrSvg(url))).toBe(libraryCells("Q").size);
+    expect(sizeOf(renderQrSvg(url))).toBe(libraryCells("H").size);
+    expect(sizeOf(renderQrSvg(url, { dots: false }))).toBe(libraryCells("H").size);
     expect(sizeOf(renderQrSvg(url, { errorCorrectionLevel: "M" }))).toBe(libraryCells("M").size);
-    // Same text, lower level, fewer modules: the logo-less code is the lighter one.
-    expect(sizeOf(renderQrSvg(url))).toBeLessThan(sizeOf(renderQrSvg(url, { logoHref })));
   });
 
   test("every style is a well-formed, deterministic SVG", () => {
@@ -188,17 +187,13 @@ describe("renderQrSvg label", () => {
     expect(plain).not.toContain("<text");
     expect(labelled).toContain(">ay7vkdat8gdf</text>");
 
-    const [, size, height] = /viewBox="0 0 (\d+) (\d+)"/.exec(labelled)!.map(Number);
+    const [, size, height] = /viewBox="0 0 (\d+) ([\d.]+)"/.exec(labelled)!.map(Number);
     expect(height).toBeGreaterThan(size);
-    // The text sits just under the code, inside the extended canvas, and leaves room for descenders.
+    // The text starts at the quiet zone's edge (never inside it) and leaves room for its descenders.
     const y = Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(labelled)![1]);
     const fontSize = Number(/<text [^>]*font-size="([\d.]+)"/.exec(labelled)![1]);
-    expect(y).toBeGreaterThan(size - MARGIN);
-    expect(y).toBeLessThan(height - fontSize * 0.25);
-    // Capitals start at least 2 modules under the code's last row (and well within the old 4).
-    const gap = y - fontSize * 0.72 - (size - MARGIN);
-    expect(gap).toBeGreaterThanOrEqual(2);
-    expect(gap).toBeLessThan(4);
+    expect(y - fontSize * 0.72).toBeGreaterThanOrEqual(size - 1e-9);
+    expect(y + fontSize * 0.25).toBeLessThan(height);
     // The code itself is unchanged by the label.
     expect(dotCells(labelled)).toEqual(dotCells(plain));
   });

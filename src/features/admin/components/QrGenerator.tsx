@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useMemo, useState, useTransition } from "react";
 
 import type { PetEntrySummary } from "@/lib/repository";
 import { useSnackbar } from "@/ui/Snackbar";
@@ -41,6 +41,9 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [qrStyle, setQrStyle] = useState<QrStyle>(DEFAULT_QR_STYLE);
+  // The cards redraw their codes from this. Deferred, so a switch flips at once
+  // and the (interruptible) redraw of every visible card follows it.
+  const cardStyle = useDeferredValue(qrStyle);
   const [pending, startTransition] = useTransition();
   const { show } = useSnackbar();
 
@@ -115,7 +118,7 @@ export function QrGenerator({ initialEntries, qrBase }: QrGeneratorProps) {
         <ul className="mt-6 flex flex-wrap gap-4">
           {filtered.slice(0, visible).map((entry) => (
             <li key={entry.id} className="w-72">
-              <PetQrCard entry={entry} qrBase={qrBase} style={qrStyle} />
+              <PetQrCard entry={entry} qrBase={qrBase} qrStyle={cardStyle} />
             </li>
           ))}
         </ul>

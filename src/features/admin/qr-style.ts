@@ -10,9 +10,9 @@ export type QrStyle = {
 };
 
 /** Today's look: round dots with the logo in the middle. */
-export const DEFAULT_QR_STYLE: QrStyle = { logo: true, dots: true };
+export const DEFAULT_QR_STYLE: Readonly<QrStyle> = Object.freeze({ logo: true, dots: true });
 
 /** Options for `renderQrSvg` that draw the tag for pet `id` in the given style. */
-export function tagQrOptions(style: QrStyle, id: string): QrSvgOptions {
+export function tagQrOptions(style: Readonly<QrStyle>, id: string): QrSvgOptions {
   return { logoHref: style.logo ? LOGO_DATA_URI : undefined, dots: style.dots, label: id };
 }
