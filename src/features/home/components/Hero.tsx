@@ -48,7 +48,7 @@ export function Hero({ demoHref }: { demoHref?: string }) {
           >
             {HERO.title}
             <br />
-            <span className="box-decoration-clone bg-gradient-to-t from-sage/60 from-[36%] to-transparent to-[36%]">
+            <span className="underline decoration-sage decoration-[4px] underline-offset-[6px] [text-decoration-skip-ink:none]">
               {HERO.highlight}
             </span>
           </h1>
