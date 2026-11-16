@@ -41,8 +41,20 @@ const config: Config = {
           "0%, 100%": { transform: "rotate(-2.5deg)" },
           "50%": { transform: "rotate(2.5deg)" },
         },
+        // The home's eyebrow pill: a dot that breathes while a ring spreads out
+        // and fades from it, on one shared 2s beat.
+        "thinking-core": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(0.85)", opacity: "0.8" },
+        },
+        "thinking-ring": {
+          "0%": { transform: "scale(1)", opacity: "0.7" },
+          "70%, 100%": { transform: "scale(1.9)", opacity: "0" },
+        },
       },
       animation: {
+        "thinking-core": "thinking-core 2s ease-in-out infinite",
+        "thinking-ring": "thinking-ring 2s ease-out infinite",
         "snackbar-in": "snackbar-in 180ms ease-out",
         sway: "sway 6s ease-in-out infinite",
       },

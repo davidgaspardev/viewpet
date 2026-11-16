@@ -34,7 +34,11 @@ export function Hero({ demoHref }: { demoHref?: string }) {
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-sage/20 px-3 py-1 text-xs font-medium text-ink/80">
-            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-sage" />
+            {/* A soft pulse, like something thinking: the core breathes while a ring fades outward. Still when motion is reduced. */}
+            <span aria-hidden="true" className="relative flex h-2.5 w-2.5">
+              <span className="absolute inset-0 rounded-full bg-sage motion-safe:animate-thinking-ring" />
+              <span className="relative h-2.5 w-2.5 rounded-full bg-sage motion-safe:animate-thinking-core" />
+            </span>
             {HERO.eyebrow}
           </p>
 
@@ -44,9 +48,7 @@ export function Hero({ demoHref }: { demoHref?: string }) {
           >
             {HERO.title}
             <br />
-            <span className="box-decoration-clone bg-gradient-to-t from-sage/60 from-[36%] to-transparent to-[36%]">
-              {HERO.highlight}
-            </span>
+            {HERO.highlight}
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/75">{HERO.lead}</p>
