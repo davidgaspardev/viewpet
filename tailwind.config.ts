@@ -45,11 +45,11 @@ const config: Config = {
         // and fades from it, on one shared 2s beat.
         "thinking-core": {
           "0%, 100%": { transform: "scale(1)", opacity: "1" },
-          "50%": { transform: "scale(0.7)", opacity: "0.75" },
+          "50%": { transform: "scale(0.85)", opacity: "0.8" },
         },
         "thinking-ring": {
           "0%": { transform: "scale(1)", opacity: "0.7" },
-          "70%, 100%": { transform: "scale(3)", opacity: "0" },
+          "70%, 100%": { transform: "scale(1.9)", opacity: "0" },
         },
       },
       animation: {

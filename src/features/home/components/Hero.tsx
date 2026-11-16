@@ -35,9 +35,9 @@ export function Hero({ demoHref }: { demoHref?: string }) {
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-sage/20 px-3 py-1 text-xs font-medium text-ink/80">
             {/* A soft pulse, like something thinking: the core breathes while a ring fades outward. Still when motion is reduced. */}
-            <span aria-hidden="true" className="relative flex h-2 w-2">
+            <span aria-hidden="true" className="relative flex h-2.5 w-2.5">
               <span className="absolute inset-0 rounded-full bg-sage motion-safe:animate-thinking-ring" />
-              <span className="relative h-2 w-2 rounded-full bg-sage motion-safe:animate-thinking-core" />
+              <span className="relative h-2.5 w-2.5 rounded-full bg-sage motion-safe:animate-thinking-core" />
             </span>
             {HERO.eyebrow}
           </p>
