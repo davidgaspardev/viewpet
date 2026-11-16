@@ -11,10 +11,7 @@ type SectionHeadingProps = {
 export function SectionHeading({ eyebrow, title, lead, id, align = "left" }: SectionHeadingProps) {
   return (
     <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/70">
-        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-sage" />
-        {eyebrow}
-      </p>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ink/70">{eyebrow}</p>
       <h2 id={id} className="mt-3 text-balance text-3xl font-bold tracking-tight text-ink sm:text-4xl">
         {title}
       </h2>
