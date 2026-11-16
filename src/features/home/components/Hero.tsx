@@ -48,9 +48,7 @@ export function Hero({ demoHref }: { demoHref?: string }) {
           >
             {HERO.title}
             <br />
-            <span className="underline decoration-sage decoration-[4px] underline-offset-[6px] [text-decoration-skip-ink:none]">
-              {HERO.highlight}
-            </span>
+            {HERO.highlight}
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/75">{HERO.lead}</p>
