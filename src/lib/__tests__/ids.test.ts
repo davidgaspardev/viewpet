@@ -1,11 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { generateHashId, isHashId, HASH_ID_LENGTH } from "../utils/ids";
+import { generateHashId, isHashId, HASH_ID_LENGTH, HASH_ID_LENGTHS } from "../utils/ids";
 
 const ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 
 describe("generateHashId", () => {
   test("returns a string of the correct length", () => {
     expect(generateHashId()).toHaveLength(HASH_ID_LENGTH);
+  });
+
+  test("generates 10 characters, and that length is one the validator accepts", () => {
+    expect(HASH_ID_LENGTH).toBe(10);
+    expect(HASH_ID_LENGTHS).toContain(HASH_ID_LENGTH);
   });
 
   test("uses only characters from the safe alphabet", () => {
@@ -47,7 +52,13 @@ describe("isHashId", () => {
     expect(isHashId(validId)).toBe(true);
   });
 
-  test("rejects IDs that are too short", () => {
+  test("accepts both issued lengths: 10 (generated) and 12 (the length it may return to)", () => {
+    expect(isHashId("23456789ab")).toBe(true); // 10 chars
+    expect(isHashId("23456789abcd")).toBe(true); // 12 chars
+  });
+
+  test("rejects IDs that are too short, and lengths in between", () => {
+    expect(isHashId("abc234567")).toBe(false); // 9 chars
     expect(isHashId("abc23456def")).toBe(false); // 11 chars
   });
 

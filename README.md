@@ -16,7 +16,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 |-------|---------|--------------|
 | **Tag** (plaquinha) | O objeto físico: a placa/pingente pendurado na coleira do pet, com o QR Code. É o que a pessoa que acha o animal escaneia. | Rota `/tag/<hashId>`, `src/app/tag/` |
 | **QR Code** | O código impresso na tag. Gerado no `/admin`. Ver [URL do QR](#url-do-qr). | `src/lib/qrcode/`, `src/features/admin/` |
-| **`hashId`** | O identificador opaco de 12 caracteres da tag. É também a chave do registro do pet no banco: um `hashId` ↔ uma tag ↔ um pet. Ver [Formato do `hashId`](#formato-do-hashid). | `src/lib/utils/ids.ts`, `id-format.ts` |
+| **`hashId`** | O identificador opaco da tag (10 caracteres). É também a chave do registro do pet no banco: um `hashId` ↔ uma tag ↔ um pet. Ver [Formato do `hashId`](#formato-do-hashid). | `src/lib/utils/ids.ts`, `id-format.ts` |
 | **Reserva** | Gerar um `hashId` e guardá-lo no banco vazio, antes de existir pet. Acontece antes da impressão. | `bun run reserve`, página `/admin` |
 | **Estado da tag** | `missing`, `reserved`, `active` ou `lost`. Ver [Estados de uma tag](#estados-de-uma-tag). | `PetEntry`, `getPetEntry()` |
 | **Tutor** (guardian) | Quem cuida do pet e é contatado por quem o encontra. Um pet tem até 2; o primeiro é o principal. | `Guardian`, `src/types/pet.ts` |
@@ -97,9 +97,13 @@ As variáveis de S3 e R2 estão em [Armazenamento de imagens](#armazenamento-de-
 
 Opaco: não carrega nome, slug ou qualquer informação derivada do pet. Isso é proposital — o QR Code é impresso uma única vez e fica colado na plaquinha por anos. Trocar o nome do pet, o tutor, qualquer coisa, não pode invalidar a URL.
 
-- **Comprimento:** 12 caracteres
+- **Comprimento gerado:** 10 caracteres (`HASH_ID_LENGTH`)
 - **Alfabeto (32 chars, URL-safe):** `23456789abcdefghjkmnpqrstuvwxyz` — sem `0`/`o`, `1`/`i`/`l`, que se confundem visualmente
-- **Entropia:** 12 × 5 bits = **60 bits** (~10¹⁸ IDs possíveis)
+- **Entropia:** 10 × 5 bits = **50 bits** (~10¹⁵ IDs possíveis)
+
+**Por que 10.** Com a correção de erro H do QR (a do admin, por causa do logo), o código tem o mesmo tamanho de 6 a 10 caracteres; 11 e 12 pulam uma versão (de 33×33 para 37×37 módulos). Menos que 10 não encolhe o QR e deixa o id adivinhável. A página mostra o telefone do tutor a quem tiver a URL, então o id também é a defesa contra enumeração: com 1 milhão de tags, um scraper precisa de cerca de 1 bilhão de palpites por acerto (com 12 caracteres, 1 trilhão). Por isso, **ponha limite de requisições na borda** (CDN/proxy): o app não tem.
+
+**Voltar a 12 (ou mudar) depois.** O QR impresso nunca muda, então `isHashId` aceita todos os comprimentos já emitidos (`HASH_ID_LENGTHS`, hoje `[10, 12]`), e o matcher do middleware cobre de 10 a 12 caracteres. Para gerar ids de 12, mude só `HASH_ID_LENGTH`; as plaquinhas de 10 continuam valendo. Qualquer comprimento novo entra na lista `HASH_ID_LENGTHS` *antes* de ser impresso, e nunca sai dela.
 
 Implementação em `src/lib/utils/ids.ts` (`generateHashId()`) e `src/lib/utils/id-format.ts` (`isHashId()`, sem dependências, usável no middleware).
 
@@ -162,7 +166,7 @@ Exemplo de configuração: `QR_BASE_URL=https://qr.viewpet.info` (só a origem: 
 - **Sem as variáveis** (ex.: dev local) não existe redirect e o QR aponta direto pra `<origem>/tag/<id>`.
 - **DNS/hospedagem:** adicione `qr.viewpet.info` aos domínios do projeto e aponte o DNS pra mesma hospedagem do site. O DNS só faz o nome chegar até o app; quem redireciona é o middleware.
 - **307, não 308:** o redirect é temporário de propósito, pra o destino poder mudar sem navegadores ou CDNs lembrarem do antigo.
-- **Só ids válidos:** o middleware só redireciona caminhos de 12 caracteres que sejam um `hashId` bem formado; qualquer outra coisa segue pro 404 normal. O id é convertido pra minúsculas, então digitar em maiúsculas também funciona.
+- **Só ids válidos:** o middleware só redireciona caminhos de 10 a 12 caracteres que sejam um `hashId` bem formado; qualquer outra coisa segue pro 404 normal. O id é convertido pra minúsculas, então digitar em maiúsculas também funciona.
 - **Barra final** (`/<id>/`): o Next primeiro normaliza pra `/<id>` (308) e depois vem o redirect, ou seja, uma volta a mais.
 - **Sinal de scan (`qr_scan`):** um redirect não leva nada que a página consiga ler (o `Referer` é de onde o scan começou, nunca o host `qr.`). Por isso o redirect também seta o cookie `qr_scan=1`: 60 segundos, `HttpOnly`, `SameSite=Lax`, `Secure` quando o site é https, com `Path` restrito à própria tag (`/tag/<id>`). A página lê o cookie no servidor e expõe `data-scan-source="qr"` (ou `"direct"`) no `<main>`. É a base do futuro "receber a localização de quem escaneou um pet perdido"; a coleta em si (com consentimento) ainda não existe.
   - **Domínio em comum:** o cookie é gravado pelo host `qr.` e lido pelo site, então precisa de `Domain` no pai comum (`qr.viewpet.info` + `viewpet.info` → `viewpet.info`). Se os dois hosts não compartilham um domínio pai, o redirect funciona mas **sem** o cookie.
@@ -311,7 +315,7 @@ Três collections (`src/lib/repository/mongodb/`; tipos em `dto.ts`). O pet apon
 
 | Campo         | Tipo                               | Notas                                                      |
 | ------------- | ---------------------------------- | ---------------------------------------------------------- |
-| `_id`         | `string`                           | O próprio `hashId` (12 chars). Chave primária natural.     |
+| `_id`         | `string`                           | O próprio `hashId` (10 chars). Chave primária natural.     |
 | `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. Mesmo `PetStatus` do domínio.               |
 | `name`, `pictureUrl`, `birthdate` | `string`       | Ausentes quando `reserved`.                                |
 | `gender`, `species`, `weightKg`, `neutered`, `breed`, `allergies`, `about` | opcionais | Ausentes quando não informados; `neutered: false` é gravado. |

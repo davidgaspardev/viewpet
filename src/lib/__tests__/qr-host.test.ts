@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { config as middlewareConfig } from "../../middleware";
 import { parseBaseUrl, parseOrigin } from "../utils/base-url";
-import { generateHashId, HASH_ID_LENGTH, HASH_ID_PATTERN, isHashId } from "../utils/ids";
+import { generateHashId, HASH_ID_LENGTHS, HASH_ID_PATTERN, isHashId } from "../utils/ids";
 import { hostnameOf, resolveQrRedirect } from "../utils/qr-redirect";
 import { tagPath } from "../utils/routes";
 
@@ -33,6 +33,18 @@ describe("parseBaseUrl", () => {
 describe("tagPath / HASH_ID_PATTERN", () => {
   test("tagPath builds the public page path", () => {
     expect(tagPath("abcd2345efgh")).toBe("/tag/abcd2345efgh");
+  });
+
+  test("the route pattern matches the ids of every issued length", () => {
+    const re = new RegExp(`^${HASH_ID_PATTERN}$`);
+    for (const id of ["23456789ab", "23456789abcd"]) {
+      expect(re.test(id)).toBe(true);
+      expect(isHashId(id)).toBe(true);
+    }
+    for (const bad of ["23456789a", "23456789abc", "23456789abcde"]) {
+      expect(re.test(bad)).toBe(false);
+      expect(isHashId(bad)).toBe(false);
+    }
   });
 
   test("the route pattern matches exactly what generateHashId and isHashId accept", () => {
@@ -135,7 +147,8 @@ describe("resolveQrRedirect", () => {
 });
 
 describe("middleware matcher", () => {
-  test("covers /admin and any single segment of exactly HASH_ID_LENGTH characters", () => {
-    expect(middlewareConfig.matcher).toEqual(["/admin/:path*", `/:id([A-Za-z0-9]{${HASH_ID_LENGTH}})`]);
+  test("covers /admin and any single segment as short as the shortest id and as long as the longest", () => {
+    const [min, max] = [Math.min(...HASH_ID_LENGTHS), Math.max(...HASH_ID_LENGTHS)];
+    expect(middlewareConfig.matcher).toEqual(["/admin/:path*", `/:id([A-Za-z0-9]{${min},${max}})`]);
   });
 });
