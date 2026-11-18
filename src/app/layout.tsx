@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from "next";
+
+import { VercelObservability } from "@/ui/VercelObservability";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,6 +28,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className="min-h-screen bg-white font-sans text-ink">
         {children}
+        <VercelObservability />
       </body>
     </html>
   );

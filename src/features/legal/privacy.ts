@@ -47,6 +47,7 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
           "Dados dos tutores (até dois por pet): nome, até três números de celular por tutor com as formas de contato que você aceita (chamada, WhatsApp ou Telegram) e, se você preencher, e-mail e perfis em redes sociais (Instagram, X, Facebook, TikTok).",
           "O registro do seu aceite: a data e a hora do cadastro e as versões dos Termos de Uso e desta política que você viu.",
           "Dados técnicos: um cookie de 60 segundos (veja a seção Cookies) e os registros de acesso (endereço IP, data e hora, navegador) que o provedor de hospedagem mantém para segurança e funcionamento.",
+          "Dados de uso do site: as páginas visitadas e métricas de desempenho (veja a seção Medição de uso do site). O endereço dessas páginas é registrado sem o código do pet e sem o que vem depois do “?”, com exceção dos parâmetros de campanha (utm_).",
         ],
         closing: [
           "Não pedimos dados pessoais sensíveis (art. 5º, II, da LGPD) nem documentos. No campo de texto livre e na foto, evite informações sobre saúde, religião, opinião política ou documentos de pessoas, e fotos em que apareçam pessoas, sobretudo crianças.",
@@ -59,6 +60,7 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
           "Criar e manter a página pública do pet, para que quem o encontre consiga falar com o tutor. Bases legais: execução do serviço que você pediu (art. 7º, V) e o seu consentimento para publicar os dados de contato (art. 7º, I).",
           "Guardar a prova do seu aceite, porque cabe a nós demonstrar que o consentimento foi dado (art. 8º, §2º). Bases legais: cumprimento de obrigação legal e exercício regular de direitos (art. 7º, II e VI).",
           "Manter o serviço seguro e funcionando, por exemplo com registros de acesso e prevenção de abuso. Bases legais: legítimo interesse (art. 7º, IX) e, quando houver, obrigação legal (art. 7º, II).",
+          "Saber quantas pessoas visitam o site e se ele carrega rápido, com estatísticas agregadas (veja Medição de uso do site). Base legal: legítimo interesse (art. 7º, IX).",
         ],
         closing: [
           "Não vendemos os dados, não os usamos para publicidade nem para montar perfis, e não os usamos para outra finalidade sem avisar você antes (art. 6º, I e II, e art. 8º, §6º).",
@@ -88,7 +90,7 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
         id: "compartilhamento",
         title: "Com quem compartilhamos",
         items: [
-          "Provedores que operam o serviço em nosso nome (operadores): hospedagem e entrega do site, banco de dados e armazenamento das fotos. Eles só podem usar os dados para prestar esses serviços.",
+          "Provedores que operam o serviço em nosso nome (operadores): hospedagem e entrega do site, medição de uso do site, banco de dados e armazenamento das fotos. Eles só podem usar os dados para prestar esses serviços.",
           "Qualquer pessoa que abra a página, no que ela mostra, como descrito em O que fica público.",
           "Autoridades, quando a lei ou uma ordem judicial exigir.",
         ],
@@ -107,8 +109,17 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
         id: "cookies",
         title: "Cookies",
         paragraphs: [
-          "Usamos um único cookie, chamado qr_scan. Ele dura 60 segundos e só indica que a visita veio de um QR Code escaneado. Não identifica você e hoje não serve a publicidade nem a estatística. Por ser necessário ao funcionamento, não depende de consentimento.",
-          "Não usamos cookies de análise nem de publicidade.",
+          "O ViewPet define um único cookie, chamado qr_scan. Ele dura 60 segundos e só indica que a visita veio de um QR Code escaneado. Não identifica você e não serve a publicidade nem a estatística. Por ser necessário ao funcionamento, não depende de consentimento.",
+          "Não definimos cookies de análise nem de publicidade. A medição de uso do site (próxima seção) não depende de cookies nossos, e a Vercel informa que não usa cookies de terceiros nela.",
+        ],
+      },
+      {
+        id: "medicao",
+        title: "Medição de uso do site",
+        paragraphs: [
+          "Para saber quantas pessoas visitam o ViewPet e se as páginas carregam rápido, usamos o Vercel Web Analytics e o Vercel Speed Insights, da Vercel, a mesma empresa que hospeda o site. Eles registram as páginas visitadas, a origem da visita (de qual página ou site você veio), o país, o tipo de aparelho, o sistema e o navegador, e métricas de desempenho, como o tempo de carregamento. Os dados são usados só em estatísticas agregadas, sem identificar você.",
+          "A página do pet é um endereço com um código, e quem tem o código vê os contatos do tutor. Por isso o código nunca é enviado a essa medição: ele é trocado por “[id]” no próprio navegador, antes do envio. Também não são enviados o que vem depois do “?” no endereço, exceto parâmetros de campanha (utm_), nem o conteúdo das páginas ou os dados do pet e dos tutores. O painel administrativo não é medido.",
+          "Segundo a Vercel, a visita é reconhecida por um código calculado a partir da requisição, que é descartado em até 24 horas, sem ligá-la a uma pessoa ou a um endereço IP. Se você não quiser ser medido, use um bloqueador de rastreadores no navegador: o site continua funcionando normalmente.",
         ],
       },
       {
