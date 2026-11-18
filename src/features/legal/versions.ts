@@ -5,4 +5,4 @@
  * we know what a tutor agreed to.
  */
 export const TERMS_VERSION = "2026-11-13";
-export const PRIVACY_VERSION = "2026-11-13";
+export const PRIVACY_VERSION = "2026-11-17";

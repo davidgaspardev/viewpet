@@ -35,6 +35,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 - MongoDB (produção) ou JSON em disco (dev/test)
 - Imagens: filesystem (dev), AWS S3 ou Cloudflare R2 (produção)
 - Three.js / React Three Fiber (cena 3D da tag)
+- [Vercel Web Analytics](https://vercel.com/docs/analytics) e [Speed Insights](https://vercel.com/docs/speed-insights) (uso e desempenho, veja "Métricas de uso")
 - i18n próprio (PT-BR e EN-US)
 - [nanoid](https://github.com/ai/nanoid) pra geração de hashIds opacos
 
@@ -383,6 +384,15 @@ A página `/` apresenta o produto: hero, "como funciona", o que a página do pet
 |----------|---------|--------|
 | `DEMO_TAG_ID` | `nuxw4d83wraa` | Id de um pet **publicado** (ativo ou perdido), usado nos botões "Ver uma página de exemplo". Sem ela, com um id malformado, inexistente, ainda só reservado (cuja página é o formulário público) ou se o banco não responder, esses botões somem e a home continua funcionando. Use um pet de exemplo dedicado, não o de um cliente: a página mostra os contatos dele a qualquer visitante. É lida quando a home é gerada (build e a cada hora), então o banco precisa estar acessível no build. |
 
+## Métricas de uso (Vercel Analytics e Speed Insights)
+
+`<Analytics />` e `<SpeedInsights />` ficam uma vez só, no componente `src/ui/VercelObservability.tsx` montado em `src/app/layout.tsx`, então cobrem todas as rotas (`/`, `/tag/[id]`, `/privacy`, `/terms`). Medem **visitas às páginas** (origem, país, aparelho, navegador) e **métricas de desempenho** (Web Vitals). Não há eventos personalizados e nada do pet ou do tutor é enviado.
+
+- **Só na Vercel:** os scripts só reportam em um deploy na Vercel. Em `bun dev` e em outro host nada chega ao painel. Em desenvolvimento o Analytics só loga no console do navegador.
+- **Ativar uma vez:** no painel da Vercel, projeto → aba **Analytics** → *Enable*, e aba **Speed Insights** → *Enable*. Sem isso os scripts não têm para onde enviar. Não precisa de token nem de variável de ambiente.
+- **O id da tag não vai para o painel.** `/tag/<hashId>` dá acesso aos contatos do tutor, então os dois componentes passam todo evento por `redactAnalyticsEvent` (`beforeSend`, em `src/lib/utils/analytics-url.ts`) antes de enviar: o segmento depois de `/tag` e qualquer segmento no formato de um id (`isHashId`, que vale também para `/<hashId>` do host curto) viram `[id]`; o `?...` e o `#...` são descartados, exceto `utm_*` (e só se o valor não contiver um id); o `route` do Speed Insights recebe o mesmo tratamento. Eventos de `/admin` são descartados. Está testado em `src/lib/__tests__/analytics-url.test.ts`.
+- **LGPD:** a seção "Medição de uso do site" da política de privacidade descreve isso. Se passar a medir algo novo (eventos, replay, outro serviço), revise o texto e a `PRIVACY_VERSION`.
+
 ## Termos e LGPD
 
 O cadastro só publica a página se o tutor marcar **duas caixas** (nenhuma vem marcada): (1) "Li e aceito os Termos de Uso e estou ciente da Política de Privacidade" e (2) a autorização específica para publicar os dados informados, inclusive nome e telefones dos tutores, com a declaração de que as pessoas cujos contatos foram informados autorizaram. Os dois textos abrem em outra aba, para o formulário não perder o que já foi digitado.
@@ -402,7 +412,7 @@ O cadastro só publica a página se o tutor marcar **duas caixas** (nenhuma vem 
 
 As páginas são geradas no build e de novo, no máximo, a cada hora. Sem as três primeiras variáveis o build avisa no log e, fora de produção, a página mostra um aviso; **em produção a política ficaria sem controlador e sem contato, o que não atende o art. 9º**. Preencha antes de publicar.
 
-**Revisão jurídica:** os textos foram escritos a partir da LGPD (Lei 13.709/2018, arts. 5º a 9º, 14 a 19, 33, 41 e 46 a 48) e do que o app faz hoje, mas não passaram por advogado. Antes de ir para produção, confira com um: o prazo de 15 dias para eliminar os dados, os provedores e a transferência para fora do Brasil (art. 33), a base legal de cada finalidade, e se o ViewPet se enquadra como agente de pequeno porte. Todo texto que descreve o tratamento (`dados`, `publico`, `compartilhamento`, `cookies`) precisa ser conferido de novo sempre que o app passar a coletar ou a mostrar algo diferente, como analytics, edição do cadastro ou o modo pet perdido.
+**Revisão jurídica:** os textos foram escritos a partir da LGPD (Lei 13.709/2018, arts. 5º a 9º, 14 a 19, 33, 41 e 46 a 48) e do que o app faz hoje, mas não passaram por advogado. Antes de ir para produção, confira com um: o prazo de 15 dias para eliminar os dados, os provedores e a transferência para fora do Brasil (art. 33), a base legal de cada finalidade, e se o ViewPet se enquadra como agente de pequeno porte. Todo texto que descreve o tratamento (`dados`, `publico`, `compartilhamento`, `cookies`) precisa ser conferido de novo sempre que o app passar a coletar ou a mostrar algo diferente, como novos eventos de analytics, edição do cadastro ou o modo pet perdido.
 
 ## URLs de exemplo
 
