@@ -8,7 +8,7 @@ import type { PetStatus } from "@/types/pet";
 import { Card } from "@/ui/Card";
 
 import { STATUS_LABELS } from "../entries";
-import { qrUrl } from "../origin";
+import { qrPayload, qrUrl } from "../origin";
 import { tagQrOptions, type QrStyle } from "../qr-style";
 import { outlineButton } from "../styles";
 
@@ -47,6 +47,8 @@ type PetQrCardProps = {
  */
 export const PetQrCard = memo(function PetQrCard({ entry, qrBase, qrStyle }: PetQrCardProps) {
   const url = qrUrl(qrBase, entry.id);
+  // What the code encodes (see `qrPayload`); `url` stays the readable link under it.
+  const payload = qrPayload(qrBase, entry.id);
 
   // Computed after mount, not during render: each QR is ~50 KB of markup, so
   // doing it in render would put it in the server HTML and then again on
@@ -55,8 +57,8 @@ export const PetQrCard = memo(function PetQrCard({ entry, qrBase, qrStyle }: Pet
   const [src, setSrc] = useState<string>();
   const { logo, dots } = qrStyle;
   useEffect(() => {
-    setSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(tagQrSvg(url, entry.id, { logo, dots }))}`);
-  }, [url, entry.id, logo, dots]);
+    setSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(tagQrSvg(payload, entry.id, { logo, dots }))}`);
+  }, [payload, entry.id, logo, dots]);
 
   return (
     <Card
@@ -65,7 +67,7 @@ export const PetQrCard = memo(function PetQrCard({ entry, qrBase, qrStyle }: Pet
         <button
           type="button"
           // Rendered on demand so the card doesn't keep the SVG around as well.
-          onClick={() => downloadSvg(entry.id, tagQrSvg(url, entry.id, { logo, dots }))}
+          onClick={() => downloadSvg(entry.id, tagQrSvg(payload, entry.id, { logo, dots }))}
           className={`mr-2 rounded-lg px-3 py-1.5 text-xs ${outlineButton}`}
         >
           Download SVG
