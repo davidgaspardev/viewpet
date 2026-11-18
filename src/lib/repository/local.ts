@@ -71,9 +71,11 @@ export class LocalPetRepository implements Seedable {
   }
 
   async listPetEntries(): Promise<PetEntrySummary> {
-    // The JSON store keeps no timestamps; object order is insertion order (a
-    // hashId is 12 chars, so it never counts as an integer-like key), so
+    // The JSON store keeps no timestamps; object order is insertion order, so
     // reversing it gives the same "newest first" the Mongo provider returns.
+    // (An all-digit id below 2^32 would be an integer-like key and sort first
+    // instead: about 3 in 10 million ten-character ids, ordering in this
+    // dev-only store and nothing more. Twelve characters can't reach it.)
     const entries: PetEntrySummary = [];
     for (const [id, value] of Object.entries(this.read())) {
       if (value === null) entries.push({ id, status: "reserved" });

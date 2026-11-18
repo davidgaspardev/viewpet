@@ -15,6 +15,13 @@ describe("handleQrRedirect", () => {
     expect(response.headers.get("location")).toBe(`https://viewpet.info/tag/${id}`);
   });
 
+  test("redirects a 10-character id (the generated length) the same way", () => {
+    const short = "abcd2345ef";
+    const response = handleQrRedirect(request(`/${short.toUpperCase()}`), env);
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(`https://viewpet.info/tag/${short}`);
+  });
+
   test("keeps the query string and lowercases the id", () => {
     const response = handleQrRedirect(request(`/${id.toUpperCase()}?lang=en`), env);
     expect(response.headers.get("location")).toBe(`https://viewpet.info/tag/${id}?lang=en`);
