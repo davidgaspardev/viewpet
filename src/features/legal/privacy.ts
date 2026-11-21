@@ -47,7 +47,7 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
           "Dados dos tutores (até dois por pet): nome, até três números de celular por tutor com as formas de contato que você aceita (chamada, WhatsApp ou Telegram) e, se você preencher, e-mail e perfis em redes sociais (Instagram, X, Facebook, TikTok).",
           "O registro do seu aceite: a data e a hora do cadastro e as versões dos Termos de Uso e desta política que você viu.",
           "Dados técnicos: um cookie de 60 segundos (veja a seção Cookies) e os registros de acesso (endereço IP, data e hora, navegador) que o provedor de hospedagem mantém para segurança e funcionamento.",
-          "Dados de uso do site: as páginas visitadas e métricas de desempenho (veja a seção Medição de uso do site). O endereço dessas páginas é registrado sem o código do pet e sem o que vem depois do “?”, com exceção dos parâmetros de campanha (utm_).",
+          "Dados de uso do site: as páginas visitadas, métricas de desempenho e o registro técnico das requisições ao servidor, como rota, resposta e tempo (veja a seção Medição de uso do site). O endereço dessas páginas é registrado sem o código do pet e sem o que vem depois do “?”, com exceção dos parâmetros de campanha (utm_).",
         ],
         closing: [
           "Não pedimos dados pessoais sensíveis (art. 5º, II, da LGPD) nem documentos. No campo de texto livre e na foto, evite informações sobre saúde, religião, opinião política ou documentos de pessoas, e fotos em que apareçam pessoas, sobretudo crianças.",
@@ -119,6 +119,7 @@ export function privacyDocument(contact: LegalContact): LegalDocument {
         paragraphs: [
           "Para saber quantas pessoas visitam o ViewPet e se as páginas carregam rápido, usamos o Vercel Web Analytics e o Vercel Speed Insights, da Vercel, a mesma empresa que hospeda o site. Eles registram as páginas visitadas, a origem da visita (de qual página ou site você veio), o país, o tipo de aparelho, o sistema e o navegador, e métricas de desempenho, como o tempo de carregamento. Os dados são usados só em estatísticas agregadas, sem identificar você.",
           "A página do pet é um endereço com um código, e quem tem o código vê os contatos do tutor. Por isso o código nunca é enviado a essa medição: ele é trocado por “[id]” no próprio navegador, antes do envio. Também não são enviados o que vem depois do “?” no endereço, exceto parâmetros de campanha (utm_), nem o conteúdo das páginas ou os dados do pet e dos tutores. O painel administrativo não é medido.",
+          "No servidor, também guardamos o registro técnico de cada requisição (rota, resposta, tempo gasto e erros) para encontrar falhas e lentidão. Antes de gravar, o código do pet e o que vem depois do “?” no endereço são removidos, e esse registro não inclui os dados do pet nem dos tutores.",
           "Segundo a Vercel, a visita é reconhecida por um código calculado a partir da requisição, que é descartado em até 24 horas, sem ligá-la a uma pessoa ou a um endereço IP. Se você não quiser ser medido, use um bloqueador de rastreadores no navegador: o site continua funcionando normalmente.",
         ],
       },
