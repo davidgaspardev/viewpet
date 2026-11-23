@@ -319,6 +319,56 @@ describe("MongoPetRepository", () => {
       }
     });
 
+    test("the birthdate is optional: none stored, none on read, and it loads", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born1", makePet({ name: "Sem data", birthdate: undefined }));
+      expect(await rawPet("born1")).not.toHaveProperty("birthdate");
+      const entry = await provider.getPetEntry("born1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.name).toBe("Sem data");
+      expect(entry.pet).not.toHaveProperty("birthdate");
+    });
+
+    test("saving again without a birthdate clears the one stored; with one, stores it", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born2", makePet({ birthdate: "2024-01-08T00:00:00.000Z" }));
+      expect((await rawPet("born2"))?.birthdate).toBe("2024-01-08T00:00:00.000Z");
+      await provider.setPet("born2", makePet({ birthdate: undefined }));
+      expect(await rawPet("born2")).not.toHaveProperty("birthdate");
+    });
+
+    test("an age-derived birthdate keeps its 'approximate' flag; saving again without it clears it", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born3", makePet({ birthdateApproximate: true }));
+      expect((await rawPet("born3"))?.birthdateApproximate).toBe(true);
+      const entry = await provider.getPetEntry("born3");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.birthdateApproximate).toBe(true);
+
+      await provider.setPet("born3", makePet());
+      expect(await rawPet("born3")).not.toHaveProperty("birthdateApproximate");
+      const again = await provider.getPetEntry("born3");
+      if (!("pet" in again)) throw new Error("expected a pet");
+      expect(again.pet).not.toHaveProperty("birthdateApproximate");
+    });
+
+    test("the flag is never stored, or loaded, without a birthdate", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born4", makePet({ birthdate: undefined, birthdateApproximate: true }));
+      expect(await rawPet("born4")).not.toHaveProperty("birthdateApproximate");
+      await insertRawPet({
+        _id: "born5",
+        status: "active",
+        name: "Odd",
+        pictureUrl: "https://example.com/odd.jpg",
+        birthdateApproximate: true,
+        guardianIds: [],
+      });
+      const entry = await provider.getPetEntry("born5");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet).not.toHaveProperty("birthdateApproximate");
+    });
+
     test("a species this build does not know is dropped on read, not shown", async () => {
       const provider = new MongoPetRepository();
       await provider.setPet("kind5", makePet({ species: "dog", weightKg: 5 }));

@@ -65,6 +65,35 @@ describe("submitPet validation", () => {
     expect(await submit(formWith())).toEqual({ status: "error", message: "invalid_picture_type" });
   });
 
+  test("the birthdate is optional: left out or blank, the form still gets as far as the picture", async () => {
+    for (const birthdate of [null, "", "   "]) {
+      expect(await submit(formWith({ birthdate }))).toEqual({
+        status: "error",
+        message: "invalid_picture_type",
+      });
+    }
+  });
+
+  test("one that was given is still checked, before the picture is saved", async () => {
+    // A date derived from an age goes through the same check as a typed one.
+    for (const bad of ["2020-02-31", "20/01/2020", "2999-01-01", "1800-01-01", "yesterday"]) {
+      expect(await submit(formWith({ birthdate: bad }))).toEqual({
+        status: "error",
+        message: "invalid_birthdate",
+      });
+    }
+  });
+
+  test("name and gender stay required with no birthdate", async () => {
+    const missing: Record<string, string | null>[] = [{ name: "" }, { gender: null }];
+    for (const overrides of missing) {
+      expect(await submit(formWith({ birthdate: null, ...overrides }))).toEqual({
+        status: "error",
+        message: "missing_fields",
+      });
+    }
+  });
+
   test("a secondary guardian left completely empty is simply skipped", async () => {
     const result = await submit(formWith({ g1_name: "", g1_p0_phone: "" }));
     expect(result).toEqual({ status: "error", message: "invalid_picture_type" });

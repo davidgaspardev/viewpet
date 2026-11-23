@@ -67,7 +67,7 @@ export interface LostInfo {
 export interface Pet {
   name: string;
   picture: string;
-  birthdate: string;
+  birthdate?: string;
   owner: Owner;
   status?: PetStatus;     // default "active"
   lostInfo?: LostInfo;    // só existe quando status === "lost"

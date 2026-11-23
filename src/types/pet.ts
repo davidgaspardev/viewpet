@@ -119,8 +119,19 @@ export interface LostEvent {
 export interface Pet {
   name: string;
   pictureUrl: string;
-  /** ISO-8601 */
-  birthdate: string;
+  /**
+   * ISO-8601. Optional: many pets are adopted without a known birthday, so the
+   * form lets the tutor skip it or give an age instead (stored as the birthdate
+   * it implies). The profile just leaves the age out when it is absent.
+   */
+  birthdate?: string;
+  /**
+   * `true` when `birthdate` was derived from an age the tutor gave ("2 years
+   * and 4 months") rather than a date they know. The profile then shows the
+   * age as approximate and leaves out the month of birth, which nobody stated.
+   * Absent (never `false`) otherwise, and meaningless without a `birthdate`.
+   */
+  birthdateApproximate?: true;
   status: RegisteredPetStatus;
   gender?: PetGender;
   /**

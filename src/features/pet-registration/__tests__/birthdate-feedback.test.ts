@@ -5,7 +5,7 @@ const TODAY = "2026-10-11";
 const base = { today: TODAY, touched: false, focused: false, locale: "pt-BR" as const };
 
 describe("birthdateFeedback", () => {
-  test("empty text has no message and nothing to submit (required handles it)", () => {
+  test("empty text has no message and nothing to submit (the field is optional)", () => {
     expect(birthdateFeedback("", { ...base, touched: true })).toEqual({
       iso: "",
       message: "",

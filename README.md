@@ -241,7 +241,8 @@ interface LostEvent {
 interface Pet {
   name:       string;
   pictureUrl: string;
-  birthdate:  string;              // ISO-8601
+  birthdate?: string;              // ISO-8601; opcional (o formulário aceita só a idade)
+  birthdateApproximate?: true;     // a data foi derivada de uma idade; o perfil mostra "Cerca de N" sem o mês
   status:     RegisteredPetStatus;
   gender?:    PetGender;
   species?:   PetSpecies;          // obrigatório no formulário; opcional aqui p/ pets antigos
@@ -319,8 +320,8 @@ Três collections (`src/lib/repository/mongodb/`; tipos em `dto.ts`). O pet apon
 | ------------- | ---------------------------------- | ---------------------------------------------------------- |
 | `_id`         | `string`                           | O próprio `hashId` (10 chars). Chave primária natural.     |
 | `status`      | `"reserved" \| "active" \| "lost"` | Discriminador. Mesmo `PetStatus` do domínio.               |
-| `name`, `pictureUrl`, `birthdate` | `string`       | Ausentes quando `reserved`.                                |
-| `gender`, `species`, `weightKg`, `neutered`, `breed`, `allergies`, `about` | opcionais | Ausentes quando não informados; `neutered: false` é gravado. |
+| `name`, `pictureUrl`          | `string`           | Ausentes quando `reserved`.                                |
+| `birthdate`, `birthdateApproximate`, `gender`, `species`, `weightKg`, `neutered`, `breed`, `allergies`, `about` | opcionais | Ausentes quando não informados; `neutered: false` é gravado. |
 | `consent`     | `ConsentRecord` (opcional)         | Só é escrito, nunca apagado por um `setPet` sem ele.       |
 | `guardianIds` | `ObjectId[]`                       | Ordem encoda prioridade — `[0]` é o principal.             |
 | `createdAt`, `updatedAt` | `Date`                  | Gerenciados pelo provider.                                 |

@@ -134,3 +134,42 @@ export function formatBirthdateLong(iso: string, locale: string): string {
     new Date(`${iso}T00:00:00Z`),
   );
 }
+
+/** Highest age (in months) the "I only know the age" input accepts: a year under the birthdate cap, so the derived date always passes `validateBirthdate`. */
+export const MAX_AGE_MONTHS = (MAX_PET_AGE_YEARS - 1) * 12;
+
+/**
+ * Days taken off the derived birthdate. Whoever says "3 months" means *at
+ * least* 3, and the page shows the age as of the viewer's day (and the server's
+ * UTC day), which can differ from the tutor's by one. Without a margin a pet
+ * said to be 3 months old could be shown as 2 on the day it was registered.
+ */
+export const AGE_BIRTHDATE_MARGIN_DAYS = 3;
+
+export type AgeError = "too_young" | "too_old";
+
+export type AgeBirthdateResult = { ok: true; iso: string } | { ok: false; error: AgeError };
+
+/**
+ * Birthdate (`YYYY-MM-DD`) implied by "this pet is `totalMonths` months old as
+ * of `today`": the same day of the month `totalMonths` ago (clamped to the
+ * month's last day, so 31 May − 3 months is 29 February, not 2 March), minus
+ * `AGE_BIRTHDATE_MARGIN_DAYS`. The tutor never sees this; it is what gets stored.
+ */
+export function birthdateFromAge(totalMonths: number, today: string): AgeBirthdateResult {
+  if (!Number.isInteger(totalMonths) || totalMonths < 1) return { ok: false, error: "too_young" };
+  if (totalMonths > MAX_AGE_MONTHS) return { ok: false, error: "too_old" };
+
+  const [year, month, day] = today.split("-").map(Number);
+  const monthIndex = year * 12 + (month - 1) - totalMonths;
+  const targetYear = Math.floor(monthIndex / 12);
+  const targetMonth = monthIndex % 12;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const born = new Date(
+    Date.UTC(targetYear, targetMonth, Math.min(day, lastDay) - AGE_BIRTHDATE_MARGIN_DAYS),
+  );
+  return {
+    ok: true,
+    iso: `${pad(born.getUTCFullYear(), 4)}-${pad(born.getUTCMonth() + 1)}-${pad(born.getUTCDate())}`,
+  };
+}

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  AGE_BIRTHDATE_MARGIN_DAYS,
   applyDateMask,
+  birthdateFromAge,
+  MAX_AGE_MONTHS,
   caretAfterMask,
   formatBirthdateLong,
   localTodayIso,
@@ -10,6 +13,7 @@ import {
   validateBirthdate,
   validateBirthdateIso,
 } from "../utils/birthdate";
+import { ageInMonths } from "../utils/age";
 
 const TODAY = "2026-10-11";
 
@@ -176,5 +180,80 @@ describe("date helpers", () => {
     const usersToday = "2026-10-12";
     expect(validateBirthdateIso(usersToday, tomorrowUtcIso(serverNow)).ok).toBe(true);
     expect(validateBirthdateIso("2026-10-13", tomorrowUtcIso(serverNow))).toEqual({ ok: false, error: "future" });
+  });
+});
+
+describe("birthdateFromAge", () => {
+  const born = (months: number, today: string) => {
+    const result = birthdateFromAge(months, today);
+    if (!result.ok) throw new Error(`expected a date, got ${result.error}`);
+    return result.iso;
+  };
+
+  test("is the same day N months ago, minus the margin", () => {
+    expect(AGE_BIRTHDATE_MARGIN_DAYS).toBe(3);
+    expect(born(3, "2026-10-11")).toBe("2026-07-08");
+    expect(born(1, "2026-10-11")).toBe("2026-09-08");
+  });
+
+  test("years and months are the same thing: 33 months is 2 years and 9 months", () => {
+    expect(born(33, "2026-10-11")).toBe("2024-01-08");
+    expect(born(2 * 12 + 9, "2026-10-11")).toBe(born(33, "2026-10-11"));
+  });
+
+  test("crosses year boundaries", () => {
+    expect(born(3, "2026-01-20")).toBe("2025-10-17");
+    expect(born(12, "2026-01-20")).toBe("2025-01-17");
+  });
+
+  test("the margin rolls back over month and year starts", () => {
+    expect(born(3, "2026-10-02")).toBe("2026-06-29");
+    expect(born(12, "2026-01-01")).toBe("2024-12-29");
+  });
+
+  test("clamps to the last day of a shorter month instead of spilling into the next", () => {
+    // 31 May − 3 months: there is no 31 February → 28 February (2026), then −3 days.
+    expect(born(3, "2026-05-31")).toBe("2026-02-25");
+    // …a leap year keeps its 29th…
+    expect(born(3, "2028-05-31")).toBe("2028-02-26");
+    // …and 29 February a year back clamps to 28 February.
+    expect(born(12, "2028-02-29")).toBe("2027-02-25");
+  });
+
+  test("the age the profile shows is the age the tutor typed, on the day and a day either side", () => {
+    // formatAge reads the stored date as UTC midnight; a viewer (or the server) may be a day off.
+    for (const months of [1, 3, 11, 12, 33, 100]) {
+      for (const day of ["2026-03-31", "2026-05-31", "2026-10-11", "2026-12-31"]) {
+        const iso = born(months, day);
+        for (const offset of [-1, 0, 1]) {
+          const now = new Date(`${day}T12:00:00Z`);
+          now.setUTCDate(now.getUTCDate() + offset);
+          const shown = ageInMonths(new Date(`${iso}T00:00:00Z`), now);
+          // Never younger than said; at most the margin's worth older.
+          expect(shown).toBeGreaterThanOrEqual(months);
+          expect(shown).toBeLessThanOrEqual(months + 1);
+        }
+      }
+    }
+  });
+
+  test("always passes the same check the server applies to a typed date", () => {
+    for (const months of [1, 7, 12, 33, MAX_AGE_MONTHS]) {
+      for (const today of ["2026-01-01", "2026-02-28", "2028-02-29", "2026-12-31"]) {
+        const iso = born(months, today);
+        expect(validateBirthdateIso(iso, tomorrowUtcIso(new Date(`${today}T12:00:00Z`)))).toEqual({
+          ok: true,
+          iso,
+        });
+      }
+    }
+  });
+
+  test("less than a month, zero or a non-integer is too young; past the cap is too old", () => {
+    for (const months of [0, -1, 1.5, Number.NaN]) {
+      expect(birthdateFromAge(months, "2026-10-11")).toEqual({ ok: false, error: "too_young" });
+    }
+    expect(birthdateFromAge(MAX_AGE_MONTHS + 1, "2026-10-11")).toEqual({ ok: false, error: "too_old" });
+    expect(birthdateFromAge(MAX_AGE_MONTHS, "2026-10-11").ok).toBe(true);
   });
 });

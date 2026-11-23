@@ -8,6 +8,7 @@ export type PetDoc = {
   name?: string;
   pictureUrl?: string;
   birthdate?: string;
+  birthdateApproximate?: boolean;
   gender?: PetGender;
   species?: PetSpecies;
   weightKg?: number;
