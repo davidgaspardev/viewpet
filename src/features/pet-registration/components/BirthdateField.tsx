@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FocusEvent,
+} from "react";
 
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { applyDateMask, caretAfterMask, localTodayIso } from "@/lib/utils/birthdate";
@@ -21,12 +29,17 @@ const digitsOnly = (value: string, maxLength: number) => value.replace(/\D/g, ""
  * "33 months"). The age becomes a birthdate here, in the browser
  * (`birthdateFromAge`). Either way the visible inputs have no `name`; what is
  * submitted is a `YYYY-MM-DD` in a hidden `birthdate` field — empty when the
- * tutor left both blank — so the server action only ever sees a date.
+ * tutor left both blank — so the server action only ever sees a date. (The two
+ * mode radios do carry a `birthdate_mode` name, which keeps them one keyboard
+ * group; the server ignores it.)
  */
 export function BirthdateField({ locale }: { locale: Locale }) {
   const dict = getDictionary(locale);
   const dateRef = useRef<HTMLInputElement>(null);
+  const yearsRef = useRef<HTMLInputElement>(null);
   const monthsRef = useRef<HTMLInputElement>(null);
+  // The age input edited last: the one the browser's validation bubble should point at.
+  const lastEditedRef = useRef<"years" | "months">("months");
   const hintId = useId();
   const errorId = useId();
   const [mode, setMode] = useState<Mode>("date");
@@ -46,8 +59,11 @@ export function BirthdateField({ locale }: { locale: Locale }) {
   // `required`: an empty field has no message and the form goes through.
   useEffect(() => {
     dateRef.current?.setCustomValidity(message);
-    monthsRef.current?.setCustomValidity(message);
-  }, [message, mode]);
+    const [target, other] =
+      lastEditedRef.current === "years" ? [yearsRef, monthsRef] : [monthsRef, yearsRef];
+    target.current?.setCustomValidity(message);
+    other.current?.setCustomValidity("");
+  }, [message, mode, years, months]);
 
   const changeMode = (next: string) => {
     setMode(next === "age" ? "age" : "date");
@@ -70,6 +86,16 @@ export function BirthdateField({ locale }: { locale: Locale }) {
   const focusProps = {
     onFocus: () => setFocused(true),
     onBlur: () => {
+      setFocused(false);
+      setTouched(true);
+    },
+  };
+  // Years and months are one field to the tutor: moving between them is not
+  // "leaving" it, so an incomplete value doesn't flash an alert on the way.
+  const ageFocusProps = {
+    onFocus: () => setFocused(true),
+    onBlur: (e: FocusEvent<HTMLDivElement>) => {
+      if (e.currentTarget.contains(e.relatedTarget)) return;
       setFocused(false);
       setTouched(true);
     },
@@ -107,18 +133,21 @@ export function BirthdateField({ locale }: { locale: Locale }) {
             className={`${INPUT_CLASS} !mt-0 ${invalidClass}`}
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" {...ageFocusProps}>
             <label className="block">
               <span className={LABEL_CLASS}>{dict.petAgeYears}</span>
               <input
+                ref={yearsRef}
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
                 maxLength={AGE_YEARS_MAX_LENGTH}
                 value={years}
                 placeholder="2"
-                onChange={(e) => setYears(digitsOnly(e.target.value, AGE_YEARS_MAX_LENGTH))}
-                {...focusProps}
+                onChange={(e) => {
+                  lastEditedRef.current = "years";
+                  setYears(digitsOnly(e.target.value, AGE_YEARS_MAX_LENGTH));
+                }}
                 aria-invalid={showError}
                 aria-describedby={showError ? `${hintId} ${errorId}` : hintId}
                 className={`${INPUT_CLASS} ${invalidClass}`}
@@ -134,8 +163,10 @@ export function BirthdateField({ locale }: { locale: Locale }) {
                 maxLength={AGE_MONTHS_MAX_LENGTH}
                 value={months}
                 placeholder="4"
-                onChange={(e) => setMonths(digitsOnly(e.target.value, AGE_MONTHS_MAX_LENGTH))}
-                {...focusProps}
+                onChange={(e) => {
+                  lastEditedRef.current = "months";
+                  setMonths(digitsOnly(e.target.value, AGE_MONTHS_MAX_LENGTH));
+                }}
                 aria-invalid={showError}
                 aria-describedby={showError ? `${hintId} ${errorId}` : hintId}
                 className={`${INPUT_CLASS} ${invalidClass}`}

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { getDictionary } from "@/lib/i18n";
+import { formatBirthMonth } from "@/lib/utils/age";
 import { MAX_AGE_MONTHS } from "@/lib/utils/birthdate";
 
 import { ageFeedback } from "../components/ageFeedback";
@@ -35,10 +37,13 @@ describe("ageFeedback", () => {
   });
 
   test("echoes the approximate birth month so the tutor sees what is recorded", () => {
-    expect(ageFeedback("2", "4", base).echo).toBe("Vamos registrar o nascimento por volta de jun. de 2024.");
-    expect(ageFeedback("2", "4", { ...base, locale: "en-US" }).echo).toBe(
-      "We'll record the birth as around Jun 2024.",
-    );
+    // 2026-10-11 − 28 months − 3 days = 2024-06-08. Expected text built from the
+    // same formatter, so it doesn't depend on the runtime's ICU month names.
+    for (const locale of ["pt-BR", "en-US"] as const) {
+      const month = formatBirthMonth("2024-06-08", locale) as string;
+      expect(ageFeedback("2", "4", { ...base, locale }).echo).toBe(getDictionary(locale).petAgeEcho(month));
+    }
+    expect(ageFeedback("2", "4", base).echo).toContain("2024");
   });
 
   test("zero is too young, but only flagged once the user has left the fields", () => {
