@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 
 import type { getDictionary } from "@/lib/i18n";
+import { useSnackbar } from "@/ui/Snackbar";
 import {
   applyPhoneMask,
   MAX_PHONES_PER_GUARDIAN,
@@ -11,6 +12,7 @@ import {
   type SelectablePhoneChannel,
 } from "@/lib/utils/phone";
 
+import { keepOneChannel } from "./channelGuard";
 import { RequiredMark } from "./FieldMarks";
 import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { useKeyedList } from "./useKeyedList";
@@ -46,10 +48,14 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
   const channelRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const hintId = useId();
+  const channelsHintId = useId();
+  const { show } = useSnackbar();
   const label = row === 0 ? dict.cellphoneMain : dict.cellphoneNumber(row + 1);
 
   // Hold the submit with the browser's own message when the number can't be
-  // used: cut short, or with no way to reach it. The channel checkboxes are
+  // used: cut short, or with no way to reach it. The "no way to reach it" case
+  // is normally prevented by `keepOneChannel`; it stays as a fallback for a
+  // change that skips the handler (e.g. a browser restoring form state). The channel checkboxes are
   // uncontrolled, so this reads what is actually ticked in the DOM — React's
   // automatic form reset after a server action can change them without any
   // event, and a copy of their state would drift from it. A blank number is
@@ -103,8 +109,12 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
           {dict.phoneHint}
         </p>
       )}
-      <fieldset className="mt-3">
+      <fieldset className="mt-3" aria-describedby={channelsHintId}>
         <legend className="text-xs font-medium text-ink/70">{dict.phoneChannelsLabel}</legend>
+        {/* The rule, read out with the group; sighted users get it from the snackbar. */}
+        <p id={channelsHintId} className="sr-only">
+          {dict.phoneChannelRequired}
+        </p>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {SELECTABLE_PHONE_CHANNELS.map((channel, i) => (
             // A real checkbox inside a big tap target; the box lights up when ticked.
@@ -119,7 +129,15 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
                 type="checkbox"
                 name={`${name}${channel}`}
                 defaultChecked={DEFAULT_CHANNELS[channel]}
-                onChange={() => syncValidity(phone)}
+                onChange={(e) => {
+                  // The last ticked box can't be unticked: put it back and say why.
+                  if (keepOneChannel(channelRefs.current, e.currentTarget)) {
+                    // Assertive region: the box flips back in the same event, so the
+                    // reason has to be announced right away. Times out like a warning.
+                    show(dict.phoneChannelLastOne(row + 1), { variant: "error", duration: 6000 });
+                  }
+                  syncValidity(phone);
+                }}
                 className="h-4 w-4 rounded accent-ink"
               />
               {channelLabel(channel, dict)}
