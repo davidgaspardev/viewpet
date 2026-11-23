@@ -319,6 +319,24 @@ describe("MongoPetRepository", () => {
       }
     });
 
+    test("the birthdate is optional: none stored, none on read, and it loads", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born1", makePet({ name: "Sem data", birthdate: undefined }));
+      expect(await rawPet("born1")).not.toHaveProperty("birthdate");
+      const entry = await provider.getPetEntry("born1");
+      if (!("pet" in entry)) throw new Error("expected a pet");
+      expect(entry.pet.name).toBe("Sem data");
+      expect(entry.pet).not.toHaveProperty("birthdate");
+    });
+
+    test("saving again without a birthdate clears the one stored; with one, stores it", async () => {
+      const provider = new MongoPetRepository();
+      await provider.setPet("born2", makePet({ birthdate: "2024-01-08T00:00:00.000Z" }));
+      expect((await rawPet("born2"))?.birthdate).toBe("2024-01-08T00:00:00.000Z");
+      await provider.setPet("born2", makePet({ birthdate: undefined }));
+      expect(await rawPet("born2")).not.toHaveProperty("birthdate");
+    });
+
     test("a species this build does not know is dropped on read, not shown", async () => {
       const provider = new MongoPetRepository();
       await provider.setPet("kind5", makePet({ species: "dog", weightKg: 5 }));

@@ -8,7 +8,7 @@
  *       _id: hashId,                 // the opaque QR id, used as primary key
  *       status: "reserved" | "active" | "lost",
  *       // when status !== "reserved":
- *       name, pictureUrl, birthdate, gender?,
+ *       name, pictureUrl, birthdate?, gender?,
  *       species?,                    // "dog" | "cat" | … — the key only; absent on legacy pets
  *       weightKg?, neutered?,        // number (kg) / boolean; absent = not informed (`false` is stored)
  *       breed?, allergies?, about?,  // optional details; absent when not provided
@@ -333,9 +333,9 @@ export class MongoPetRepository implements Seedable {
       .map((id) => byId.get(id.toString()))
       .filter((g): g is Guardian => Boolean(g));
 
-    if (!doc.name || !doc.pictureUrl || !doc.birthdate) {
+    if (!doc.name || !doc.pictureUrl) {
       throw new Error(
-        `Pet "${hashId}" has status "${doc.status}" but is missing required fields (name/pictureUrl/birthdate).`,
+        `Pet "${hashId}" has status "${doc.status}" but is missing required fields (name/pictureUrl).`,
       );
     }
 
@@ -344,7 +344,7 @@ export class MongoPetRepository implements Seedable {
     const pet: Pet = {
       name: doc.name,
       pictureUrl: doc.pictureUrl,
-      birthdate: doc.birthdate,
+      ...(doc.birthdate ? { birthdate: doc.birthdate } : {}),
       status: doc.status,
       ...(doc.gender ? { gender: doc.gender } : {}),
       // A species this build doesn't know (written by a newer deploy) is dropped, not shown.
@@ -406,7 +406,7 @@ export class MongoPetRepository implements Seedable {
           status: pet.status,
           name: pet.name,
           pictureUrl: pet.pictureUrl,
-          birthdate: pet.birthdate,
+          ...(pet.birthdate ? { birthdate: pet.birthdate } : {}),
           ...(pet.gender ? { gender: pet.gender } : {}),
           ...(pet.species ? { species: pet.species } : {}),
           ...(pet.weightKg !== undefined ? { weightKg: pet.weightKg } : {}),
@@ -428,6 +428,7 @@ export class MongoPetRepository implements Seedable {
           lostInfo: "",
           // The optional fields are replaced wholesale: saving a pet without
           // one clears what an earlier save stored, instead of leaving it stale.
+          ...(pet.birthdate ? {} : { birthdate: "" }),
           ...(pet.gender ? {} : { gender: "" }),
           ...(pet.species ? {} : { species: "" }),
           ...(pet.weightKg !== undefined ? {} : { weightKg: "" }),

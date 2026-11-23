@@ -134,6 +134,15 @@ type Dictionary = {
   errorBirthdateIncomplete: string;
   errorBirthdateFuture: string;
   errorBirthdateTooOld: string;
+  petBirthdateModeDate: string;
+  petBirthdateModeAge: string;
+  petAgeYears: string;
+  petAgeMonths: string;
+  petAgeHint: string;
+  petAgeEcho: (approxBirth: string) => string;
+  errorAgeInvalid: string;
+  errorAgeTooYoung: string;
+  errorAgeTooOld: string;
   errorPhone: string;
   errorPhoneChannels: string;
   errorEmail: string;
@@ -199,7 +208,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formSteps: [
       {
         title: "Preencha os dados",
-        body: "Leva poucos minutos. Só o essencial é obrigatório: nome, tipo, sexo, foto, nascimento e o contato do tutor (celular e e-mail).",
+        body: "Leva poucos minutos. Só o essencial é obrigatório: nome, tipo, sexo, foto e o contato do tutor (celular e e-mail).",
       },
       {
         title: "Publicamos a página",
@@ -292,6 +301,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Digite a data completa (dia/mês/ano).",
     errorBirthdateFuture: "A data não pode estar no futuro.",
     errorBirthdateTooOld: "Essa data é muito antiga. Confira o ano.",
+    petBirthdateModeDate: "Sei a data",
+    petBirthdateModeAge: "Só sei a idade",
+    petAgeYears: "Anos",
+    petAgeMonths: "Meses",
+    petAgeHint: "Ex.: 2 anos e 4 meses, ou só 33 meses.",
+    petAgeEcho: (approxBirth) => `Vamos registrar o nascimento por volta de ${approxBirth}.`,
+    errorAgeInvalid: "Idade inválida.",
+    errorAgeTooYoung: "Informe pelo menos 1 mês de vida. Para filhotes mais novos, use a data.",
+    errorAgeTooOld: "Essa idade é alta demais. Confira os valores.",
     errorDetails: "Confira raça, peso, alergias e sobre — algum valor está inválido ou longo demais.",
     errorWeight: (max) => `Peso inválido. Digite em quilos, até ${max}. Ex.: 4,5.`,
     errorConsent: "Marque as duas caixas de aceite para publicar a página.",
@@ -360,7 +378,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     formSteps: [
       {
         title: "Fill in the details",
-        body: "It takes a few minutes. Only the essentials are required: name, type, gender, photo, birthdate and the guardian's contact (phone and email).",
+        body: "It takes a few minutes. Only the essentials are required: name, type, gender, photo and the guardian's contact (phone and email).",
       },
       {
         title: "We publish the page",
@@ -453,6 +471,15 @@ const dictionaries: Record<Locale, Dictionary> = {
     errorBirthdateIncomplete: "Enter the full date (day/month/year).",
     errorBirthdateFuture: "The date can't be in the future.",
     errorBirthdateTooOld: "That date is too far in the past. Check the year.",
+    petBirthdateModeDate: "I know the date",
+    petBirthdateModeAge: "I only know the age",
+    petAgeYears: "Years",
+    petAgeMonths: "Months",
+    petAgeHint: "E.g. 2 years and 4 months, or just 33 months.",
+    petAgeEcho: (approxBirth) => `We'll record the birth as around ${approxBirth}.`,
+    errorAgeInvalid: "Invalid age.",
+    errorAgeTooYoung: "Enter at least 1 month. For younger pets, use the date.",
+    errorAgeTooOld: "That age is too high. Check the values.",
     errorDetails: "Check breed, weight, allergies and about — a value is invalid or too long.",
     errorWeight: (max) => `Invalid weight. Enter it in kilograms, up to ${max}. E.g. 4.5.`,
     errorConsent: "Tick both boxes to publish the page.",

@@ -213,7 +213,9 @@ function PetFormBody({ hashId, locale }: PetFormProps) {
                   <SpeciesField locale={locale} value={species} onValueChange={setSpecies} />
                   <GenderField dict={dict} />
                   <BreedField locale={locale} species={species} />
-                  <BirthdateField locale={locale} />
+                  <div className={FULL_ROW}>
+                    <BirthdateField locale={locale} />
+                  </div>
                   <div className={FULL_ROW}>
                     <ImageUpload name="picture" required locale={locale} />
                   </div>

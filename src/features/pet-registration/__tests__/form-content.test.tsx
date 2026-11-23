@@ -212,6 +212,47 @@ describe("PetForm placeholders", () => {
   });
 });
 
+describe("birthdate field", () => {
+  const tags = (html: string) => html.match(/<input\b[^>]*>/g) ?? [];
+
+  for (const locale of SUPPORTED_LOCALES) {
+    test(`${locale}: is optional, and offers the age as the other way to fill it`, () => {
+      const dict = getDictionary(locale);
+      const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale={locale} />));
+
+      // Labelled optional, with both ways to fill it as radios; the date one is selected first.
+      expect(html).toMatch(new RegExp(`${dict.petBirthdate}<span[^>]*>[^]{0,30}${dict.optional}`));
+      const modes = tags(html).filter((tag) => tag.includes('name="birthdate_mode"'));
+      expect(modes).toHaveLength(2);
+      for (const radio of modes) expect(radio).not.toContain("required");
+      expect(html).toContain(dict.petBirthdateModeDate);
+      expect(html).toContain(dict.petBirthdateModeAge);
+
+      const typed = tags(html).find((tag) => tag.includes(`aria-label="${dict.petBirthdate}"`));
+      expect(typed).toBeDefined();
+      expect(typed).not.toContain("required");
+      expect(typed).toContain(`placeholder="${dict.petBirthdatePlaceholder}"`);
+    });
+  }
+
+  test("what is submitted is one hidden `birthdate`, empty until the tutor fills it", () => {
+    const html = decode(renderToStaticMarkup(<PetForm hashId="38q9uymz5c43" locale="pt-BR" />));
+    const named = tags(html).filter((tag) => /\bname="birthdate"/.test(tag));
+    expect(named).toHaveLength(1);
+    expect(named[0]).toContain('type="hidden"');
+    expect(named[0]).toContain('value=""');
+    // The inputs the tutor types in carry no name of their own.
+    expect(tags(html).filter((tag) => /\bname="(years|months|age)/.test(tag))).toHaveLength(0);
+  });
+
+  test("the intro no longer lists the birthdate among the required fields", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      const html = decode(renderToStaticMarkup(<FormIntro hashId="38q9uymz5c43" locale={locale} />));
+      expect(html).not.toMatch(/nascimento|birthdate/i);
+    }
+  });
+});
+
 describe("species and breed fields", () => {
   const field = (html: string, name: string) =>
     (html.match(/<input\b[^>]*>/g) ?? []).filter((tag) => tag.includes(`name="${name}"`));

@@ -82,18 +82,19 @@ export async function submitPet(
     genderRaw === "male" || genderRaw === "female" ? genderRaw : undefined;
   const pictureField = form.get("picture");
 
-  if (!name || !birthdate || !gender) {
+  if (!name || !gender) {
     return { status: "error", message: "missing_fields" };
   }
   if (!(pictureField instanceof File) || pictureField.size === 0) {
     return { status: "error", message: "invalid_picture" };
   }
-  // The form submits a validated `YYYY-MM-DD`; re-check it strictly here. The
-  // upper bound is tomorrow (UTC) so a user ahead of UTC can still pick today.
-  if (!validateBirthdateIso(birthdate, tomorrowUtcIso()).ok) {
+  // Optional. When present it is a `YYYY-MM-DD` the form validated, whether the
+  // tutor typed it or gave an age it was derived from; re-check it strictly
+  // here. The upper bound is tomorrow (UTC) so a user ahead of UTC can still
+  // pick today.
+  if (birthdate && !validateBirthdateIso(birthdate, tomorrowUtcIso()).ok) {
     return { status: "error", message: "invalid_birthdate" };
   }
-  const parsed = new Date(birthdate);
 
   const details = parsePetDetails(form);
   if (!details.ok) return { status: "error", message: details.error };
@@ -135,7 +136,7 @@ export async function submitPet(
   const pet: Pet = {
     name,
     pictureUrl,
-    birthdate: parsed.toISOString(),
+    ...(birthdate ? { birthdate: new Date(birthdate).toISOString() } : {}),
     status: "active",
     gender,
     ...details.details,
