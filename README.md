@@ -36,6 +36,7 @@ Os mesmos termos valem no código, nos tickets e na conversa.
 - Imagens: filesystem (dev), AWS S3 ou Cloudflare R2 (produção)
 - Three.js / React Three Fiber (cena 3D da tag)
 - [Vercel Web Analytics](https://vercel.com/docs/analytics) e [Speed Insights](https://vercel.com/docs/speed-insights) (uso e desempenho, veja "Métricas de uso")
+- [OpenTelemetry](https://opentelemetry.io/) com `@vercel/otel` (tracing de requests no servidor, veja "Tracing de requests")
 - i18n próprio (PT-BR e EN-US)
 - [nanoid](https://github.com/ai/nanoid) pra geração de hashIds opacos
 
@@ -392,6 +393,17 @@ A página `/` apresenta o produto: hero, "como funciona", o que a página do pet
 - **Ativar uma vez:** no painel da Vercel, projeto → aba **Analytics** → *Enable*, e aba **Speed Insights** → *Enable*. Sem isso os scripts não têm para onde enviar. Não precisa de token nem de variável de ambiente.
 - **O id da tag não vai para o painel.** `/tag/<hashId>` dá acesso aos contatos do tutor, então os dois componentes passam todo evento por `redactAnalyticsEvent` (`beforeSend`, em `src/lib/utils/analytics-url.ts`) antes de enviar: o segmento depois de `/tag` e qualquer segmento no formato de um id (`isHashId`, que vale também para `/<hashId>` do host curto) viram `[id]`; o `?...` e o `#...` são descartados, exceto `utm_*` (e só se o valor não contiver um id); o `route` do Speed Insights recebe o mesmo tratamento. Eventos de `/admin` são descartados. Está testado em `src/lib/__tests__/analytics-url.test.ts`.
 - **LGPD:** a seção "Medição de uso do site" da política de privacidade descreve isso. Se passar a medir algo novo (eventos, replay, outro serviço), revise o texto e a `PRIVACY_VERSION`.
+
+## Tracing de requests (OpenTelemetry)
+
+`src/instrumentation.ts` liga o tracing do servidor (`registerOTel` do `@vercel/otel`, serviço `viewpet`): o Next chama `register()` uma vez ao subir, no runtime Node.js e no Edge (middleware). Cada request vira um trace com spans de rota, renderização, `generateMetadata` e `fetch` de saída, com método, rota, status e duração. Não há spans personalizados, e nada do pet ou do tutor entra neles.
+
+- **Ativar na Vercel:** Settings → **Tracing** do projeto e crie ao menos uma regra de amostragem com taxa acima de 0% (por exemplo 100%). Sem regra nada é coletado. Não precisa de token nem de variável de ambiente. Fora da Vercel, o exportador só envia se `OTEL_EXPORTER_OTLP_ENDPOINT` (e `OTEL_EXPORTER_OTLP_PROTOCOL`) estiverem definidos; sem eles, nada sai.
+- **O id da tag não vai para o trace.** `/tag/<hashId>` dá acesso aos contatos do tutor, e o span raiz grava o caminho (`http.target`), a URL das chamadas de saída (`http.url`), o nome do span e as mensagens de erro. O `RedactingSpanProcessor` (`src/lib/tracing/`) roda **antes** do processador que exporta (por isso vem primeiro em `spanProcessors`) e, para cada span, troca o segmento depois de `/tag` e qualquer trecho no formato de um id (`HASH_ID_PATTERN`) por `[id]`, corta o `?...` e o `#...` dos atributos de URL e zera `url.query`. Vale para o nome, os atributos e os eventos do span (inclusive `exception.message`). A lógica pura está em `src/lib/utils/trace-redaction.ts`, com testes em `src/lib/__tests__/trace-redaction.test.ts`.
+- **Como conferir localmente:** suba um receptor OTLP qualquer (por exemplo um servidor HTTP que grave o corpo), rode `bun run build && bun run start` com `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_EXPORTER_OTLP_PROTOCOL=http/json`, abra um `/tag/<id>` e procure o id no que chegou: o span raiz sai como `GET /tag/[id]` com `http.target` igual a `/tag/[id]`.
+- **Dependências:** os pacotes `@opentelemetry/*` estão fixados nas faixas que o `@vercel/otel` aceita como peers (`api-logs`, `instrumentation` e `sdk-logs` abaixo de 0.300). Não suba essas versões sem conferir a versão do `@vercel/otel`.
+- **Limites da Vercel:** o plano Hobby inclui um volume mensal de spans e a retenção é curta (confira os valores atuais na documentação de Tracing da Vercel). Spans personalizados do Edge não aparecem.
+- **LGPD:** a seção "Medição de uso do site" da política descreve o registro das requisições. Se passar a gravar atributos novos nos spans, revise o texto e a `PRIVACY_VERSION`.
 
 ## Termos e LGPD
 
