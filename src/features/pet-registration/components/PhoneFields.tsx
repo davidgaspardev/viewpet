@@ -11,6 +11,9 @@ import {
   type SelectablePhoneChannel,
 } from "@/lib/utils/phone";
 
+import { useSnackbar } from "@/ui/Snackbar";
+
+import { keepOneChannel } from "./channelGuard";
 import { RequiredMark } from "./FieldMarks";
 import { ADD_BUTTON_CLASS, HINT_CLASS, INPUT_CLASS, LABEL_CLASS } from "./fieldStyles";
 import { useKeyedList } from "./useKeyedList";
@@ -46,6 +49,8 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
   const channelRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const hintId = useId();
+  const channelsHintId = useId();
+  const { show } = useSnackbar();
   const label = row === 0 ? dict.cellphoneMain : dict.cellphoneNumber(row + 1);
 
   // Hold the submit with the browser's own message when the number can't be
@@ -103,8 +108,12 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
           {dict.phoneHint}
         </p>
       )}
-      <fieldset className="mt-3">
+      <fieldset className="mt-3" aria-describedby={channelsHintId}>
         <legend className="text-xs font-medium text-ink/70">{dict.phoneChannelsLabel}</legend>
+        {/* The rule, read out with the group; sighted users get it from the snackbar. */}
+        <p id={channelsHintId} className="sr-only">
+          {dict.phoneChannelRequired}
+        </p>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {SELECTABLE_PHONE_CHANNELS.map((channel, i) => (
             // A real checkbox inside a big tap target; the box lights up when ticked.
@@ -119,7 +128,13 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
                 type="checkbox"
                 name={`${name}${channel}`}
                 defaultChecked={DEFAULT_CHANNELS[channel]}
-                onChange={() => syncValidity(phone)}
+                onChange={(e) => {
+                  // The last ticked box can't be unticked: put it back and say why.
+                  if (keepOneChannel(channelRefs.current, e.currentTarget)) {
+                    show(dict.phoneChannelLastOne, { variant: "warn" });
+                  }
+                  syncValidity(phone);
+                }}
                 className="h-4 w-4 rounded accent-ink"
               />
               {channelLabel(channel, dict)}

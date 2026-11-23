@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { getDictionary, SUPPORTED_LOCALES } from "@/lib/i18n";
 import { Card } from "@/ui/Card";
+import { SnackbarProvider } from "@/ui/Snackbar";
 
 import { AllergiesField } from "../components/AllergiesField";
 import { FormIntro } from "../components/FormIntro";
@@ -120,7 +121,11 @@ describe("Card", () => {
 describe("PhoneFields", () => {
   const dict = getDictionary("pt-BR");
   const render = (isPrimaryGuardian: boolean) =>
-    renderToStaticMarkup(<PhoneFields prefix="g0_" isPrimaryGuardian={isPrimaryGuardian} dict={dict} />);
+    renderToStaticMarkup(
+      <SnackbarProvider closeLabel={dict.close}>
+        <PhoneFields prefix="g0_" isPrimaryGuardian={isPrimaryGuardian} dict={dict} />
+      </SnackbarProvider>,
+    );
 
   test("names the first number the main one, explains it, and labels the channels", () => {
     const html = render(true);
@@ -151,6 +156,28 @@ describe("PhoneFields", () => {
     const describedBy = input.match(/aria-describedby="([^"]+)"/)?.[1];
     expect(describedBy).toBeTruthy();
     expect(html).toContain(`id="${describedBy}"`);
+  });
+});
+
+describe("PhoneFields channel rule", () => {
+  const dict = getDictionary("pt-BR");
+  const html = renderToStaticMarkup(
+    <SnackbarProvider closeLabel={dict.close}>
+      <PhoneFields prefix="g0_" isPrimaryGuardian dict={dict} />
+    </SnackbarProvider>,
+  );
+
+  test("the channel group is described by the rule, for assistive tech", () => {
+    const fieldset = html.match(/<fieldset[^>]*>/)![0];
+    const describedBy = fieldset.match(/aria-describedby="([^"]+)"/)?.[1];
+    expect(describedBy).toBeTruthy();
+    expect(html).toMatch(new RegExp(`id="${describedBy}"[^>]*>${dict.phoneChannelRequired}<`));
+  });
+
+  test("the message for a blocked untick exists in every language", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      expect(getDictionary(locale).phoneChannelLastOne.trim()).not.toBe("");
+    }
   });
 });
 
