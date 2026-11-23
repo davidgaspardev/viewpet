@@ -176,7 +176,9 @@ describe("PhoneFields channel rule", () => {
 
   test("the message for a blocked untick exists in every language", () => {
     for (const locale of SUPPORTED_LOCALES) {
-      expect(getDictionary(locale).phoneChannelLastOne.trim()).not.toBe("");
+      const message = getDictionary(locale).phoneChannelLastOne(2);
+      expect(message.trim()).not.toBe("");
+      expect(message).toContain("2");
     }
   });
 });

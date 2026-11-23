@@ -118,7 +118,7 @@ type Dictionary = {
   guardianNumber: (n: number) => string;
   phoneChannelCall: string;
   phoneChannelRequired: string;
-  phoneChannelLastOne: string;
+  phoneChannelLastOne: (n: number) => string;
   phoneIncomplete: string;
   addPhone: string;
   removePhone: string;
@@ -277,8 +277,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     guardianNumber: (n) => `Tutor ${n}`,
     phoneChannelCall: "Chamadas",
     phoneChannelRequired: "Escolha pelo menos uma forma de contato.",
-    phoneChannelLastOne:
-      "Não é possível desmarcar: o número precisa de pelo menos uma forma de contato.",
+    phoneChannelLastOne: (n) =>
+      `Não é possível desmarcar: o número ${n} precisa de pelo menos uma forma de contato.`,
     phoneIncomplete: "Digite o número com DDD (10 ou 11 dígitos).",
     addPhone: "Adicionar outro número",
     removePhone: "Remover",
@@ -440,7 +440,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     guardianNumber: (n) => `Guardian ${n}`,
     phoneChannelCall: "Calls",
     phoneChannelRequired: "Choose at least one way to be contacted.",
-    phoneChannelLastOne: "Can't untick it: a number needs at least one way to be contacted.",
+    phoneChannelLastOne: (n) =>
+      `Can't untick it: number ${n} needs at least one way to be contacted.`,
     phoneIncomplete: "Enter the number with area code (10 or 11 digits).",
     addPhone: "Add another number",
     removePhone: "Remove",

@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 
 import type { getDictionary } from "@/lib/i18n";
+import { useSnackbar } from "@/ui/Snackbar";
 import {
   applyPhoneMask,
   MAX_PHONES_PER_GUARDIAN,
@@ -10,8 +11,6 @@ import {
   SELECTABLE_PHONE_CHANNELS,
   type SelectablePhoneChannel,
 } from "@/lib/utils/phone";
-
-import { useSnackbar } from "@/ui/Snackbar";
 
 import { keepOneChannel } from "./channelGuard";
 import { RequiredMark } from "./FieldMarks";
@@ -54,7 +53,9 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
   const label = row === 0 ? dict.cellphoneMain : dict.cellphoneNumber(row + 1);
 
   // Hold the submit with the browser's own message when the number can't be
-  // used: cut short, or with no way to reach it. The channel checkboxes are
+  // used: cut short, or with no way to reach it. The "no way to reach it" case
+  // is normally prevented by `keepOneChannel`; it stays as a fallback for a
+  // change that skips the handler (e.g. a browser restoring form state). The channel checkboxes are
   // uncontrolled, so this reads what is actually ticked in the DOM — React's
   // automatic form reset after a server action can change them without any
   // event, and a copy of their state would drift from it. A blank number is
@@ -131,7 +132,9 @@ function PhoneRow({ name, row, required, onRemove, dict }: PhoneRowProps) {
                 onChange={(e) => {
                   // The last ticked box can't be unticked: put it back and say why.
                   if (keepOneChannel(channelRefs.current, e.currentTarget)) {
-                    show(dict.phoneChannelLastOne, { variant: "warn" });
+                    // Assertive region: the box flips back in the same event, so the
+                    // reason has to be announced right away. Times out like a warning.
+                    show(dict.phoneChannelLastOne(row + 1), { variant: "error", duration: 6000 });
                   }
                   syncValidity(phone);
                 }}
