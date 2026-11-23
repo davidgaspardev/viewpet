@@ -125,6 +125,13 @@ export interface Pet {
    * it implies). The profile just leaves the age out when it is absent.
    */
   birthdate?: string;
+  /**
+   * `true` when `birthdate` was derived from an age the tutor gave ("2 years
+   * and 4 months") rather than a date they know. The profile then shows the
+   * age as approximate and leaves out the month of birth, which nobody stated.
+   * Absent (never `false`) otherwise, and meaningless without a `birthdate`.
+   */
+  birthdateApproximate?: true;
   status: RegisteredPetStatus;
   gender?: PetGender;
   /**

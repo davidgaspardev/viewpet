@@ -9,6 +9,7 @@
  *       status: "reserved" | "active" | "lost",
  *       // when status !== "reserved":
  *       name, pictureUrl, birthdate?, gender?,
+ *       birthdateApproximate?,       // true when the birthdate was derived from an age; absent otherwise
  *       species?,                    // "dog" | "cat" | … — the key only; absent on legacy pets
  *       weightKg?, neutered?,        // number (kg) / boolean; absent = not informed (`false` is stored)
  *       breed?, allergies?, about?,  // optional details; absent when not provided
@@ -345,6 +346,7 @@ export class MongoPetRepository implements Seedable {
       name: doc.name,
       pictureUrl: doc.pictureUrl,
       ...(doc.birthdate ? { birthdate: doc.birthdate } : {}),
+      ...(doc.birthdate && doc.birthdateApproximate === true ? { birthdateApproximate: true as const } : {}),
       status: doc.status,
       ...(doc.gender ? { gender: doc.gender } : {}),
       // A species this build doesn't know (written by a newer deploy) is dropped, not shown.
@@ -407,6 +409,7 @@ export class MongoPetRepository implements Seedable {
           name: pet.name,
           pictureUrl: pet.pictureUrl,
           ...(pet.birthdate ? { birthdate: pet.birthdate } : {}),
+          ...(pet.birthdate && pet.birthdateApproximate ? { birthdateApproximate: true } : {}),
           ...(pet.gender ? { gender: pet.gender } : {}),
           ...(pet.species ? { species: pet.species } : {}),
           ...(pet.weightKg !== undefined ? { weightKg: pet.weightKg } : {}),
@@ -429,6 +432,7 @@ export class MongoPetRepository implements Seedable {
           // The optional fields are replaced wholesale: saving a pet without
           // one clears what an earlier save stored, instead of leaving it stale.
           ...(pet.birthdate ? {} : { birthdate: "" }),
+          ...(pet.birthdate && pet.birthdateApproximate ? {} : { birthdateApproximate: "" }),
           ...(pet.gender ? {} : { gender: "" }),
           ...(pet.species ? {} : { species: "" }),
           ...(pet.weightKg !== undefined ? {} : { weightKg: "" }),

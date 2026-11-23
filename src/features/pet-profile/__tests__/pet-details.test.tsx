@@ -89,6 +89,25 @@ describe("PetDetails", () => {
       expect(render({ name: "Lupe", birthdate, breed: "SRD" })).toContain("last:odd:col-span-2");
     });
 
+    test("an estimated age says so and doesn't invent a month of birth", () => {
+      const html = render({ name: "Lupe", birthdate, birthdateApproximate: true });
+      expect(html).toContain(`Cerca de ${formatAge(birthdate, "pt-BR")}`);
+      expect(html).not.toContain("nasceu em");
+      const en = renderToStaticMarkup(
+        <PetDetails pet={{ name: "Lupe", birthdate, birthdateApproximate: true }} locale="en-US" />,
+      );
+      expect(en).toContain(`About ${formatAge(birthdate, "en-US")}`);
+      expect(en).not.toContain("born ");
+    });
+
+    test("without the flag the month of birth is shown as before", () => {
+      expect(render({ name: "Lupe", birthdate })).not.toContain("Cerca de");
+    });
+
+    test("the flag alone, with no birthdate, shows nothing", () => {
+      expect(render({ name: "Lupe", breed: "SRD", birthdateApproximate: true })).not.toContain("Idade");
+    });
+
     test("no birthdate, or one that isn't a date, means no age tile (and no 'Invalid Date')", () => {
       expect(render({ name: "Lupe", breed: "SRD" })).not.toContain("Idade");
       const bad = render({ name: "Lupe", breed: "SRD", birthdate: "not a date" });

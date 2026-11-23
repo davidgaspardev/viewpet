@@ -241,6 +241,11 @@ describe("birthdate field", () => {
     expect(named).toHaveLength(1);
     expect(named[0]).toContain('type="hidden"');
     expect(named[0]).toContain('value=""');
+    // Date mode is the default, so nothing says "estimated" yet.
+    const approx = tags(html).filter((tag) => /\bname="birthdate_approximate"/.test(tag));
+    expect(approx).toHaveLength(1);
+    expect(approx[0]).toContain('type="hidden"');
+    expect(approx[0]).toContain('value=""');
     // The inputs the tutor types in carry no name of their own.
     expect(tags(html).filter((tag) => /\bname="(years|months|age)/.test(tag))).toHaveLength(0);
   });

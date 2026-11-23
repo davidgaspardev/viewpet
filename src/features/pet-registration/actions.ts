@@ -137,6 +137,10 @@ export async function submitPet(
     name,
     pictureUrl,
     ...(birthdate ? { birthdate: new Date(birthdate).toISOString() } : {}),
+    // Set by the form when the tutor gave an age instead of a date.
+    ...(birthdate && readString(form, "birthdate_approximate") === "true"
+      ? { birthdateApproximate: true as const }
+      : {}),
     status: "active",
     gender,
     ...details.details,

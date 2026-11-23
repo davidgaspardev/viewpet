@@ -79,6 +79,8 @@ type Dictionary = {
   petAge: string;
   /** "born {month year}", after the age. */
   bornOn: (monthYear: string) => string;
+  /** The age when it is an estimate (the tutor gave an age, not a date): "about 2 years old". */
+  approxAge: (age: string) => string;
   petSpecies: string;
   /** Name of each kind of pet; one entry per `PET_SPECIES` value. */
   species: Record<PetSpecies, string>;
@@ -247,6 +249,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     genderFemale: "Fêmea",
     petAge: "Idade",
     bornOn: (monthYear) => `nasceu em ${monthYear}`,
+    approxAge: (age) => `Cerca de ${age}`,
     petSpecies: "Tipo",
     species: { dog: "Cachorro", cat: "Gato" },
     petWeight: "Peso",
@@ -417,6 +420,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     genderFemale: "Female",
     petAge: "Age",
     bornOn: (monthYear) => `born ${monthYear}`,
+    approxAge: (age) => `About ${age}`,
     petSpecies: "Type",
     species: { dog: "Dog", cat: "Cat" },
     petWeight: "Weight",

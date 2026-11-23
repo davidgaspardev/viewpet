@@ -10,13 +10,13 @@ type PetDetailsProps = {
     "name" | "species" | "breed" | "weightKg" | "neutered" | "allergies" | "about"
   > &
     /** Always there for a registered pet; optional here so the block also renders without one. */
-    Partial<Pick<Pet, "birthdate">>;
+    Partial<Pick<Pet, "birthdate" | "birthdateApproximate">>;
   locale: Locale;
 };
 
 /**
  * The "About {pet}" block: the age on a tile of its own (with the month and year
- * of birth), then the other quick facts (type, breed, weight, neutered) as
+ * of birth, or "about N" and no month when the age was only an estimate), then the other quick facts (type, breed, weight, neutered) as
  * tiles, then allergies and the free-form "about". Every field is optional
  * (pets registered before they existed have none) and a tile is only drawn for
  * what is known, so the section is left out when there is nothing to show.
@@ -26,7 +26,7 @@ type PetDetailsProps = {
  */
 export function PetDetails({ pet, locale }: PetDetailsProps) {
   const dict = getDictionary(locale);
-  const { species, breed, weightKg, neutered, allergies, about, birthdate } = pet;
+  const { species, breed, weightKg, neutered, allergies, about, birthdate, birthdateApproximate } = pet;
   const hasAllergies = !!allergies && allergies.length > 0;
 
   const facts: Array<{ label: string; value: string }> = [];
@@ -70,11 +70,18 @@ export function PetDetails({ pet, locale }: PetDetailsProps) {
               <div className="rounded-xl bg-white px-3 py-2.5 ring-1 ring-black/10">
                 <dt className="text-xs font-medium text-muted">{dict.petAge}</dt>
                 <dd className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-base font-semibold text-ink">
-                  <span>{ageLabel}</span>
-                  <span className="text-sm font-normal text-ink/70">
-                    <span aria-hidden="true">· </span>
-                    {dict.bornOn(born)}
-                  </span>
+                  {birthdateApproximate ? (
+                    // An estimate: say so, and don't print a month of birth nobody stated.
+                    <span>{dict.approxAge(ageLabel)}</span>
+                  ) : (
+                    <>
+                      <span>{ageLabel}</span>
+                      <span className="text-sm font-normal text-ink/70">
+                        <span aria-hidden="true">· </span>
+                        {dict.bornOn(born)}
+                      </span>
+                    </>
+                  )}
                 </dd>
               </div>
             )}

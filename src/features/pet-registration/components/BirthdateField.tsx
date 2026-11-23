@@ -29,7 +29,8 @@ const digitsOnly = (value: string, maxLength: number) => value.replace(/\D/g, ""
  * "33 months"). The age becomes a birthdate here, in the browser
  * (`birthdateFromAge`). Either way the visible inputs have no `name`; what is
  * submitted is a `YYYY-MM-DD` in a hidden `birthdate` field — empty when the
- * tutor left both blank — so the server action only ever sees a date. (The two
+ * tutor left both blank — so the server action only ever sees a date, plus a
+ * hidden `birthdate_approximate` that says the date came from an age. (The two
  * mode radios do carry a `birthdate_mode` name, which keeps them one keyboard
  * group; the server ignores it.)
  */
@@ -177,6 +178,8 @@ export function BirthdateField({ locale }: { locale: Locale }) {
       </div>
 
       <input type="hidden" name="birthdate" value={iso} />
+      {/* An age is only an estimate: the server keeps that, so the profile can say so. */}
+      <input type="hidden" name="birthdate_approximate" value={mode === "age" && iso ? "true" : ""} />
       <p id={hintId} className={`mt-1 text-xs ${echo ? "font-medium text-ink" : "text-ink/70"}`}>
         {echo ?? (mode === "date" ? dict.petBirthdateHint : dict.petAgeHint)}
       </p>
