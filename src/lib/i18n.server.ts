@@ -1,14 +1,18 @@
 import "server-only";
 
-import { headers } from "next/headers";
-
-import { DEFAULT_LOCALE, localeFromLanguages, normalizeLocale, parseAcceptLanguage, type Locale } from "./i18n";
+import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "./i18n";
 
 /**
  * Resolve locale from (in order): explicit override (e.g. ?lang=pt or ?lang=pt-BR),
- * Accept-Language header, then default. Server-only because it touches
- * request headers — Client Components should import dictionary helpers
- * from `./i18n` instead.
+ * then the default (pt-BR). Server-only, so Client Components import dictionary
+ * helpers from `./i18n` instead.
+ *
+ * TEMPORARY: the Accept-Language header is deliberately NOT consulted for now.
+ * Some Portuguese-language phones were still getting the English page, so every
+ * visitor gets Portuguese unless `?lang=en` asks otherwise. To bring detection
+ * back, read `headers().get("accept-language")` and pass it through
+ * `parseAcceptLanguage` + `localeFromLanguages` (both still in `./i18n`) before
+ * falling back to DEFAULT_LOCALE.
  *
  * Supports both full locale codes (pt-BR, en-US) and legacy simplified codes (pt, en).
  */
@@ -17,15 +21,6 @@ export async function resolveLocale(override?: string): Promise<Locale> {
   if (override) {
     const normalized = normalizeLocale(override);
     if (normalized) return normalized;
-  }
-
-  try {
-    const h = await headers();
-    // "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7" → the first supported tag, by preference.
-    const preferred = localeFromLanguages(parseAcceptLanguage(h.get("accept-language") ?? ""));
-    if (preferred) return preferred;
-  } catch {
-    // headers() can throw in non-request contexts; ignore.
   }
 
   return DEFAULT_LOCALE;
