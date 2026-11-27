@@ -43,3 +43,18 @@ export function resolveQrBase(
 export function qrUrl(base: string, id: string): string {
   return `${base}/${id}`;
 }
+
+/**
+ * What the QR code actually encodes. The same URL as `qrUrl`, except on the
+ * short QR host, where it is upper-cased: a QR code has a denser "alphanumeric"
+ * mode for capitals, digits and `:/.-`, which fits a smaller (so easier to scan
+ * and to engrave) code than the lowercase text would. That is only safe when
+ * nothing in the URL is case-sensitive: the scheme and host never are, and the
+ * short host's redirect lower-cases the id (`resolveQrRedirect`). With a path
+ * in the base (the direct `<origin>/tag` form) the route is case-sensitive, so
+ * the text is left alone.
+ */
+export function qrPayload(base: string, id: string): string {
+  const url = qrUrl(base, id);
+  return new URL(base).pathname === "/" ? url.toUpperCase() : url;
+}

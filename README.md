@@ -146,6 +146,8 @@ O QR codifica, nesta ordem de preferência:
 
 `QR_BASE_URL` e `SITE_URL` precisam ser URLs http(s) absolutas, senão o `/admin` mostra o erro em vez da lista (e nenhum ID é reservado). Se só `QR_BASE_URL` estiver definida, o admin se recusa a gerar QR Codes, porque o redirect não teria pra onde ir. Em produção, defina as duas pra não imprimir etiquetas com o host errado.
 
+**Texto em maiúsculas no host curto.** Com `QR_BASE_URL`, o QR codifica `HTTPS://QR.VIEWPET.INFO/<HASHID>` (tudo em maiúsculas), não a URL em minúsculas. O QR tem um modo "alfanumérico" mais denso, que só aceita maiúsculas: com ele o código de um id de 12 caracteres cai de 37×37 módulos (versão 5) para 33×33 (versão 4), com correção de erro H. É seguro porque esquema e host não diferenciam caixa e o redirect já converte o id para minúsculas. Na forma direta (`<SITE_URL>/tag/<id>`) o texto fica como está, porque a rota `/tag` diferencia caixa. A função é `qrPayload` em `src/features/admin/origin.ts`; o link mostrado sob cada QR continua em minúsculas.
+
 ### Página de admin (`/admin`)
 
 Alternativa visual ao CLI: lista todos os IDs do banco com o status de cada um (`reserved` / `active` / `lost`), com filtro por status, e gera um novo ID (já reservado no banco) por vez.
